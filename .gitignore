@@ -1,0 +1,25 @@
+.venv/
+.uv-cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Generated experiment artifacts
+artifacts/
+checkpoints/
+outputs/
+data/generated/
+*.pt
+*.pth
+*.safetensors
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+wandb/

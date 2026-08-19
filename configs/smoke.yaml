@@ -1,0 +1,43 @@
+seed: 42
+output_dir: outputs/smoke
+
+data:
+  train_sessions: 12
+  validation_sessions: 4
+  test_sessions: 4
+  node_count_min: 8
+  node_count_max: 10
+  turns: [1, 2]
+  reasoning_types:
+    - shortest_path
+    - filtered_neighbor_count
+
+model:
+  backend: mock
+  lm_name: mock
+  graph_hidden_size: 32
+  graph_layers: 2
+  prefix_tokens: 2
+  node_feature_size: 12
+
+training:
+  seed: 42
+  epochs: 1
+  batch_size: 2
+  learning_rate: 0.001
+  gradient_accumulation_steps: 1
+  mixed_precision: "no"
+
+evaluation:
+  splits: [test]
+  conditions:
+    - question_only
+    - frozen_graph_history
+    - shuffled_graph
+    - oracle_updated_graph
+    - cached_no_reencode
+    - predicted_updated_graph
+    - serialized_initial_history
+    - token_matched_history
+    - serialized_current_graph
+    - tool_solver
