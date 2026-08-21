@@ -9,7 +9,15 @@ from pathlib import Path
 from typing import Any
 
 from graph_modi.config import ExperimentConfig, load_config
-from graph_modi.data.multiturn import generate_dataset, load_sessions, save_sessions
+from graph_modi.data.multiturn import (
+    DEFAULT_GRAPH_DEGREE,
+    DEFAULT_LINE_COUNT,
+    DEFAULT_REWIRE_PROBABILITY,
+    DISTRIBUTION,
+    generate_dataset,
+    load_sessions,
+    save_sessions,
+)
 from graph_modi.data.validation import audit_sessions
 from graph_modi.evaluation.runner import CONDITIONS, evaluate_sessions
 from graph_modi.graph.solvers import render_question
@@ -31,7 +39,11 @@ def _write_json(path: Path, value: Any) -> None:
 
 
 def _data_path(config: ExperimentConfig, split: str) -> Path:
-    return config.output_dir / "data" / f"{split}.jsonl"
+    return config.data_dir / f"{split}.jsonl"
+
+
+def _audit_path(config: ExperimentConfig) -> Path:
+    return config.data_dir / "audit.json"
 
 
 def _generate(config: ExperimentConfig) -> dict[str, Any]:
@@ -54,6 +66,10 @@ def _generate(config: ExperimentConfig) -> dict[str, Any]:
                 ["shortest_path", "filtered_neighbor_count"],
             )
         ],
+        distribution=str(data.get("distribution", DISTRIBUTION)),
+        degree=int(data.get("graph_degree", DEFAULT_GRAPH_DEGREE)),
+        rewire_probability=float(data.get("rewire_probability", DEFAULT_REWIRE_PROBABILITY)),
+        line_count=int(data.get("line_count", DEFAULT_LINE_COUNT)),
     )
     report: dict[str, Any] = {}
     for split, sessions in dataset.items():
@@ -61,7 +77,7 @@ def _generate(config: ExperimentConfig) -> dict[str, Any]:
         report[split] = audit_sessions(sessions)
         if not report[split]["valid"]:
             raise RuntimeError(f"Generated invalid {split} data: {report[split]['failures']}")
-    _write_json(config.output_dir / "data" / "audit.json", report)
+    _write_json(_audit_path(config), report)
     return report
 
 

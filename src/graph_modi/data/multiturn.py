@@ -26,9 +26,114 @@ from graph_modi.schema import (
 
 _LINES = ("red", "blue", "green", "yellow")
 
+DISTRIBUTION = "watts_strogatz_metro_v1"
+DEFAULT_GRAPH_DEGREE = 4
+DEFAULT_REWIRE_PROBABILITY = 0.15
+DEFAULT_LINE_COUNT = 4
+TRACK_RELATION = "track"
+TRANSFER_RELATION = "transfer"
+_CONNECTIVITY_ATTEMPTS = 32
 
-def _make_graph(rng: random.Random, split: str, index: int, node_count: int) -> AttributedGraph:
-    graph_id = f"{split}-graph-{index:06d}"
+
+def _pair(left: int, right: int) -> tuple[int, int]:
+    return (left, right) if left < right else (right, left)
+
+
+def _watts_strogatz_positions(
+    rng: random.Random,
+    node_count: int,
+    degree: int,
+    rewire_probability: float,
+) -> dict[tuple[int, int], bool]:
+    """Build a rewired ring lattice over ring positions.
+
+    Returns each position pair mapped to whether it was rewired, so callers can
+    distinguish surviving ring track from rewired transfer links. Edge count is
+    always ``node_count * degree // 2``: a rewire removes and adds one edge.
+    """
+    edges: dict[tuple[int, int], bool] = {
+        _pair(position, (position + offset) % node_count): False
+        for position in range(node_count)
+        for offset in range(1, degree // 2 + 1)
+    }
+    neighbors: dict[int, set[int]] = {position: set() for position in range(node_count)}
+    for left, right in edges:
+        neighbors[left].add(right)
+        neighbors[right].add(left)
+    for left, right in list(edges):
+        if rng.random() >= rewire_probability:
+            continue
+        options = [
+            candidate
+            for candidate in range(node_count)
+            if candidate != left and candidate not in neighbors[left]
+        ]
+        if not options:
+            continue
+        target = rng.choice(options)
+        del edges[_pair(left, right)]
+        neighbors[left].discard(right)
+        neighbors[right].discard(left)
+        edges[_pair(left, target)] = True
+        neighbors[left].add(target)
+        neighbors[target].add(left)
+    return edges
+
+
+def _is_connected(node_count: int, position_edges: Iterable[tuple[int, int]]) -> bool:
+    adjacency: dict[int, list[int]] = {position: [] for position in range(node_count)}
+    for left, right in position_edges:
+        adjacency[left].append(right)
+        adjacency[right].append(left)
+    seen = {0}
+    frontier = [0]
+    while frontier:
+        position = frontier.pop()
+        for neighbor in adjacency[position]:
+            if neighbor not in seen:
+                seen.add(neighbor)
+                frontier.append(neighbor)
+    return len(seen) == node_count
+
+
+def _make_graph(
+    rng: random.Random,
+    split: str,
+    index: int,
+    node_count: int,
+    *,
+    degree: int = DEFAULT_GRAPH_DEGREE,
+    rewire_probability: float = DEFAULT_REWIRE_PROBABILITY,
+    line_count: int = DEFAULT_LINE_COUNT,
+) -> AttributedGraph:
+    if degree < 2 or degree % 2:
+        raise ValueError("graph_degree must be an even number of at least 2")
+    if degree >= node_count:
+        raise ValueError(f"graph_degree {degree} requires more than {degree} nodes")
+    if not 0.0 <= rewire_probability <= 1.0:
+        raise ValueError("rewire_probability must be in [0, 1]")
+    if not 1 <= line_count <= len(_LINES):
+        raise ValueError(f"line_count must be between 1 and {len(_LINES)}")
+
+    for _ in range(_CONNECTIVITY_ATTEMPTS):
+        position_edges = _watts_strogatz_positions(rng, node_count, degree, rewire_probability)
+        if _is_connected(node_count, position_edges):
+            break
+    else:
+        raise RuntimeError(
+            f"Could not draw a connected graph for {split}/{index} after "
+            f"{_CONNECTIVITY_ATTEMPTS} attempts"
+        )
+
+    # Ring positions are permuted onto node identifiers so that adjacency cannot
+    # be recovered from node id or label arithmetic.
+    identifiers = list(range(node_count))
+    rng.shuffle(identifiers)
+    lines = {
+        identifiers[position]: _LINES[(position * line_count) // node_count]
+        for position in range(node_count)
+    }
+
     nodes = tuple(
         Node(
             id=f"n{node_index}",
@@ -36,31 +141,30 @@ def _make_graph(rng: random.Random, split: str, index: int, node_count: int) -> 
             attributes={
                 "status": "open",
                 "accessible": bool(rng.getrandbits(1)),
-                "line": rng.choice(_LINES),
-                "zone": rng.randint(1, 4),
+                "line": lines[node_index],
             },
         )
         for node_index in range(node_count)
     )
-    edges: list[Edge] = []
-    order = list(range(node_count))
-    rng.shuffle(order)
-    for position in range(1, node_count):
-        left = order[position]
-        right = order[rng.randrange(position)]
-        edges.append(Edge(f"n{left}", f"n{right}"))
-    existing = {frozenset((edge.source, edge.target)) for edge in edges}
-    for left in range(node_count):
-        for right in range(left + 1, node_count):
-            pair = frozenset((f"n{left}", f"n{right}"))
-            if pair not in existing and rng.random() < 0.12:
-                edges.append(Edge(f"n{left}", f"n{right}"))
-                existing.add(pair)
+    edges = tuple(
+        Edge(
+            source=f"n{identifiers[left]}",
+            target=f"n{identifiers[right]}",
+            relation=TRANSFER_RELATION if rewired else TRACK_RELATION,
+        )
+        for (left, right), rewired in sorted(position_edges.items())
+    )
     return AttributedGraph(
-        graph_id=graph_id,
+        graph_id=f"{split}-graph-{index:06d}",
         nodes=nodes,
-        edges=tuple(edges),
-        metadata={"distribution": "synthetic_metro_v1", "split": split},
+        edges=edges,
+        metadata={
+            "distribution": DISTRIBUTION,
+            "split": split,
+            "degree": degree,
+            "rewire_probability": rewire_probability,
+            "line_count": line_count,
+        },
     )
 
 
@@ -96,6 +200,7 @@ def _candidate_edit(
             target=EditTarget.EDGE,
             source=source,
             destination=destination,
+            relation=TRANSFER_RELATION,
         )
     if operation is EditOperation.DEL and graph.edges:
         edge = rng.choice(graph.edges)
@@ -131,6 +236,9 @@ def _queries(graph: AttributedGraph, reasoning_type: ReasoningType) -> Iterable[
                     yield GraphQuery(reasoning_type, source, target)
         return
     if reasoning_type is ReasoningType.FILTERED_NEIGHBOR_COUNT:
+        lines = sorted(
+            {str(node.attributes["line"]) for node in graph.nodes if "line" in node.attributes}
+        )
         for source in nodes:
             yield GraphQuery(
                 reasoning_type,
@@ -144,6 +252,13 @@ def _queries(graph: AttributedGraph, reasoning_type: ReasoningType) -> Iterable[
                 attribute="accessible",
                 value=True,
             )
+            for line in lines:
+                yield GraphQuery(
+                    reasoning_type,
+                    source,
+                    attribute="line",
+                    value=line,
+                )
         return
     if reasoning_type is ReasoningType.CYCLE_MEMBERSHIP:
         for source in nodes:
@@ -208,9 +323,20 @@ def generate_session(
     node_count: int,
     turn_count: int,
     reasoning_types: Sequence[ReasoningType],
+    degree: int = DEFAULT_GRAPH_DEGREE,
+    rewire_probability: float = DEFAULT_REWIRE_PROBABILITY,
+    line_count: int = DEFAULT_LINE_COUNT,
 ) -> Session:
     rng = random.Random(seed)
-    initial = _make_graph(rng, split, index, node_count)
+    initial = _make_graph(
+        rng,
+        split,
+        index,
+        node_count,
+        degree=degree,
+        rewire_probability=rewire_probability,
+        line_count=line_count,
+    )
     current = initial
     turns: list[Turn] = []
     families = ("direct", "service", "notice")
@@ -275,12 +401,23 @@ def generate_dataset(
     node_count_max: int,
     turns: Sequence[int],
     reasoning_types: Sequence[str],
+    distribution: str = DISTRIBUTION,
+    degree: int = DEFAULT_GRAPH_DEGREE,
+    rewire_probability: float = DEFAULT_REWIRE_PROBABILITY,
+    line_count: int = DEFAULT_LINE_COUNT,
 ) -> dict[str, list[Session]]:
+    if distribution != DISTRIBUTION:
+        raise ValueError(
+            f"Unsupported graph distribution {distribution!r}; this generator samples "
+            f"{DISTRIBUTION!r}"
+        )
     parsed_types = tuple(ReasoningType(value) for value in reasoning_types)
     if not parsed_types:
         raise ValueError("At least one reasoning type is required")
     if not turns or min(turns) < 1:
         raise ValueError("Turn counts must be positive")
+    if node_count_min <= degree:
+        raise ValueError(f"node_count_min {node_count_min} must exceed graph_degree {degree}")
     result: dict[str, list[Session]] = {}
     split_offsets = {"train": 0, "validation": 1_000_000, "test": 2_000_000}
     for split, count in counts.items():
@@ -297,6 +434,9 @@ def generate_dataset(
                     node_count=rng.randint(node_count_min, node_count_max),
                     turn_count=turns[index % len(turns)],
                     reasoning_types=parsed_types,
+                    degree=degree,
+                    rewire_probability=rewire_probability,
+                    line_count=line_count,
                 )
             )
         result[split] = sessions

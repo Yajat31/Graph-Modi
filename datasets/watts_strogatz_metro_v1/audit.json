@@ -1,0 +1,103 @@
+{
+  "test": {
+    "answer_distribution": {
+      "0": 35,
+      "1": 208,
+      "2": 414,
+      "3": 1310,
+      "4": 1235,
+      "5": 736,
+      "6": 253,
+      "7": 50,
+      "8": 13,
+      "9": 1,
+      "no": 502,
+      "unreachable": 741,
+      "yes": 2
+    },
+    "counterfactual_pairs": 5500,
+    "failures": [],
+    "majority_answer_accuracy": 0.2381818181818182,
+    "operation_distribution": {
+      "ADD": 1834,
+      "DEL": 1833,
+      "SET": 1833
+    },
+    "reasoning_distribution": {
+      "cycle_membership": 4,
+      "filtered_neighbor_count": 1118,
+      "reachability": 500,
+      "shortest_path": 3878
+    },
+    "sessions": 2000,
+    "turns": 5500,
+    "valid": true
+  },
+  "train": {
+    "answer_distribution": {
+      "0": 215,
+      "1": 1054,
+      "10": 2,
+      "2": 2059,
+      "3": 6472,
+      "4": 6002,
+      "5": 3808,
+      "6": 1287,
+      "7": 268,
+      "8": 33,
+      "9": 1,
+      "no": 2521,
+      "unreachable": 3778
+    },
+    "counterfactual_pairs": 27500,
+    "failures": [],
+    "majority_answer_accuracy": 0.23534545454545455,
+    "operation_distribution": {
+      "ADD": 9167,
+      "DEL": 9166,
+      "SET": 9167
+    },
+    "reasoning_distribution": {
+      "cycle_membership": 21,
+      "filtered_neighbor_count": 5603,
+      "reachability": 2500,
+      "shortest_path": 19376
+    },
+    "sessions": 10000,
+    "turns": 27500,
+    "valid": true
+  },
+  "validation": {
+    "answer_distribution": {
+      "0": 26,
+      "1": 106,
+      "2": 193,
+      "3": 619,
+      "4": 617,
+      "5": 400,
+      "6": 126,
+      "7": 32,
+      "8": 6,
+      "9": 1,
+      "no": 251,
+      "unreachable": 373
+    },
+    "counterfactual_pairs": 2750,
+    "failures": [],
+    "majority_answer_accuracy": 0.2250909090909091,
+    "operation_distribution": {
+      "ADD": 917,
+      "DEL": 916,
+      "SET": 917
+    },
+    "reasoning_distribution": {
+      "cycle_membership": 1,
+      "filtered_neighbor_count": 571,
+      "reachability": 250,
+      "shortest_path": 1928
+    },
+    "sessions": 1000,
+    "turns": 2750,
+    "valid": true
+  }
+}

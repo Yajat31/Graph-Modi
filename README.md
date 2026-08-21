@@ -91,13 +91,27 @@ only an integration test and must not be reported as a learned projector.
 
 ## Generate data
 
+Shared experiment sessions live under [`datasets/`](datasets/), not under
+gitignored `outputs/`. The released experiment-1 set is already generated:
+
+[`datasets/watts_strogatz_metro_v1/`](datasets/watts_strogatz_metro_v1/)
+
+Regenerate only when the locked generator changes:
+
 ```bash
 uv run graph-modi generate --config configs/qwen8b_projector.yaml
 ```
 
-This creates graph-instance, entity-name, seed, session, and
-paraphrase-family-disjoint JSONL files. Train, validation, and test graphs come
-from the same generator distribution for the initial feasibility experiment.
+That writes `train` / `validation` / `test` JSONL plus `audit.json` into
+`data_dir` from the config (`datasets/watts_strogatz_metro_v1` for the Qwen
+run). Checkpoints and evaluation dumps still go to `output_dir`
+(`outputs/qwen8b`), which stays local and gitignored.
+
+Train, validation, and test graphs come from the same generator
+distribution: `watts_strogatz_metro_v1`, a rewired ring lattice with
+`graph_degree: 4` and `rewire_probability: 0.15`, locked in
+[`documents/decisions/0001-graph-distribution.md`](documents/decisions/0001-graph-distribution.md).
+Station lines are contiguous ring arcs and edges are `track` or `transfer`.
 The generated audit rejects non-cumulative sessions, invalid edits, leaked
 answers, incorrect oracle labels, and unchanged-answer examples.
 
@@ -136,7 +150,7 @@ checkpoints fail with a shape/backbone error instead of loading partially.
 uv run graph-modi evaluate --config configs/qwen8b_projector.yaml
 uv run graph-modi run-session \
   --config configs/qwen8b_projector.yaml \
-  --session outputs/qwen8b/data/test.jsonl \
+  --session datasets/watts_strogatz_metro_v1/test.jsonl \
   --index 0
 ```
 
@@ -181,9 +195,25 @@ src/graph_modi/
   pipeline/      cumulative edit/apply/re-encode loop
   evaluation/    paired conditions and metrics
 configs/         smoke, Qwen projector, and evaluation configurations
+datasets/        shared session JSONL for team training and evaluation
 tests/           unit and download-free integration tests
 scripts/         setup and SLURM launchers
+documents/       proposal, candidate designs, decision records, experiment log
+outputs/         local checkpoints and scratch (gitignored)
 ```
+
+Shared sessions for experiment 1 are in
+[`datasets/watts_strogatz_metro_v1/`](datasets/watts_strogatz_metro_v1/).
+Configs set `data_dir` to that folder and `output_dir` to a local
+`outputs/<run>/` path for checkpoints.
+
+Design choices that constrain later experiments (a locked graph
+distribution, a frozen dataset scale, the set of evaluation conditions) are
+recorded as decisions under [`documents/decisions/`](documents/decisions/),
+not left in chat history. Every run whose result was actually used is
+logged in [`documents/experiments/log.md`](documents/experiments/log.md).
+See [`documents/README.md`](documents/README.md) for how the pieces fit
+together.
 
 ## Current limitations
 

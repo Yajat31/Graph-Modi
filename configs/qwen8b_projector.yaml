@@ -1,10 +1,15 @@
 seed: 42
 output_dir: outputs/qwen8b
+data_dir: datasets/watts_strogatz_metro_v1
 
 data:
   train_sessions: 10000
   validation_sessions: 1000
   test_sessions: 2000
+  distribution: watts_strogatz_metro_v1
+  graph_degree: 4
+  rewire_probability: 0.15
+  line_count: 4
   node_count_min: 15
   node_count_max: 30
   turns: [1, 2, 3, 5]

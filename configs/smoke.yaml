@@ -5,6 +5,10 @@ data:
   train_sessions: 12
   validation_sessions: 4
   test_sessions: 4
+  distribution: watts_strogatz_metro_v1
+  graph_degree: 4
+  rewire_probability: 0.15
+  line_count: 4
   node_count_min: 8
   node_count_max: 10
   turns: [1, 2]

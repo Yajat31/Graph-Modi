@@ -22,6 +22,13 @@ class ExperimentConfig:
     def output_dir(self) -> Path:
         return Path(self.values.get("output_dir", "outputs/default"))
 
+    @property
+    def data_dir(self) -> Path:
+        """Shared session JSONL directory; defaults to ``output_dir / "data"``."""
+        if "data_dir" in self.values:
+            return Path(self.values["data_dir"])
+        return self.output_dir / "data"
+
     def section(self, name: str) -> dict[str, Any]:
         value = self.values.get(name, {})
         if not isinstance(value, dict):

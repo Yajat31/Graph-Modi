@@ -9,14 +9,16 @@ __pycache__/
 build/
 dist/
 
-# Generated experiment artifacts
+# Local run artifacts (checkpoints, smoke scratch, eval dumps)
 artifacts/
 checkpoints/
 outputs/
-data/generated/
 *.pt
 *.pth
 *.safetensors
+
+# Shared session JSONL lives under datasets/ and is tracked in git.
+# Do not add a blanket ignore for datasets/.
 
 # Local configuration and credentials
 .env
