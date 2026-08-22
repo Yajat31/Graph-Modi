@@ -39,6 +39,7 @@ from graph_modi.training import (
     pretrain_graph_encoder,
     run_mock_training,
     train_projector,
+    train_soft_prompt,
 )
 
 
@@ -307,6 +308,26 @@ def _tea_model(config: ExperimentConfig) -> Any:
     return tea_model.to(device)
 
 
+def _soft_prompt_model(config: ExperimentConfig) -> Any:
+    import torch
+
+    from graph_modi.models.soft_prompt import SoftPromptGLM
+
+    model = config.section("model")
+    dtype_name = str(model.get("torch_dtype", "float32"))
+    dtype = getattr(torch, dtype_name, None)
+    if dtype is None:
+        raise ValueError(f"Unknown torch dtype: {dtype_name}")
+    soft_model = SoftPromptGLM.from_pretrained(
+        str(model["lm_name"]),
+        prefix_tokens=int(model.get("prefix_tokens", 10)),
+        trust_remote_code=bool(model.get("trust_remote_code", False)),
+        torch_dtype=dtype,
+    )
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return soft_model.to(device)
+
+
 def command_generate(config: ExperimentConfig, _args: argparse.Namespace) -> None:
     report = _generate(config)
     print(json.dumps(report, indent=2))
@@ -318,6 +339,9 @@ def command_pretrain(config: ExperimentConfig, _args: argparse.Namespace) -> Non
     if model_config.get("backend", "mock") == "mock":
         path = run_mock_training(config.output_dir / "gnn", seed=config.seed)
         print(path)
+        return
+    if model_config.get("backend") == "soft_prompt":
+        print(json.dumps({"skipped": "soft_prompt has no GNN to pretrain"}, indent=2))
         return
     _, gnn, tensorizer = _neural_components(config)
     examples = _training_examples(config)
@@ -342,12 +366,9 @@ def command_train(config: ExperimentConfig, _args: argparse.Namespace) -> None:
         path = run_mock_training(config.output_dir / "projector", seed=config.seed)
         print(path)
         return
-    model = _tea_model(config)
-    _load_local_gnn(model, config)
-    architecture = str(model_config.get("architecture", "tea"))
     training = config.section("training")
     train_config = ProjectorTrainingConfig(
-        output_dir=config.output_dir / "projector",
+        output_dir=config.output_dir / ("soft_prompt" if model_config.get("backend") == "soft_prompt" else "projector"),
         epochs=int(training.get("epochs", 5)),
         batch_size=int(training.get("batch_size", 1)),
         gradient_accumulation_steps=int(training.get("gradient_accumulation_steps", 1)),
@@ -359,6 +380,14 @@ def command_train(config: ExperimentConfig, _args: argparse.Namespace) -> None:
         resume_from=training.get("resume_from"),
     )
     examples = _training_examples(config)
+    if model_config.get("backend") == "soft_prompt":
+        soft_model = _soft_prompt_model(config)
+        result = train_soft_prompt(soft_model, examples, train_config)
+        print(json.dumps(asdict(result), indent=2, default=str))
+        return
+    model = _tea_model(config)
+    _load_local_gnn(model, config)
+    architecture = str(model_config.get("architecture", "tea"))
     if architecture == "graph_token":
         from graph_modi.models.graph_token import train_graph_token
 
@@ -374,10 +403,16 @@ def _backend(config: ExperimentConfig) -> GraphBackend:
     if backend_name == "mock":
         return SymbolicMockBackend()
     if backend_name == "soft_prompt":
-        from graph_modi.models.soft_prompt import build_soft_prompt_backend
+        from graph_modi.models.soft_prompt import SoftPromptBackend, load_soft_prompt_checkpoint
 
-        return build_soft_prompt_backend(
-            prefix_tokens=int(model_config.get("prefix_tokens", 10)),
+        soft_model = _soft_prompt_model(config)
+        checkpoint = Path(
+            model_config.get("checkpoint", config.output_dir / "soft_prompt" / "checkpoint-final")
+        )
+        load_soft_prompt_checkpoint(soft_model, checkpoint_dir=checkpoint)
+        return SoftPromptBackend(
+            soft_model,
+            max_new_tokens=int(config.section("evaluation").get("max_new_tokens", 32)),
         )
     from graph_modi.models.tea_glm import TEAGLMBackend, load_external_component
 

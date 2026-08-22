@@ -358,8 +358,11 @@ class TEAGLM(_Module):
         self.tensorizer = tensorizer
         self.config = config or TEAGLMConfig()
         lm_hidden_dim = int(language_model.get_input_embeddings().embedding_dim)
-        if gnn.config.output_dim != projector.config.graph_dim:
-            raise ValueError("GNN output_dim must equal projector graph_dim")
+        if gnn.config.output_dim * 3 != projector.config.graph_dim:
+            raise ValueError(
+                "projector graph_dim must equal 3 * GNN output_dim "
+                "(pooled graph vector concatenated with source and target node embeddings)"
+            )
         if projector.config.lm_hidden_dim != lm_hidden_dim:
             raise ValueError(
                 "Projector lm_hidden_dim does not match LM input embedding dimension "
@@ -413,7 +416,7 @@ class TEAGLM(_Module):
             raise ValueError("Tensorizer feature_dim must equal GNN input_dim")
         lm_hidden_dim = int(language_model.get_input_embeddings().embedding_dim)
         prefix_config = projector_config or PrefixProjectorConfig(
-            graph_dim=graph_config.output_dim,
+            graph_dim=graph_config.output_dim * 3,
             lm_hidden_dim=lm_hidden_dim,
             prefix_tokens=prefix_tokens,
             hidden_dim=projector_hidden_dim,
@@ -461,20 +464,66 @@ class TEAGLM(_Module):
             return torch.autocast(device_type="cuda", dtype=lm_dtype)
         return contextlib.nullcontext()
 
-    def encode_graphs(self, graphs: Sequence[AttributedGraph | GraphTensor]) -> Any:
-        pooled = []
-        for graph in graphs:
+    def encode_graphs(
+        self,
+        graphs: Sequence[AttributedGraph | GraphTensor],
+        *,
+        source_ids: Sequence[str | None] | None = None,
+        target_ids: Sequence[str | None] | None = None,
+    ) -> Any:
+        """Pooled graph vector concatenated with the query's source/target node
+        embeddings.
+
+        Mean pooling alone collapses every node into one vector, discarding
+        which node(s) a query is about -- fatal for path/reachability/
+        neighbor-count tasks that name specific nodes (README section 5:
+        "task-appropriate readouts ... do not represent every problem with
+        one repeated mean-pooled vector"). This mirrors the pooled+source+
+        target representation pretrain_graph_encoder's classification head
+        already uses (training.py::_batch_query_vectors); zero-filled when a
+        task has no source/target (e.g. pure graph-level tasks).
+        """
+        if source_ids is None:
+            source_ids = [None] * len(graphs)
+        if target_ids is None:
+            target_ids = [None] * len(graphs)
+        vectors = []
+        for graph, source_id, target_id in zip(graphs, source_ids, target_ids, strict=True):
             tensor_graph = self.tensorizer(graph) if isinstance(graph, AttributedGraph) else graph
             tensor_graph = tensor_graph.to(self.device)
             if self.config.freeze_gnn:
                 with torch.no_grad():
-                    pooled.append(self.gnn.pooled(tensor_graph))
+                    node_repr = self.gnn(tensor_graph)
             else:
-                pooled.append(self.gnn.pooled(tensor_graph))
-        return torch.stack(pooled)
+                node_repr = self.gnn(tensor_graph)
+            pooled = node_repr.mean(dim=0)
+            zeros = torch.zeros(node_repr.shape[-1], dtype=node_repr.dtype, device=node_repr.device)
+            node_index = {node_id: position for position, node_id in enumerate(tensor_graph.node_ids)}
+            source_row = node_repr[node_index[source_id]] if source_id in node_index else zeros
+            target_row = node_repr[node_index[target_id]] if target_id in node_index else zeros
+            vectors.append(torch.cat([pooled, source_row, target_row], dim=-1))
+        return torch.stack(vectors)
 
-    def graph_prefix(self, graphs: Sequence[AttributedGraph | GraphTensor]) -> Any:
-        return self.projector(self.encode_graphs(graphs))
+    def graph_prefix(
+        self,
+        graphs: Sequence[AttributedGraph | GraphTensor],
+        *,
+        source_ids: Sequence[str | None] | None = None,
+        target_ids: Sequence[str | None] | None = None,
+    ) -> Any:
+        """Project pooled+source+target graph vectors, then cast to the LM's embedding dtype.
+
+        Training goes through Accelerate's autocast (accelerator.prepare(...,
+        mixed_precision=...)), which reconciles the fp32 GNN/projector output
+        with the bf16 frozen LM automatically. Plain inference (generate/
+        generate_batch) has no such wrapper, so without this explicit cast,
+        concatenating the fp32 prefix with bf16 token embeddings promotes the
+        whole sequence to fp32 and crashes deep inside the LM's attention
+        projections, which run at the LM's native (bf16) parameter dtype.
+        """
+        embedding_dtype = self.language_model.get_input_embeddings().weight.dtype
+        vectors = self.encode_graphs(graphs, source_ids=source_ids, target_ids=target_ids)
+        return self.projector(vectors).to(dtype=embedding_dtype)
 
     def _encode_text(self, text: str, *, answer: bool) -> list[int]:
         token_ids = list(self.tokenizer.encode(text, add_special_tokens=False))
@@ -501,12 +550,14 @@ class TEAGLM(_Module):
         graphs: Sequence[AttributedGraph | GraphTensor],
         prompts: Sequence[str],
         answers: Sequence[str],
+        source_ids: Sequence[str | None] | None = None,
+        target_ids: Sequence[str | None] | None = None,
     ) -> Any:
         """Compute causal loss over every answer token, masking prompt and graph prefix."""
         if not graphs or not (len(graphs) == len(prompts) == len(answers)):
             raise ValueError("graphs, prompts, and answers must be non-empty and equally sized")
         embedding = self.language_model.get_input_embeddings()
-        prefixes = self.graph_prefix(graphs)
+        prefixes = self.graph_prefix(graphs, source_ids=source_ids, target_ids=target_ids)
         sequences: list[Any] = []
         label_rows: list[Any] = []
         for index, (prompt, answer) in enumerate(zip(prompts, answers, strict=True)):
@@ -564,6 +615,8 @@ class TEAGLM(_Module):
         graph: AttributedGraph | GraphTensor,
         prompt: str,
         *,
+        source_id: str | None = None,
+        target_id: str | None = None,
         max_new_tokens: int = 64,
         **generation_kwargs: Any,
     ) -> str:
@@ -571,7 +624,7 @@ class TEAGLM(_Module):
         prompt_ids, _ = self._truncate(prompt_ids, [])
         prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
         prompt_embeds = self.language_model.get_input_embeddings()(prompt_tensor)
-        prefix = self.graph_prefix([graph])[0]
+        prefix = self.graph_prefix([graph], source_ids=[source_id], target_ids=[target_id])[0]
         inputs_embeds = torch.cat([prompt_embeds, prefix], dim=0).unsqueeze(0)
         attention_mask = torch.ones(inputs_embeds.shape[:2], dtype=torch.long, device=self.device)
         with self._lm_autocast():
@@ -637,6 +690,8 @@ class TEAGLM(_Module):
         graphs: Sequence[AttributedGraph | GraphTensor],
         prompts: Sequence[str],
         *,
+        source_ids: Sequence[str | None] | None = None,
+        target_ids: Sequence[str | None] | None = None,
         max_new_tokens: int = 64,
         **generation_kwargs: Any,
     ) -> list[str]:
@@ -646,7 +701,7 @@ class TEAGLM(_Module):
         if not graphs or len(graphs) != len(prompts):
             raise ValueError("graphs and prompts must be non-empty and equally sized")
         embedding = self.language_model.get_input_embeddings()
-        prefixes = self.graph_prefix(graphs)
+        prefixes = self.graph_prefix(graphs, source_ids=source_ids, target_ids=target_ids)
         sequences = []
         for index, prompt in enumerate(prompts):
             prompt_ids, _ = self._truncate(self._encode_text(prompt, answer=False), [])
@@ -931,7 +986,13 @@ class TEAGLMBackend:
         graph = model_input.encoded_graph
         if not isinstance(graph, GraphTensor):
             graph = self.encode(model_input.current_graph)
-        return self.model.generate(graph, prompt, max_new_tokens=self.max_new_tokens)
+        return self.model.generate(
+            graph,
+            prompt,
+            source_id=model_input.query.source,
+            target_id=model_input.query.target,
+            max_new_tokens=self.max_new_tokens,
+        )
 
     def predict_edit_batch(self, items: Sequence[tuple[str, AttributedGraph]]) -> list[Any]:
         prompts = [
@@ -962,6 +1023,8 @@ class TEAGLMBackend:
         graph_indices: list[int] = []
         graph_graphs: list[Any] = []
         graph_prompts: list[str] = []
+        graph_source_ids: list[str | None] = []
+        graph_target_ids: list[str | None] = []
         for index, model_input in enumerate(model_inputs):
             prompt = self.model.config.prompt_template.format(question=model_input.question)
             graph_once_after_first_turn = (
@@ -977,6 +1040,8 @@ class TEAGLMBackend:
             graph_indices.append(index)
             graph_graphs.append(graph)
             graph_prompts.append(prompt)
+            graph_source_ids.append(model_input.query.source)
+            graph_target_ids.append(model_input.query.target)
         if text_prompts:
             generated = self.model.generate_text_only_batch(
                 text_prompts,
@@ -988,7 +1053,11 @@ class TEAGLMBackend:
             for index, output in zip(
                 graph_indices,
                 self.model.generate_batch(
-                    graph_graphs, graph_prompts, max_new_tokens=self.max_new_tokens
+                    graph_graphs,
+                    graph_prompts,
+                    source_ids=graph_source_ids,
+                    target_ids=graph_target_ids,
+                    max_new_tokens=self.max_new_tokens,
                 ),
                 strict=True,
             ):

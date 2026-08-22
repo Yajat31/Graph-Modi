@@ -22,6 +22,12 @@ from graph_modi.models.tea_glm import (
     require_tea_dependencies,
     save_checkpoint_metadata,
 )
+from graph_modi.models.soft_prompt import (
+    SoftPromptGLM,
+    load_soft_prompt_checkpoint_metadata,
+    save_soft_prompt_checkpoint,
+    soft_prompt_checkpoint_metadata,
+)
 from graph_modi.schema import AttributedGraph
 from graph_modi.utils.progress import ProgressTracker
 
@@ -506,6 +512,8 @@ def train_projector(
                     graphs=[example.graph for example in batch],
                     prompts=[example.prompt for example in batch],
                     answers=[example.answer for example in batch],
+                    source_ids=[example.metadata.get("source_id") for example in batch],
+                    target_ids=[example.metadata.get("target_id") for example in batch],
                 )
                 loss = output.loss
                 accelerator.backward(loss)
@@ -564,6 +572,231 @@ def train_projector(
 
     final_checkpoint = output_dir / "checkpoint-final"
     _save_training_checkpoint(
+        accelerator=accelerator,
+        model=model,
+        optimizer=optimizer,
+        checkpoint_dir=final_checkpoint,
+        config=config,
+        data_split=split_identity,
+        data_sha256=data_sha256,
+        step=global_step,
+        epoch=config.epochs,
+        next_batch=0,
+    )
+    mean_loss = observed_loss / observed_updates if observed_updates else float("nan")
+    if accelerator.is_main_process:
+        _write_json(
+            output_dir / "training_result.json",
+            {
+                "global_step": global_step,
+                "mean_loss": mean_loss,
+                "data_sha256": data_sha256,
+                "final_checkpoint": str(final_checkpoint),
+            },
+        )
+    accelerator.wait_for_everyone()
+    return TrainingResult(
+        output_dir=output_dir,
+        final_checkpoint=final_checkpoint,
+        global_step=global_step,
+        mean_loss=mean_loss,
+        data_sha256=data_sha256,
+    )
+
+
+def _save_soft_prompt_training_checkpoint(
+    *,
+    accelerator: Any,
+    model: Any,
+    optimizer: Any,
+    checkpoint_dir: Path,
+    config: ProjectorTrainingConfig,
+    data_split: Mapping[str, Any],
+    data_sha256: str,
+    step: int,
+    epoch: int,
+    next_batch: int,
+) -> None:
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    if accelerator.is_main_process:
+        unwrapped = accelerator.unwrap_model(model)
+        metadata = soft_prompt_checkpoint_metadata(
+            unwrapped,
+            training_config=config.metadata(),
+            data_split=data_split,
+            data_sha256=data_sha256,
+            step=step,
+        )
+        save_soft_prompt_checkpoint(checkpoint_dir, unwrapped, metadata)
+        accelerator.save(optimizer.state_dict(), checkpoint_dir / "optimizer.pt")
+        _write_json(
+            checkpoint_dir / "trainer_state.json",
+            {"global_step": step, "epoch": epoch, "next_batch": next_batch},
+        )
+    accelerator.wait_for_everyone()
+
+
+def _validate_soft_prompt_resume(
+    checkpoint_dir: Path,
+    *,
+    data_split: Mapping[str, Any],
+    data_sha256: str,
+) -> tuple[int, int, int]:
+    metadata = load_soft_prompt_checkpoint_metadata(checkpoint_dir / "metadata.json")
+    if metadata.get("data_sha256") != data_sha256:
+        raise ValueError("Resume checkpoint was created from different training examples")
+    if metadata.get("data_split") != dict(data_split):
+        raise ValueError("Resume checkpoint uses different data-split metadata")
+    state = json.loads((checkpoint_dir / "trainer_state.json").read_text(encoding="utf-8"))
+    return int(state["global_step"]), int(state["epoch"]), int(state["next_batch"])
+
+
+def train_soft_prompt(
+    model: SoftPromptGLM,
+    examples: Sequence[TrainingExample],
+    config: ProjectorTrainingConfig,
+    *,
+    data_split: Mapping[str, Any] | None = None,
+) -> TrainingResult:
+    """Train only the shared soft-prompt matrix; frozen LM, no GNN, no graph batching."""
+    require_tea_dependencies()
+    if not examples:
+        raise ValueError("At least one training example is required")
+    try:
+        import torch
+        from accelerate import Accelerator
+        from torch.utils.data import DataLoader
+    except ImportError as exc:
+        raise RuntimeError(
+            "Soft-prompt training requires Accelerate. "
+            "Install dependencies with `pip install 'graph-modi[tea]'`."
+        ) from exc
+
+    set_deterministic_seed(config.seed)
+    for parameter in model.language_model.parameters():
+        parameter.requires_grad_(False)
+    model.soft_prompt.requires_grad_(True)
+
+    split_identity, data_sha256 = _data_identity(examples, data_split)
+    output_dir = Path(config.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    accelerator = Accelerator(
+        gradient_accumulation_steps=config.gradient_accumulation_steps,
+        mixed_precision=config.mixed_precision,
+    )
+    generator = torch.Generator()
+    generator.manual_seed(config.seed)
+    loader = DataLoader(
+        list(examples),
+        batch_size=config.batch_size,
+        shuffle=True,
+        num_workers=config.num_workers,
+        collate_fn=lambda batch: batch,
+        generator=generator,
+    )
+    optimizer = torch.optim.AdamW([model.soft_prompt], lr=config.learning_rate, weight_decay=config.weight_decay)
+    model, optimizer, loader = accelerator.prepare(model, optimizer, loader)
+
+    global_step = 0
+    first_epoch = 0
+    skip_batches = 0
+    if config.resume_from is not None:
+        checkpoint_dir = Path(config.resume_from)
+        unwrapped = accelerator.unwrap_model(model)
+        global_step, first_epoch, skip_batches = _validate_soft_prompt_resume(
+            checkpoint_dir,
+            data_split=split_identity,
+            data_sha256=data_sha256,
+        )
+        state = torch.load(checkpoint_dir / "soft_prompt.pt", map_location="cpu", weights_only=True)
+        with torch.no_grad():
+            unwrapped.soft_prompt.copy_(state.to(unwrapped.soft_prompt.device))
+        optimizer.load_state_dict(
+            torch.load(checkpoint_dir / "optimizer.pt", map_location="cpu", weights_only=True)
+        )
+
+    import time
+
+    micro_batches_per_epoch = (len(examples) + config.batch_size - 1) // config.batch_size
+    steps_per_epoch = max(1, micro_batches_per_epoch // config.gradient_accumulation_steps)
+    total_steps = steps_per_epoch * config.epochs
+    log_every = max(1, steps_per_epoch // 20)
+    start_time = time.monotonic()
+    if accelerator.is_main_process:
+        print(
+            f"[train-projector] stage=soft_prompt device={accelerator.device} "
+            f"examples={len(examples)} steps/epoch={steps_per_epoch} epochs={config.epochs} "
+            f"total_steps={total_steps}",
+            flush=True,
+        )
+
+    observed_loss = 0.0
+    observed_updates = 0
+    epoch_loss = 0.0
+    epoch_updates = 0
+    for epoch in range(first_epoch, config.epochs):
+        model.train()
+        epoch_loader = loader
+        batch_offset = 0
+        if epoch == first_epoch and skip_batches:
+            epoch_loader = accelerator.skip_first_batches(loader, skip_batches)
+            batch_offset = skip_batches
+        for batch_index, batch in enumerate(epoch_loader, start=batch_offset):
+            with accelerator.accumulate(model):
+                output = model(
+                    prompts=[example.prompt for example in batch],
+                    answers=[example.answer for example in batch],
+                )
+                loss = output.loss
+                accelerator.backward(loss)
+                if accelerator.sync_gradients and config.max_grad_norm:
+                    accelerator.clip_grad_norm_([model.soft_prompt], config.max_grad_norm)
+                optimizer.step()
+                optimizer.zero_grad()
+            if accelerator.sync_gradients:
+                global_step += 1
+                reduced_loss = accelerator.reduce(loss.detach(), reduction="mean")
+                loss_value = float(reduced_loss.item())
+                observed_loss += loss_value
+                observed_updates += 1
+                epoch_loss += loss_value
+                epoch_updates += 1
+                if accelerator.is_main_process and (
+                    global_step % log_every == 0 or global_step == total_steps
+                ):
+                    elapsed = time.monotonic() - start_time
+                    print(
+                        f"[train-projector] stage=soft_prompt step {global_step}/{total_steps} "
+                        f"(epoch {epoch + 1}/{config.epochs}) loss={loss_value:.4f} "
+                        f"elapsed={elapsed:.0f}s",
+                        flush=True,
+                    )
+                if global_step % config.save_every_steps == 0:
+                    _save_soft_prompt_training_checkpoint(
+                        accelerator=accelerator,
+                        model=model,
+                        optimizer=optimizer,
+                        checkpoint_dir=output_dir / f"checkpoint-{global_step:08d}",
+                        config=config,
+                        data_split=split_identity,
+                        data_sha256=data_sha256,
+                        step=global_step,
+                        epoch=epoch,
+                        next_batch=batch_index + 1,
+                    )
+        if accelerator.is_main_process and epoch_updates:
+            print(
+                f"[train-projector] stage=soft_prompt epoch {epoch + 1}/{config.epochs} done "
+                f"mean_loss={epoch_loss / epoch_updates:.4f} "
+                f"elapsed={time.monotonic() - start_time:.0f}s",
+                flush=True,
+            )
+        epoch_loss = 0.0
+        epoch_updates = 0
+        skip_batches = 0
+
+    final_checkpoint = output_dir / "checkpoint-final"
+    _save_soft_prompt_training_checkpoint(
         accelerator=accelerator,
         model=model,
         optimizer=optimizer,

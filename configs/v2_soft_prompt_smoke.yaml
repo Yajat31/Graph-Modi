@@ -1,0 +1,36 @@
+seed: 42
+output_dir: outputs/v2_soft_prompt_smoke
+
+data:
+  distribution: metro_v2_preliminary
+  train_sessions: 4
+  validation_sessions: 2
+  test_sessions: 2
+  ood_sessions: 0
+  static_train_graphs: 3
+  static_validation_graphs: 2
+  static_test_graphs: 2
+  static_tuples_per_graph: 3
+
+model:
+  backend: soft_prompt
+  lm_name: /home/arihantr/models/Meta-Llama-3.1-8B-Instruct
+  prefix_tokens: 10
+  trust_remote_code: false
+  torch_dtype: bfloat16
+
+training:
+  seed: 42
+  epochs: 1
+  batch_size: 2
+  learning_rate: 0.01
+  gradient_accumulation_steps: 1
+  mixed_precision: bf16
+  save_every_steps: 500
+
+evaluation:
+  splits: [test]
+  batch_size: 2
+  max_new_tokens: 8
+  conditions:
+    - soft_prompt
