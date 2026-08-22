@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
-from graph_modi.graph.executor import apply_edit, graph_fingerprint
+from graph_modi.graph.executor import apply_edit, apply_edit_program, graph_fingerprint
 from graph_modi.graph.solvers import render_question
 from graph_modi.models.base import GraphBackend, ModelInput
 from graph_modi.schema import AttributedGraph, Session, TurnOutput
@@ -15,6 +15,14 @@ from graph_modi.schema import AttributedGraph, Session, TurnOutput
 class MaterializedTurn:
     before: AttributedGraph
     after: AttributedGraph
+
+
+def _turn_edits(turn) -> tuple:
+    if turn.gold_edits:
+        return turn.gold_edits
+    if turn.edit_program is not None:
+        return turn.edit_program.edits
+    return (turn.gold_edit,)
 
 
 def materialize_states(session: Session) -> tuple[MaterializedTurn, ...]:
@@ -27,7 +35,7 @@ def materialize_states(session: Session) -> tuple[MaterializedTurn, ...]:
                 f"Session {session.session_id} turn {turn.turn_index} does not "
                 "continue from the preceding graph"
             )
-        result = apply_edit(before, turn.gold_edit, strict=True)
+        result = apply_edit_program(before, _turn_edits(turn), strict=True)
         current = result.graph
         if graph_fingerprint(current) != turn.after_fingerprint:
             raise ValueError(
@@ -52,7 +60,7 @@ def run_session(
     for turn in session.turns:
         started = time.perf_counter()
         predicted = (
-            backend.predict_edit(turn.utterance, current) if predicted_edits else turn.gold_edit
+            backend.predict_edit(turn.utterance, current) if predicted_edits else _turn_edits(turn)
         )
         if predicted is None:
             outputs.append(
@@ -68,7 +76,10 @@ def run_session(
                 )
             )
             continue
-        result = apply_edit(current, predicted)
+        if isinstance(predicted, tuple):
+            result = apply_edit_program(current, predicted)
+        else:
+            result = apply_edit(current, predicted)
         if result.applied:
             current = result.graph
             encoded = backend.encode(current)

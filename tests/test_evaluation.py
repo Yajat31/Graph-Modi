@@ -43,6 +43,13 @@ def test_paired_conditions_expose_stale_graph_control() -> None:
     assert summary["predicted_updated_graph"]["execution_equivalent_edit_accuracy"] == 1
 
 
+def test_new_baseline_conditions_exist() -> None:
+    from graph_modi.evaluation.runner import CONDITIONS
+
+    for name in ("soft_prompt", "structure_only", "modify_and_print", "majority_prior"):
+        assert name in CONDITIONS
+
+
 def test_oracle_graph_prompt_does_not_include_revision_history() -> None:
     session = generate_dataset(
         counts={"test": 1},

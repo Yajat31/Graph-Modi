@@ -23,6 +23,7 @@ from graph_modi.models.tea_glm import (
     save_checkpoint_metadata,
 )
 from graph_modi.schema import AttributedGraph
+from graph_modi.utils.progress import ProgressTracker
 
 
 @dataclass(frozen=True, slots=True)
@@ -251,13 +252,10 @@ def pretrain_graph_encoder(
     rng = random.Random(seed)
     ordered = list(examples)
     batches_per_epoch = (len(ordered) + batch_size - 1) // batch_size
-    log_every = max(1, batches_per_epoch // 10)
-    start_time = time.monotonic()
-    print(
-        f"[pretrain-gnn] device={device} examples={len(ordered)} "
-        f"batches/epoch={batches_per_epoch} epochs={epochs}",
-        flush=True,
-    )
+    total_batches = batches_per_epoch * epochs
+    tracker = ProgressTracker("[pretrain-gnn]", total_batches, phase="gnn")
+    tracker.banner(examples=len(ordered), epochs=epochs, batch_size=batch_size, device=str(device))
+    batch_counter = 0
     for epoch in range(epochs):
         rng.shuffle(ordered)
         gnn.train()
@@ -280,20 +278,15 @@ def pretrain_graph_encoder(
             optimizer.step()
             epoch_loss += float(loss.item()) * len(batch)
             epoch_correct += int((logits.argmax(dim=-1) == targets).sum().item())
-            if (batch_index + 1) % log_every == 0 or batch_index + 1 == batches_per_epoch:
-                elapsed = time.monotonic() - start_time
-                print(
-                    f"[pretrain-gnn] epoch {epoch + 1}/{epochs} "
-                    f"batch {batch_index + 1}/{batches_per_epoch} "
-                    f"loss={loss.item():.4f} elapsed={elapsed:.0f}s",
-                    flush=True,
-                )
-        print(
-            f"[pretrain-gnn] epoch {epoch + 1}/{epochs} done "
-            f"mean_loss={epoch_loss / len(ordered):.4f} "
-            f"train_acc={epoch_correct / len(ordered):.4f} "
-            f"elapsed={time.monotonic() - start_time:.0f}s",
-            flush=True,
+            batch_counter += 1
+            tracker.tick(
+                loss=f"{loss.item():.4f}",
+                acc=f"{epoch_correct / max(1, (batch_index + 1) * batch_size):.4f}",
+                epoch=f"{epoch + 1}/{epochs}",
+            )
+        tracker.end(
+            mean_loss=f"{epoch_loss / len(ordered):.4f}",
+            train_acc=f"{epoch_correct / len(ordered):.4f}",
         )
     gnn.eval()
     head.eval()

@@ -9,7 +9,7 @@ from typing import Any
 
 from graph_modi.evaluation.metrics import aggregate_rows, normalize_answer
 from graph_modi.graph.edits import GraphEdit, execution_equivalent
-from graph_modi.graph.executor import apply_edit, graph_fingerprint
+from graph_modi.graph.executor import apply_edit, apply_edit_program, graph_fingerprint
 from graph_modi.graph.serialization import (
     serialize_graph,
     serialize_history,
@@ -19,6 +19,7 @@ from graph_modi.graph.solvers import answer_query, render_question
 from graph_modi.models.base import GraphBackend, ModelInput
 from graph_modi.pipeline.multiturn import materialize_states
 from graph_modi.schema import AttributedGraph, Session
+from graph_modi.utils.progress import ProgressTracker
 
 CONDITIONS = (
     "question_only",
@@ -32,6 +33,10 @@ CONDITIONS = (
     "token_matched_history",
     "serialized_current_graph",
     "tool_solver",
+    "soft_prompt",
+    "structure_only",
+    "modify_and_print",
+    "majority_prior",
 )
 
 _REENCODE_CONDITIONS = {"oracle_updated_graph", "predicted_updated_graph"}
@@ -49,11 +54,17 @@ def _prompt(
         return f"Initial graph: {serialize_graph(initial)}\n{history_text}\n{question}"
     if condition == "serialized_current_graph":
         return f"Current graph: {serialize_graph(current)}\n{question}"
+    if condition == "modify_and_print":
+        return f"Current graph: {serialize_graph(current)}\n{history_text}\n{question}"
     if condition == "token_matched_history":
         matched = token_budget_match(history_text, target_tokens=64)
         return f"{matched}\n{question}"
     if condition in {"frozen_graph_history", "cached_no_reencode", "graph_once_then_text"}:
         return f"{history_text}\n{question}"
+    if condition == "soft_prompt":
+        return f"{history_text}\n{question}"
+    if condition == "structure_only":
+        return question
     return question
 
 
@@ -96,9 +107,16 @@ def _advance_round(condition: str, round_index: int, chunk: list[_Task], backend
     for task in chunk:
         turn = task.session.turns[round_index]
         if condition == "predicted_updated_graph":
-            result = apply_edit(task.current, task.predicted_edit) if task.predicted_edit else None
+            predicted = task.predicted_edit
+            if isinstance(predicted, tuple):
+                result = apply_edit_program(task.current, predicted) if predicted else None
+            else:
+                result = apply_edit(task.current, predicted) if predicted else None
         else:
-            result = apply_edit(task.current, turn.gold_edit)
+            edits = turn.gold_edits or (
+                turn.edit_program.edits if turn.edit_program else (turn.gold_edit,)
+            )
+            result = apply_edit_program(task.current, edits)
         if result is not None and result.applied:
             task.current = result.graph
             if condition in _REENCODE_CONDITIONS:
@@ -113,6 +131,12 @@ def _advance_round(condition: str, round_index: int, chunk: list[_Task], backend
         for task in chunk:
             turn = task.session.turns[round_index]
             task.predicted_answer = answer_query(task.current, turn.query)
+        return
+
+    if condition == "majority_prior":
+        for task in chunk:
+            turn = task.session.turns[round_index]
+            task.predicted_answer = turn.stale_answer
         return
 
     model_inputs = []
@@ -184,13 +208,19 @@ def evaluate_sessions(
     )
 
     total_turns = len(conditions) * sum(len(session.turns) for session in sessions)
-    completed_turns = 0
+    tracker = ProgressTracker(
+        "[evaluate]",
+        total_turns,
+        phase="dynamic",
+        enabled=progress,
+    )
     start_time = time.monotonic()
     if progress:
-        print(
-            f"[evaluate] sessions={len(sessions)} conditions={len(conditions)} "
-            f"total_turns={total_turns} batch_size={batch_size}",
-            flush=True,
+        tracker.banner(
+            sessions=len(sessions),
+            conditions=len(conditions),
+            total_turns=total_turns,
+            batch_size=batch_size,
         )
 
     rows: list[dict[str, Any]] = []
@@ -218,12 +248,7 @@ def evaluate_sessions(
                 _advance_round(condition, round_index, chunk, backend)
                 batch_latency = (time.perf_counter() - batch_started) / len(chunk)
                 rows.extend(_row_for(task, round_index, batch_latency) for task in chunk)
-                completed_turns += len(chunk)
-            if progress:
-                elapsed = time.monotonic() - start_time
-                print(
-                    f"[evaluate] condition={condition!r} round={round_index + 1}/{max_turns} "
-                    f"turns={completed_turns}/{total_turns} elapsed={elapsed:.0f}s",
-                    flush=True,
-                )
+                tracker.tick(len(chunk), condition=condition, round=f"{round_index + 1}/{max_turns}")
+    if progress:
+        tracker.end(elapsed=f"{time.monotonic() - start_time:.0f}s")
     return {"summary": aggregate_rows(rows), "rows": rows}

@@ -135,6 +135,96 @@ class ReasoningType(str, Enum):
     FILTERED_PATH_COUNT = "filtered_path_count"
     CYCLE_MEMBERSHIP = "cycle_membership"
     EDGE_EXISTS = "edge_exists"
+    NODE_DEGREE = "node_degree"
+    NODE_COUNT = "node_count"
+    PATH_COST = "path_cost"
+    LINK_PREDICTION = "link_prediction"
+
+
+class TopologyFamily(str, Enum):
+    WATTS_STROGATZ = "watts_strogatz"
+    SBM = "sbm"
+    ERDOS_RENYI = "erdos_renyi"
+
+
+class DensityBin(str, Enum):
+    SPARSE = "sparse"
+    MEDIUM = "medium"
+    DENSE = "dense"
+
+
+class HopDepth(str, Enum):
+    LOCAL = "local"
+    MID = "mid"
+    GLOBAL = "global"
+
+
+@dataclass(frozen=True, slots=True)
+class EditProgram:
+    """Ordered edit sequence terminated by END in canonical serialization."""
+
+    edits: tuple[GraphEdit, ...]
+
+    def canonical(self) -> str:
+        if not self.edits:
+            return "NOOP ; END"
+        return " ; ".join(edit.canonical() for edit in self.edits) + " ; END"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"edits": [edit.to_dict() for edit in self.edits]}
+
+    @classmethod
+    def from_dict(cls, record: dict[str, Any]) -> EditProgram:
+        return cls(edits=tuple(GraphEdit.from_dict(item) for item in record.get("edits", [])))
+
+    @classmethod
+    def single(cls, edit: GraphEdit) -> EditProgram:
+        return cls(edits=(edit,))
+
+
+@dataclass(frozen=True, slots=True)
+class StaticQATuple:
+    """Independent static (G, Q, A) sample for GLM pretraining."""
+
+    tuple_id: str
+    split: str
+    graph: AttributedGraph
+    query: GraphQuery
+    answer: str
+    topology: TopologyFamily
+    density_bin: DensityBin
+    hop_depth: HopDepth
+    scale_bin: str
+    metadata: dict[str, Scalar] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "tuple_id": self.tuple_id,
+            "split": self.split,
+            "graph": self.graph.to_dict(),
+            "query": self.query.to_dict(),
+            "answer": self.answer,
+            "topology": self.topology.value,
+            "density_bin": self.density_bin.value,
+            "hop_depth": self.hop_depth.value,
+            "scale_bin": self.scale_bin,
+            "metadata": dict(self.metadata),
+        }
+
+    @classmethod
+    def from_dict(cls, record: dict[str, Any]) -> StaticQATuple:
+        return cls(
+            tuple_id=str(record["tuple_id"]),
+            split=str(record["split"]),
+            graph=AttributedGraph.from_dict(record["graph"]),
+            query=GraphQuery.from_dict(record["query"]),
+            answer=str(record["answer"]),
+            topology=TopologyFamily(record["topology"]),
+            density_bin=DensityBin(record["density_bin"]),
+            hop_depth=HopDepth(record["hop_depth"]),
+            scale_bin=str(record["scale_bin"]),
+            metadata=dict(record.get("metadata", {})),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,9 +264,12 @@ class Turn:
     before_fingerprint: str
     after_fingerprint: str
     tags: tuple[str, ...] = ()
+    gold_edits: tuple[GraphEdit, ...] = ()
+    edit_program: EditProgram | None = None
+    complexity: dict[str, Scalar] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        record: dict[str, Any] = {
             "turn_index": self.turn_index,
             "utterance": self.utterance,
             "gold_edit": self.gold_edit.to_dict(),
@@ -187,9 +280,24 @@ class Turn:
             "after_fingerprint": self.after_fingerprint,
             "tags": list(self.tags),
         }
+        if self.gold_edits:
+            record["gold_edits"] = [edit.to_dict() for edit in self.gold_edits]
+        if self.edit_program is not None:
+            record["edit_program"] = self.edit_program.to_dict()
+        if self.complexity:
+            record["complexity"] = dict(self.complexity)
+        return record
 
     @classmethod
     def from_dict(cls, record: dict[str, Any]) -> Turn:
+        gold_edits = tuple(
+            GraphEdit.from_dict(item) for item in record.get("gold_edits", [])
+        )
+        edit_program = (
+            EditProgram.from_dict(record["edit_program"])
+            if record.get("edit_program")
+            else (EditProgram(edits=gold_edits) if gold_edits else None)
+        )
         return cls(
             turn_index=int(record["turn_index"]),
             utterance=str(record["utterance"]),
@@ -200,6 +308,9 @@ class Turn:
             before_fingerprint=str(record["before_fingerprint"]),
             after_fingerprint=str(record["after_fingerprint"]),
             tags=tuple(record.get("tags", [])),
+            gold_edits=gold_edits,
+            edit_program=edit_program,
+            complexity=dict(record.get("complexity", {})),
         )
 
 
