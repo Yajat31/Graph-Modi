@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -11,6 +12,7 @@ from graph_modi.schema import (
     AttributedGraph,
     Edge,
     EditOperation,
+    EditProgram,
     EditTarget,
     GraphEdit,
     Node,
@@ -81,6 +83,23 @@ def _failure(graph: AttributedGraph, message: str, strict: bool) -> EditResult:
     if strict:
         raise ValueError(message)
     return EditResult(graph=graph, applied=False, error=message)
+
+
+def apply_edit_program(
+    graph: AttributedGraph,
+    program: EditProgram | Sequence[GraphEdit],
+    *,
+    strict: bool = False,
+) -> EditResult:
+    """Apply an ordered edit program sequentially."""
+    edits = program.edits if isinstance(program, EditProgram) else tuple(program)
+    current = graph
+    any_applied = False
+    for edit in edits:
+        result = apply_edit(current, edit, strict=strict)
+        current = result.graph
+        any_applied = any_applied or result.applied
+    return EditResult(graph=current, applied=any_applied)
 
 
 def apply_edit(

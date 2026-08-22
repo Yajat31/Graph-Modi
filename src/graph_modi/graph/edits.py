@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Sequence
 
-from graph_modi.schema import EditOperation, EditTarget, GraphEdit, Scalar
+from graph_modi.schema import EditOperation, EditProgram, EditTarget, GraphEdit, Scalar
 
 _SPACE = re.compile(r"\s+")
 
@@ -31,7 +32,6 @@ def _parse_scalar(text: str) -> Scalar:
 
 
 def parse_edit(text: str, name_to_id: dict[str, str] | None = None) -> GraphEdit:
-    """Parse the deliberately small, auditable GraphModi edit language."""
     cleaned = _SPACE.sub(" ", text.strip())
     if not cleaned:
         raise ValueError("Empty edit")
@@ -80,6 +80,37 @@ def parse_edit(text: str, name_to_id: dict[str, str] | None = None) -> GraphEdit
             relation=parts[4] if len(parts) > 4 else "connected",
         )
     raise ValueError(f"Unsupported edit: {text!r}")
+
+
+def parse_edit_program(
+    text: str,
+    name_to_id: dict[str, str] | None = None,
+) -> EditProgram:
+    """Parse an ordered edit program terminated by END."""
+    cleaned = text.strip()
+    if not cleaned:
+        return EditProgram(edits=())
+    if cleaned.upper().endswith("END"):
+        body = cleaned[: cleaned.upper().rfind("END")].strip()
+    else:
+        body = cleaned
+    if not body:
+        return EditProgram(edits=())
+    commands = [segment.strip() for segment in body.split(";") if segment.strip()]
+    return EditProgram(edits=tuple(parse_edit(command, name_to_id) for command in commands))
+
+
+def execution_equivalent_program(
+    left: EditProgram | Sequence[GraphEdit] | None,
+    right: EditProgram | Sequence[GraphEdit] | None,
+) -> bool:
+    if left is None or right is None:
+        return left is right
+    left_edits = left.edits if isinstance(left, EditProgram) else tuple(left)
+    right_edits = right.edits if isinstance(right, EditProgram) else tuple(right)
+    if len(left_edits) != len(right_edits):
+        return False
+    return all(execution_equivalent(a, b) for a, b in zip(left_edits, right_edits, strict=True))
 
 
 def execution_equivalent(left: GraphEdit | None, right: GraphEdit | None) -> bool:

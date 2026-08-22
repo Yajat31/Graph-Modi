@@ -14,6 +14,7 @@ from graph_modi.models.tea_glm import (
     TEAGLM,
     DeterministicNodeTensorizer,
     GraphSAGEEncoder,
+    GraphTensor,
     assert_checkpoint_compatible,
     data_records_sha256,
     load_checkpoint_metadata,
@@ -22,6 +23,7 @@ from graph_modi.models.tea_glm import (
     save_checkpoint_metadata,
 )
 from graph_modi.schema import AttributedGraph
+from graph_modi.utils.progress import ProgressTracker
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,6 +143,79 @@ def _data_identity(
     return split, data_hash
 
 
+def _collate_batch(
+    tensorizer: DeterministicNodeTensorizer,
+    batch: Sequence[TrainingExample],
+    device: Any,
+) -> tuple[GraphTensor, Any, list[dict[str, int]]]:
+    """Merge a batch of graphs into one block-diagonal graph.
+
+    Concatenating disjoint graphs with offset edge indices is mathematically
+    equivalent to running GraphSAGE on each graph independently, since no
+    edge ever crosses between the original graphs — but it replaces one
+    forward pass per example with a single batched forward pass.
+    """
+    import torch
+
+    tensor_graphs = [tensorizer(example.graph).to(device) for example in batch]
+    node_maps: list[dict[str, int]] = []
+    xs, edge_sources, edge_targets, edge_weights, node_batch = [], [], [], [], []
+    offset = 0
+    for graph_index, tensor_graph in enumerate(tensor_graphs):
+        count = tensor_graph.x.shape[0]
+        node_maps.append(
+            {node_id: offset + position for position, node_id in enumerate(tensor_graph.node_ids)}
+        )
+        xs.append(tensor_graph.x)
+        edge_sources.append(tensor_graph.edge_index[0] + offset)
+        edge_targets.append(tensor_graph.edge_index[1] + offset)
+        edge_weights.append(tensor_graph.edge_weight)
+        node_batch.append(torch.full((count,), graph_index, dtype=torch.long, device=device))
+        offset += count
+    merged = GraphTensor(
+        x=torch.cat(xs, dim=0),
+        edge_index=torch.stack([torch.cat(edge_sources), torch.cat(edge_targets)], dim=0),
+        edge_weight=torch.cat(edge_weights),
+        node_ids=(),
+        graph_id="batch",
+    )
+    return merged, torch.cat(node_batch), node_maps
+
+
+def _batch_query_vectors(
+    gnn: GraphSAGEEncoder,
+    tensorizer: DeterministicNodeTensorizer,
+    batch: Sequence[TrainingExample],
+    device: Any,
+) -> Any:
+    """Pooled graph vector concatenated with the query's source/target node
+    representations, so the classifier can see *which* nodes a question
+    refers to rather than only the graph as an undifferentiated whole.
+    Computed for the whole batch via one merged forward pass."""
+    import torch
+
+    merged, node_batch, node_maps = _collate_batch(tensorizer, batch, device)
+    node_repr = gnn(merged)
+    dim = node_repr.shape[-1]
+    count = len(batch)
+    pooled_sum = torch.zeros((count, dim), dtype=node_repr.dtype, device=device)
+    pooled_sum.index_add_(0, node_batch, node_repr)
+    node_count = torch.zeros((count, 1), dtype=node_repr.dtype, device=device)
+    node_count.index_add_(
+        0, node_batch, torch.ones((node_repr.shape[0], 1), dtype=node_repr.dtype, device=device)
+    )
+    pooled = pooled_sum / node_count.clamp_min(1.0)
+    zeros = torch.zeros(dim, dtype=node_repr.dtype, device=device)
+    source_rows = []
+    target_rows = []
+    for example, node_map in zip(batch, node_maps, strict=True):
+        source_id = example.metadata.get("source_id")
+        target_id = example.metadata.get("target_id")
+        source_rows.append(node_repr[node_map[source_id]] if source_id in node_map else zeros)
+        target_rows.append(node_repr[node_map[target_id]] if target_id in node_map else zeros)
+    return torch.cat([pooled, torch.stack(source_rows), torch.stack(target_rows)], dim=-1)
+
+
 def pretrain_graph_encoder(
     gnn: GraphSAGEEncoder,
     tensorizer: DeterministicNodeTensorizer,
@@ -158,47 +233,78 @@ def pretrain_graph_encoder(
         raise ValueError("At least one GNN pretraining example is required")
     if min(epochs, batch_size) <= 0 or learning_rate <= 0:
         raise ValueError("epochs, batch_size, and learning_rate must be positive")
+
     import torch
     from torch import nn
 
     set_deterministic_seed(seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    gnn.to(device)
+
     labels = tuple(sorted({example.answer for example in examples}))
     label_to_id = {label: index for index, label in enumerate(labels)}
-    head = nn.Linear(gnn.config.output_dim, len(labels))
+    head = nn.Linear(gnn.config.output_dim * 3, len(labels)).to(device)
     optimizer = torch.optim.AdamW(
         [*gnn.parameters(), *head.parameters()],
         lr=learning_rate,
     )
     rng = random.Random(seed)
     ordered = list(examples)
-    for _ in range(epochs):
+    batches_per_epoch = (len(ordered) + batch_size - 1) // batch_size
+    total_batches = batches_per_epoch * epochs
+    tracker = ProgressTracker("[pretrain-gnn]", total_batches, phase="gnn")
+    tracker.banner(examples=len(ordered), epochs=epochs, batch_size=batch_size, device=str(device))
+    batch_counter = 0
+    for epoch in range(epochs):
         rng.shuffle(ordered)
         gnn.train()
         head.train()
-        for start in range(0, len(ordered), batch_size):
+        epoch_loss = 0.0
+        epoch_correct = 0
+        for batch_index, start in enumerate(range(0, len(ordered), batch_size)):
             batch = ordered[start : start + batch_size]
-            vectors = torch.stack([gnn.pooled(tensorizer(example.graph)) for example in batch])
+            vectors = _batch_query_vectors(gnn, tensorizer, batch, device)
             targets = torch.tensor(
                 [label_to_id[example.answer] for example in batch],
                 dtype=torch.long,
+                device=device,
             )
-            loss = nn.functional.cross_entropy(head(vectors), targets)
+            logits = head(vectors)
+            loss = nn.functional.cross_entropy(logits, targets)
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
+            nn.utils.clip_grad_norm_([*gnn.parameters(), *head.parameters()], max_norm=1.0)
             optimizer.step()
+            epoch_loss += float(loss.item()) * len(batch)
+            epoch_correct += int((logits.argmax(dim=-1) == targets).sum().item())
+            batch_counter += 1
+            tracker.tick(
+                loss=f"{loss.item():.4f}",
+                acc=f"{epoch_correct / max(1, (batch_index + 1) * batch_size):.4f}",
+                epoch=f"{epoch + 1}/{epochs}",
+            )
+        tracker.end(
+            mean_loss=f"{epoch_loss / len(ordered):.4f}",
+            train_acc=f"{epoch_correct / len(ordered):.4f}",
+        )
     gnn.eval()
     head.eval()
     correct = 0
     with torch.no_grad():
-        for example in examples:
-            logits = head(gnn.pooled(tensorizer(example.graph)))
-            correct += int(labels[int(logits.argmax())] == example.answer)
+        for start in range(0, len(examples), batch_size):
+            chunk = examples[start : start + batch_size]
+            logits = head(_batch_query_vectors(gnn, tensorizer, chunk, device))
+            predictions = logits.argmax(dim=-1).tolist()
+            correct += sum(
+                labels[prediction] == example.answer
+                for example, prediction in zip(chunk, predictions, strict=True)
+            )
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
     checkpoint = destination / "gnn.pt"
     head_checkpoint = destination / "gnn_head.pt"
-    torch.save(gnn.state_dict(), checkpoint)
-    torch.save(head.state_dict(), head_checkpoint)
+    torch.save({key: value.cpu() for key, value in gnn.state_dict().items()}, checkpoint)
+    torch.save({key: value.cpu() for key, value in head.state_dict().items()}, head_checkpoint)
     _, data_hash = _data_identity(examples, None)
     metadata_path = destination / "metadata.json"
     _write_json(
@@ -369,8 +475,24 @@ def train_projector(
             )
         )
 
+    import time
+
+    micro_batches_per_epoch = (len(examples) + config.batch_size - 1) // config.batch_size
+    steps_per_epoch = max(1, micro_batches_per_epoch // config.gradient_accumulation_steps)
+    total_steps = steps_per_epoch * config.epochs
+    log_every = max(1, steps_per_epoch // 20)
+    start_time = time.monotonic()
+    if accelerator.is_main_process:
+        print(
+            f"[train-projector] device={accelerator.device} examples={len(examples)} "
+            f"steps/epoch={steps_per_epoch} epochs={config.epochs} total_steps={total_steps}",
+            flush=True,
+        )
+
     observed_loss = 0.0
     observed_updates = 0
+    epoch_loss = 0.0
+    epoch_updates = 0
     for epoch in range(first_epoch, config.epochs):
         model.train()
         epoch_loader = loader
@@ -401,8 +523,21 @@ def train_projector(
             if accelerator.sync_gradients:
                 global_step += 1
                 reduced_loss = accelerator.reduce(loss.detach(), reduction="mean")
-                observed_loss += float(reduced_loss.item())
+                loss_value = float(reduced_loss.item())
+                observed_loss += loss_value
                 observed_updates += 1
+                epoch_loss += loss_value
+                epoch_updates += 1
+                if accelerator.is_main_process and (
+                    global_step % log_every == 0 or global_step == total_steps
+                ):
+                    elapsed = time.monotonic() - start_time
+                    print(
+                        f"[train-projector] step {global_step}/{total_steps} "
+                        f"(epoch {epoch + 1}/{config.epochs}) loss={loss_value:.4f} "
+                        f"elapsed={elapsed:.0f}s",
+                        flush=True,
+                    )
                 if global_step % config.save_every_steps == 0:
                     _save_training_checkpoint(
                         accelerator=accelerator,
@@ -416,6 +551,15 @@ def train_projector(
                         epoch=epoch,
                         next_batch=batch_index + 1,
                     )
+        if accelerator.is_main_process and epoch_updates:
+            print(
+                f"[train-projector] epoch {epoch + 1}/{config.epochs} done "
+                f"mean_loss={epoch_loss / epoch_updates:.4f} "
+                f"elapsed={time.monotonic() - start_time:.0f}s",
+                flush=True,
+            )
+        epoch_loss = 0.0
+        epoch_updates = 0
         skip_batches = 0
 
     final_checkpoint = output_dir / "checkpoint-final"

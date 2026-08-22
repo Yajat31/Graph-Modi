@@ -1,0 +1,55 @@
+{
+  "test": {
+    "answer_distribution": {
+      "0": 5,
+      "1": 33,
+      "2": 44,
+      "3": 151,
+      "4": 128,
+      "5": 86,
+      "6": 18,
+      "7": 5,
+      "8": 1,
+      "no": 50,
+      "unreachable": 79
+    },
+    "counterfactual_pairs": 600,
+    "failures": [],
+    "majority_answer_accuracy": 0.25166666666666665,
+    "operation_distribution": {
+      "ADD": 200,
+      "DEL": 200,
+      "SET": 200
+    },
+    "reasoning_distribution": {
+      "filtered_neighbor_count": 163,
+      "reachability": 50,
+      "shortest_path": 387
+    },
+    "sessions": 150,
+    "turns": 600,
+    "valid": true
+  },
+  "train": {
+    "answer_distribution": {},
+    "counterfactual_pairs": 0,
+    "failures": [],
+    "majority_answer_accuracy": 0.0,
+    "operation_distribution": {},
+    "reasoning_distribution": {},
+    "sessions": 0,
+    "turns": 0,
+    "valid": true
+  },
+  "validation": {
+    "answer_distribution": {},
+    "counterfactual_pairs": 0,
+    "failures": [],
+    "majority_answer_accuracy": 0.0,
+    "operation_distribution": {},
+    "reasoning_distribution": {},
+    "sessions": 0,
+    "turns": 0,
+    "valid": true
+  }
+}

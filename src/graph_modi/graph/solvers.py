@@ -136,6 +136,34 @@ def answer_query(graph: AttributedGraph, query: GraphQuery) -> str:
             if any(neighbor == query.target for neighbor, _ in graph_adjacency[query.source])
             else "no"
         )
+    if query.reasoning_type is ReasoningType.NODE_DEGREE:
+        graph_adjacency = adjacency(graph, available_only=False)
+        return str(len(graph_adjacency[query.source]))
+    if query.reasoning_type is ReasoningType.NODE_COUNT:
+        return str(len(graph.nodes))
+    if query.reasoning_type is ReasoningType.PATH_COST:
+        if query.target is None:
+            return "invalid"
+        path = shortest_path(graph, query.source, query.target)
+        if not path:
+            return "unreachable"
+        total = 0.0
+        neighbors = adjacency(graph)
+        for left, right in zip(path, path[1:], strict=False):
+            for neighbor, weight in neighbors[left]:
+                if neighbor == right:
+                    total += weight
+                    break
+        return str(int(total) if total == int(total) else round(total, 2))
+    if query.reasoning_type is ReasoningType.LINK_PREDICTION:
+        if query.target is None:
+            return "invalid"
+        graph_adjacency = adjacency(graph, available_only=False)
+        return (
+            "yes"
+            if any(neighbor == query.target for neighbor, _ in graph_adjacency[query.source])
+            else "no"
+        )
     raise ValueError(f"Unsupported reasoning type: {query.reasoning_type}")
 
 
@@ -164,4 +192,13 @@ def render_question(query: GraphQuery, graph: AttributedGraph) -> str:
         )
     if query.reasoning_type is ReasoningType.CYCLE_MEMBERSHIP:
         return f"Is {source} part of any cycle? Answer yes or no."
+    if query.reasoning_type is ReasoningType.NODE_DEGREE:
+        return f"What is the degree of {source}? Answer with a number."
+    if query.reasoning_type is ReasoningType.NODE_COUNT:
+        return "How many stations are in the network? Answer with a number."
+    if query.reasoning_type is ReasoningType.PATH_COST:
+        return (
+            f"What is the total travel cost along the shortest open path from "
+            f"{source} to {target}? Answer with a number or unreachable."
+        )
     return f"Is there a direct edge between {source} and {target}? Answer yes or no."

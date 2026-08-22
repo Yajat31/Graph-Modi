@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -19,6 +20,7 @@ class ModelInput:
     history: tuple[str, ...]
     condition: str
     encoded_graph: Any = None
+    turn_index: int = 0
 
 
 class GraphBackend(Protocol):
@@ -36,6 +38,15 @@ class GraphBackend(Protocol):
 
     def answer(self, model_input: ModelInput) -> str | None:
         """Answer a graph question under an explicit evaluation condition."""
+
+    def predict_edit_batch(
+        self,
+        items: Sequence[tuple[str, AttributedGraph]],
+    ) -> list[GraphEdit | None]:
+        """Batched ``predict_edit``: one edit per (utterance, graph) pair."""
+
+    def answer_batch(self, model_inputs: Sequence[ModelInput]) -> list[str | None]:
+        """Batched ``answer``: one answer per model input, same order."""
 
 
 class SymbolicMockBackend:
@@ -73,13 +84,25 @@ class SymbolicMockBackend:
             return None
 
     def answer(self, model_input: ModelInput) -> str | None:
-        if model_input.condition == "question_only":
+        if model_input.condition in {"question_only", "structure_only", "majority_prior"}:
             return None
+        if model_input.condition == "soft_prompt":
+            return answer_query(model_input.current_graph, model_input.query)
         if model_input.condition in {
             "frozen_graph_history",
             "cached_no_reencode",
+            "graph_once_then_text",
         }:
             graph = model_input.initial_graph
         else:
             graph = model_input.current_graph
         return answer_query(graph, model_input.query)
+
+    def predict_edit_batch(
+        self,
+        items: Sequence[tuple[str, AttributedGraph]],
+    ) -> list[GraphEdit | None]:
+        return [self.predict_edit(utterance, graph) for utterance, graph in items]
+
+    def answer_batch(self, model_inputs: Sequence[ModelInput]) -> list[str | None]:
+        return [self.answer(model_input) for model_input in model_inputs]
