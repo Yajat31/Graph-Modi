@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from graph_modi.evaluation.metrics import normalize_answer
-from graph_modi.graph.solvers import answer_query, render_question
+from graph_modi.graph.solvers import render_question
 from graph_modi.models.base import GraphBackend, ModelInput, SymbolicMockBackend
 from graph_modi.schema import StaticQATuple
 from graph_modi.utils.progress import ProgressTracker
@@ -85,16 +85,12 @@ def summarize_static_gate(
     for row in rows:
         by_task[str(row["reasoning_type"])].append(bool(row["correct"]))
         by_scale[str(row["scale_bin"])].append(bool(row["correct"]))
-    task_accuracy = {
-        task: sum(values) / len(values) for task, values in sorted(by_task.items())
-    }
+    task_accuracy = {task: sum(values) / len(values) for task, values in sorted(by_task.items())}
     scale_accuracy = {
         scale: sum(values) / len(values) for scale, values in sorted(by_scale.items())
     }
     failing_tasks = [
-        task
-        for task, accuracy in task_accuracy.items()
-        if accuracy < GATE_PER_TASK_THRESHOLD
+        task for task, accuracy in task_accuracy.items() if accuracy < GATE_PER_TASK_THRESHOLD
     ]
     passed = overall >= GATE_OVERALL_THRESHOLD and not failing_tasks
     return {

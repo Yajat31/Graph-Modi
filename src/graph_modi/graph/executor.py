@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from typing import Any
-
-from collections.abc import Sequence
 
 from graph_modi.schema import (
     AttributedGraph,

@@ -233,7 +233,6 @@ def pretrain_graph_encoder(
         raise ValueError("At least one GNN pretraining example is required")
     if min(epochs, batch_size) <= 0 or learning_rate <= 0:
         raise ValueError("epochs, batch_size, and learning_rate must be positive")
-    import time
 
     import torch
     from torch import nn

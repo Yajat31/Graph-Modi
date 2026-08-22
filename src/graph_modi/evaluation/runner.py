@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from graph_modi.evaluation.metrics import aggregate_rows, normalize_answer
-from graph_modi.graph.edits import GraphEdit, execution_equivalent
+from graph_modi.graph.edits import execution_equivalent
 from graph_modi.graph.executor import apply_edit, apply_edit_program, graph_fingerprint
 from graph_modi.graph.serialization import (
     serialize_graph,
@@ -18,7 +18,7 @@ from graph_modi.graph.serialization import (
 from graph_modi.graph.solvers import answer_query, render_question
 from graph_modi.models.base import GraphBackend, ModelInput
 from graph_modi.pipeline.multiturn import materialize_states
-from graph_modi.schema import AttributedGraph, Session
+from graph_modi.schema import AttributedGraph, GraphEdit, Session
 from graph_modi.utils.progress import ProgressTracker
 
 CONDITIONS = (
@@ -74,7 +74,7 @@ class _Task:
 
     session: Session
     condition: str
-    expected_states: list[Any]
+    expected_states: Sequence[Any]
     current: AttributedGraph
     shuffled: AttributedGraph
     encoded: Any
@@ -85,7 +85,12 @@ class _Task:
     predicted_answer: str | None = None
 
 
-def _advance_round(condition: str, round_index: int, chunk: list[_Task], backend: GraphBackend) -> None:
+def _advance_round(
+    condition: str,
+    round_index: int,
+    chunk: list[_Task],
+    backend: GraphBackend,
+) -> None:
     """Advance one batch of tasks through round ``round_index``: append history,
     predict/apply the edit, re-encode if needed, and get an answer — batched
     across every task in the chunk wherever the backend supports it."""
@@ -228,7 +233,10 @@ def evaluate_sessions(
         tasks = []
         for session_index, session in enumerate(sessions):
             shuffled = shuffled_initials[session_index]
-            initial_for_encode = shuffled if condition == "shuffled_graph" else session.initial_graph
+            if condition == "shuffled_graph":
+                initial_for_encode = shuffled
+            else:
+                initial_for_encode = session.initial_graph
             tasks.append(
                 _Task(
                     session=session,
@@ -248,7 +256,11 @@ def evaluate_sessions(
                 _advance_round(condition, round_index, chunk, backend)
                 batch_latency = (time.perf_counter() - batch_started) / len(chunk)
                 rows.extend(_row_for(task, round_index, batch_latency) for task in chunk)
-                tracker.tick(len(chunk), condition=condition, round=f"{round_index + 1}/{max_turns}")
+                tracker.tick(
+                    len(chunk),
+                    condition=condition,
+                    round=f"{round_index + 1}/{max_turns}",
+                )
     if progress:
         tracker.end(elapsed=f"{time.monotonic() - start_time:.0f}s")
     return {"summary": aggregate_rows(rows), "rows": rows}

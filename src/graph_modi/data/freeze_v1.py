@@ -20,10 +20,7 @@ def _sha256_file(path: Path) -> str:
 
 def _git_sha(repo: Path) -> str:
     try:
-        return (
-            subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True)
-            .strip()
-        )
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         return "unknown"
 
@@ -64,7 +61,8 @@ def freeze_v1_manifest(
                 "sha256": _sha256_file(path),
                 "bytes": path.stat().st_size,
             }
-    destination = Path(output_path or root / "documents" / "experiments" / "v1_freeze_manifest.json")
+    default_path = root / "documents" / "experiments" / "v1_freeze_manifest.json"
+    destination = Path(output_path or default_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return manifest

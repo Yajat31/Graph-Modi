@@ -77,7 +77,9 @@ def _experiment_log(config: ExperimentConfig, payload: dict[str, Any]) -> None:
         **payload,
     }
     log_path = log_dir / "log.md"
-    line = f"- `{entry['git_sha'][:8]}` {payload.get('phase', 'run')}: {json.dumps(payload, sort_keys=True)}\n"
+    phase = payload.get("phase", "run")
+    payload_json = json.dumps(payload, sort_keys=True)
+    line = f"- `{entry['git_sha'][:8]}` {phase}: {payload_json}\n"
     with log_path.open("a", encoding="utf-8") as handle:
         handle.write(line)
 
@@ -151,7 +153,10 @@ def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str
         save_static_tuples(_static_path(config, split), tuples)
         report[f"static_{split}"] = {"tuples": len(tuples)}
     _write_json(_audit_path(config), report)
-    _experiment_log(config, {"phase": "generate-v2", "report": report, "distribution": DISTRIBUTION_V2})
+    _experiment_log(
+        config,
+        {"phase": "generate-v2", "report": report, "distribution": DISTRIBUTION_V2},
+    )
     return report
 
 
@@ -425,7 +430,8 @@ def command_static_eval(config: ExperimentConfig, args: argparse.Namespace) -> N
     path = config.output_dir / f"static_eval_{split}.json"
     _write_json(path, result)
     _experiment_log(config, {"phase": "static-eval", "split": split, "passed": result["passed"]})
-    print(json.dumps({key: result[key] for key in ("overall_accuracy", "passed", "failing_tasks")}, indent=2))
+    summary = {key: result[key] for key in ("overall_accuracy", "passed", "failing_tasks")}
+    print(json.dumps(summary, indent=2))
 
 
 def command_pilot(config: ExperimentConfig, args: argparse.Namespace) -> None:
@@ -433,14 +439,19 @@ def command_pilot(config: ExperimentConfig, args: argparse.Namespace) -> None:
     evaluation = config.section("evaluation")
     pilot_sessions = int(evaluation.get("pilot_sessions", 20))
     sessions = load_sessions(_data_path(config, "test"))[:pilot_sessions]
-    static = load_static_tuples(_static_path(config, "test")) if _static_path(config, "test").exists() else []
+    static_path = _static_path(config, "test")
+    static = load_static_tuples(static_path) if static_path.exists() else []
     backend = _backend(config)
-    static_result = evaluate_static_oracle(
-        static,
-        backend,
-        batch_size=int(evaluation.get("batch_size", 16)),
-        progress=not getattr(args, "no_progress", False),
-    ) if static else {"passed": True, "overall_accuracy": 1.0}
+    static_result = (
+        evaluate_static_oracle(
+            static,
+            backend,
+            batch_size=int(evaluation.get("batch_size", 16)),
+            progress=not getattr(args, "no_progress", False),
+        )
+        if static
+        else {"passed": True, "overall_accuracy": 1.0}
+    )
     dynamic = evaluate_sessions(
         sessions,
         backend,

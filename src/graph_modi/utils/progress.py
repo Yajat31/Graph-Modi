@@ -74,13 +74,15 @@ class ProgressTracker:
             return
         elapsed = time.monotonic() - self._start
         rate = self._done / elapsed if elapsed > 0 else 0.0
+        if "elapsed" not in extra:
+            extra["elapsed"] = f"{elapsed:.0f}s"
+        if "rate" not in extra:
+            extra["rate"] = f"{rate:.2f}/s"
         print(
             format_progress(
                 self.tag,
                 phase=self.phase,
                 step=f"{self._done}/{self.total}",
-                elapsed=f"{elapsed:.0f}s",
-                rate=f"{rate:.2f}/s",
                 **extra,
             ),
             flush=True,

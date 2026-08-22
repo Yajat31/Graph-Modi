@@ -290,9 +290,7 @@ class Turn:
 
     @classmethod
     def from_dict(cls, record: dict[str, Any]) -> Turn:
-        gold_edits = tuple(
-            GraphEdit.from_dict(item) for item in record.get("gold_edits", [])
-        )
+        gold_edits = tuple(GraphEdit.from_dict(item) for item in record.get("gold_edits", []))
         edit_program = (
             EditProgram.from_dict(record["edit_program"])
             if record.get("edit_program")

@@ -679,7 +679,9 @@ class TEAGLM(_Module):
         if not prompts:
             raise ValueError("prompts must be non-empty")
         pad_id = int(self.tokenizer.pad_token_id)
-        token_id_lists = [self._truncate(self._encode_text(p, answer=False), [])[0] for p in prompts]
+        token_id_lists = [
+            self._truncate(self._encode_text(prompt, answer=False), [])[0] for prompt in prompts
+        ]
         max_length = max(len(ids) for ids in token_id_lists)
         input_ids = torch.full(
             (len(prompts), max_length), pad_id, dtype=torch.long, device=self.device
@@ -704,9 +706,7 @@ class TEAGLM(_Module):
                 **generation_kwargs,
             )
         completions = generated[:, max_length:]
-        return [
-            self.tokenizer.decode(row, skip_special_tokens=True).strip() for row in completions
-        ]
+        return [self.tokenizer.decode(row, skip_special_tokens=True).strip() for row in completions]
 
 
 def tokenizer_identity(tokenizer: Any) -> dict[str, Any]:
@@ -933,9 +933,7 @@ class TEAGLMBackend:
             graph = self.encode(model_input.current_graph)
         return self.model.generate(graph, prompt, max_new_tokens=self.max_new_tokens)
 
-    def predict_edit_batch(
-        self, items: Sequence[tuple[str, AttributedGraph]]
-    ) -> list[Any]:
+    def predict_edit_batch(self, items: Sequence[tuple[str, AttributedGraph]]) -> list[Any]:
         prompts = [
             f"{self._EDIT_PROMPT_PREFIX}Revision: {utterance}\nEdit:" for utterance, _ in items
         ]
@@ -980,11 +978,11 @@ class TEAGLMBackend:
             graph_graphs.append(graph)
             graph_prompts.append(prompt)
         if text_prompts:
-            for index, output in zip(
-                text_indices,
-                self.model.generate_text_only_batch(text_prompts, max_new_tokens=self.max_new_tokens),
-                strict=True,
-            ):
+            generated = self.model.generate_text_only_batch(
+                text_prompts,
+                max_new_tokens=self.max_new_tokens,
+            )
+            for index, output in zip(text_indices, generated, strict=True):
                 results[index] = output
         if graph_prompts:
             for index, output in zip(

@@ -17,13 +17,13 @@ from graph_modi.data.multiturn import (
     _candidate_edit,
     _changed_query,
     _is_connected,
-    _make_graph as _make_ws_graph,
     _pair,
     _queries,
     _utterance,
     assert_disjoint_splits,
-    load_sessions,
-    save_sessions,
+)
+from graph_modi.data.multiturn import (
+    _make_graph as _make_ws_graph,
 )
 from graph_modi.graph.executor import apply_edit, apply_edit_program, graph_fingerprint
 from graph_modi.graph.solvers import answer_query, render_question
@@ -33,7 +33,6 @@ from graph_modi.schema import (
     Edge,
     EditOperation,
     EditProgram,
-    EditTarget,
     GraphEdit,
     GraphQuery,
     HopDepth,
@@ -282,7 +281,9 @@ def make_graph(
         density = _density_bin(node_count, node_count * degree // 2)
         p_in = {"sparse": 0.25, "medium": 0.35, "dense": 0.5}[density.value]
         p_out = {"sparse": 0.04, "medium": 0.08, "dense": 0.12}[density.value]
-        return _sbm_graph(rng, split, index, node_count, p_in=p_in, p_out=p_out, line_count=line_count)
+        return _sbm_graph(
+            rng, split, index, node_count, p_in=p_in, p_out=p_out, line_count=line_count
+        )
     if topology is TopologyFamily.ERDOS_RENYI:
         return _erdos_renyi_graph(rng, split, index, node_count, line_count=line_count)
     raise ValueError(f"Unsupported topology: {topology}")
@@ -307,7 +308,7 @@ def _sample_edit_program(
     edits: list[GraphEdit] = []
     current = graph
     for _ in range(edit_count):
-        for attempt in range(32):
+        for _attempt in range(32):
             operation = rng.choice(operations)
             edit = _candidate_edit(current, operation, rng)
             if edit is None:
@@ -365,8 +366,10 @@ def generate_session_v2(
         if query is None:
             candidates = list(_queries(updated, preferred))
             rng.shuffle(candidates)
-            query = candidates[0] if candidates else GraphQuery(
-                ReasoningType.NODE_COUNT, source=updated.nodes[0].id
+            query = (
+                candidates[0]
+                if candidates
+                else GraphQuery(ReasoningType.NODE_COUNT, source=updated.nodes[0].id)
             )
         query = replace(query, question=render_question(query, updated))
         stale_answer = answer_query(before, query)

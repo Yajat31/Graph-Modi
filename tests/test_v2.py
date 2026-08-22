@@ -3,7 +3,6 @@
 from graph_modi.data.v2 import DISTRIBUTION_V2, generate_dataset_v2
 from graph_modi.data.validation import audit_sessions
 from graph_modi.graph.edits import parse_edit_program
-from graph_modi.graph.executor import apply_edit_program
 from graph_modi.schema import EditOperation
 from graph_modi.utils.progress import ProgressTracker
 

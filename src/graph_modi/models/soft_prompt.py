@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -44,11 +45,11 @@ class SoftPromptBackend:
         return answer_query(model_input.current_graph, model_input.query)
 
     def predict_edit_batch(
-        self, items: list[tuple[str, AttributedGraph]]
+        self, items: Sequence[tuple[str, AttributedGraph]]
     ) -> list[GraphEdit | None]:
         return [self.predict_edit(utterance, graph) for utterance, graph in items]
 
-    def answer_batch(self, model_inputs: list[ModelInput]) -> list[str | None]:
+    def answer_batch(self, model_inputs: Sequence[ModelInput]) -> list[str | None]:
         return [self.answer(model_input) for model_input in model_inputs]
 
 

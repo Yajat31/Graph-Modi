@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from graph_modi.graph.executor import apply_edit, apply_edit_program, graph_fingerprint
 from graph_modi.graph.solvers import render_question
 from graph_modi.models.base import GraphBackend, ModelInput
-from graph_modi.schema import AttributedGraph, Session, TurnOutput
+from graph_modi.schema import AttributedGraph, GraphEdit, Session, Turn, TurnOutput
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,7 +17,7 @@ class MaterializedTurn:
     after: AttributedGraph
 
 
-def _turn_edits(turn) -> tuple:
+def _turn_edits(turn: Turn) -> tuple[GraphEdit, ...]:
     if turn.gold_edits:
         return turn.gold_edits
     if turn.edit_program is not None:
@@ -59,10 +59,14 @@ def run_session(
     outputs: list[TurnOutput] = []
     for turn in session.turns:
         started = time.perf_counter()
-        predicted = (
-            backend.predict_edit(turn.utterance, current) if predicted_edits else _turn_edits(turn)
-        )
-        if predicted is None:
+        edit_payload: GraphEdit | tuple[GraphEdit, ...] | None
+        if predicted_edits:
+            edit_payload = backend.predict_edit(turn.utterance, current)
+            predicted_edit: GraphEdit | None = edit_payload
+        else:
+            edit_payload = _turn_edits(turn)
+            predicted_edit = turn.gold_edit
+        if edit_payload is None:
             outputs.append(
                 TurnOutput(
                     turn_index=turn.turn_index,
@@ -76,10 +80,10 @@ def run_session(
                 )
             )
             continue
-        if isinstance(predicted, tuple):
-            result = apply_edit_program(current, predicted)
+        if isinstance(edit_payload, tuple):
+            result = apply_edit_program(current, edit_payload)
         else:
-            result = apply_edit(current, predicted)
+            result = apply_edit(current, edit_payload)
         if result.applied:
             current = result.graph
             encoded = backend.encode(current)
@@ -101,7 +105,7 @@ def run_session(
         outputs.append(
             TurnOutput(
                 turn_index=turn.turn_index,
-                predicted_edit=predicted,
+                predicted_edit=predicted_edit,
                 edit_applied=result.applied,
                 predicted_answer=answer,
                 graph_fingerprint=graph_fingerprint(current),
