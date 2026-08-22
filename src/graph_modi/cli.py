@@ -32,7 +32,7 @@ from graph_modi.evaluation.static_eval import evaluate_static_oracle
 from graph_modi.graph.solvers import render_question
 from graph_modi.models.base import GraphBackend, SymbolicMockBackend
 from graph_modi.pipeline.multiturn import materialize_states, run_session
-from graph_modi.schema import Session, StaticQATuple
+from graph_modi.schema import ReasoningType, Session, StaticQATuple
 from graph_modi.training import (
     ProjectorTrainingConfig,
     TrainingExample,
@@ -124,6 +124,14 @@ def _generate(config: ExperimentConfig, *, progress: bool = True) -> dict[str, A
     return report
 
 
+def _reasoning_types(data: dict[str, Any], key: str) -> list[ReasoningType] | None:
+    """Optional task-list override for v2 generation; None preserves the module defaults."""
+    values = data.get(key)
+    if not values:
+        return None
+    return [ReasoningType(str(value)) for value in values]
+
+
 def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str, Any]:
     data = config.section("data")
     counts = {
@@ -142,6 +150,8 @@ def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str
             "test": int(data.get("static_test_graphs", 20)),
         },
         static_tuples_per_graph=int(data.get("static_tuples_per_graph", 12)),
+        static_tasks=_reasoning_types(data, "static_tasks"),
+        dynamic_tasks=_reasoning_types(data, "dynamic_tasks"),
         progress=progress,
     )
     report: dict[str, Any] = {}

@@ -338,6 +338,7 @@ def generate_session_v2(
     degree: int = DEFAULT_GRAPH_DEGREE,
     rewire_probability: float = DEFAULT_REWIRE_PROBABILITY,
     line_count: int = DEFAULT_LINE_COUNT,
+    fallback_tasks: Sequence[ReasoningType] | None = None,
 ) -> Session:
     rng = random.Random(seed)
     initial = make_graph(
@@ -362,7 +363,7 @@ def generate_session_v2(
         before = current
         result = apply_edit_program(current, program)
         updated = result.graph
-        query = _changed_query(before, updated, preferred, rng)
+        query = _changed_query(before, updated, preferred, rng, fallback_order=fallback_tasks)
         if query is None:
             candidates = list(_queries(updated, preferred))
             rng.shuffle(candidates)
@@ -438,8 +439,10 @@ def generate_static_corpus(
     seed: int,
     node_count_ranges: dict[str, tuple[int, int]],
     topologies: Sequence[TopologyFamily],
+    tasks: Sequence[ReasoningType] | None = None,
     progress: bool = True,
 ) -> dict[str, list[StaticQATuple]]:
+    static_tasks = tuple(tasks) if tasks else _STATIC_TASKS
     total_graphs = sum(graph_counts.values())
     tracker = ProgressTracker("[generate]", total_graphs, phase="static", enabled=progress)
     tracker.banner(graphs=total_graphs, tuples_per_graph=tuples_per_graph)
@@ -458,7 +461,7 @@ def generate_static_corpus(
             density = _density_bin(len(graph.nodes), len(graph.edges))
             scale = _scale_bin(node_count, ood=node_count >= 40)
             for tuple_index in range(tuples_per_graph):
-                reasoning_type = _STATIC_TASKS[(index + tuple_index) % len(_STATIC_TASKS)]
+                reasoning_type = static_tasks[(index + tuple_index) % len(static_tasks)]
                 candidates = list(_static_queries(graph, reasoning_type))
                 rng.shuffle(candidates)
                 if not candidates:
@@ -493,8 +496,11 @@ def generate_dataset_v2(
     seed: int,
     static_graph_counts: dict[str, int] | None = None,
     static_tuples_per_graph: int = 12,
+    static_tasks: Sequence[ReasoningType] | None = None,
+    dynamic_tasks: Sequence[ReasoningType] | None = None,
     progress: bool = True,
 ) -> tuple[dict[str, list[Session]], dict[str, list[StaticQATuple]]]:
+    session_tasks = tuple(dynamic_tasks) if dynamic_tasks else _DYNAMIC_TASKS
     total_sessions = sum(counts.values())
     tracker = ProgressTracker("[generate]", total_sessions, phase="dynamic", enabled=progress)
     tracker.banner(sessions=total_sessions)
@@ -528,8 +534,9 @@ def generate_dataset_v2(
                     node_count=node_count,
                     turn_count=turn_count,
                     topology=topology,
-                    reasoning_types=_DYNAMIC_TASKS,
+                    reasoning_types=session_tasks,
                     ood=ood,
+                    fallback_tasks=tuple(dynamic_tasks) if dynamic_tasks else None,
                 )
             )
             done += 1
@@ -552,6 +559,7 @@ def generate_dataset_v2(
             "test": (16, 48),
         },
         topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
+        tasks=static_tasks,
         progress=progress,
     )
     return sessions, static

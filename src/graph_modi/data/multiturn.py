@@ -265,20 +265,31 @@ def _queries(graph: AttributedGraph, reasoning_type: ReasoningType) -> Iterable[
             yield GraphQuery(reasoning_type, source)
 
 
+_DEFAULT_CHANGED_QUERY_FALLBACK = (
+    ReasoningType.SHORTEST_PATH,
+    ReasoningType.REACHABILITY,
+    ReasoningType.FILTERED_NEIGHBOR_COUNT,
+    ReasoningType.FILTERED_PATH_COUNT,
+    ReasoningType.CYCLE_MEMBERSHIP,
+)
+
+
 def _changed_query(
     before: AttributedGraph,
     after: AttributedGraph,
     preferred: ReasoningType,
     rng: random.Random,
+    *,
+    fallback_order: Sequence[ReasoningType] | None = None,
 ) -> GraphQuery | None:
-    reasoning_order = [
-        preferred,
-        ReasoningType.SHORTEST_PATH,
-        ReasoningType.REACHABILITY,
-        ReasoningType.FILTERED_NEIGHBOR_COUNT,
-        ReasoningType.FILTERED_PATH_COUNT,
-        ReasoningType.CYCLE_MEMBERSHIP,
-    ]
+    """Find an answer-changing query, trying ``preferred`` first.
+
+    ``fallback_order`` lets a caller restrict which reasoning types this may
+    fall back to when ``preferred`` has no answer-changing candidate; None
+    preserves the original fixed fallback list unchanged.
+    """
+    order = fallback_order if fallback_order is not None else _DEFAULT_CHANGED_QUERY_FALLBACK
+    reasoning_order = [preferred, *order]
     seen: set[ReasoningType] = set()
     for reasoning_type in reasoning_order:
         if reasoning_type in seen:
