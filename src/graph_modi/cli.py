@@ -104,6 +104,8 @@ def _examples(sessions: list[Session]) -> list[TrainingExample]:
                     metadata={
                         "reasoning_type": turn.query.reasoning_type.value,
                         "graph_fingerprint": turn.after_fingerprint,
+                        "source_id": turn.query.source,
+                        "target_id": turn.query.target,
                     },
                 )
             )
@@ -127,6 +129,7 @@ def _neural_components(config: ExperimentConfig) -> tuple[Any, Any, Any]:
         hidden_dim=int(model.get("graph_hidden_size", 256)),
         output_dim=int(model.get("graph_hidden_size", 256)),
         num_layers=int(model.get("graph_layers", 4)),
+        aggregation=str(model.get("graph_aggregation", "mean")),
     )
     return graph_config, GraphSAGEEncoder(graph_config), DeterministicNodeTensorizer(tensor_config)
 
@@ -171,6 +174,7 @@ def _tea_model(config: ExperimentConfig) -> Any:
         hidden_dim=int(model.get("graph_hidden_size", 256)),
         output_dim=int(model.get("graph_hidden_size", 256)),
         num_layers=int(model.get("graph_layers", 4)),
+        aggregation=str(model.get("graph_aggregation", "mean")),
     )
     dtype_name = str(model.get("torch_dtype", "float32"))
     dtype = getattr(torch, dtype_name, None)
@@ -185,10 +189,12 @@ def _tea_model(config: ExperimentConfig) -> Any:
         torch_dtype=dtype,
         prefix_tokens=int(model.get("prefix_tokens", 8)),
         projector_hidden_dim=int(model.get("projector_hidden_size", 512)),
+        projector_num_layers=int(model.get("projector_num_layers", 1)),
     )
     if not isinstance(tea_model.tensorizer, DeterministicNodeTensorizer):
         raise TypeError("Unexpected graph tensorizer")
-    return tea_model
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return tea_model.to(device)
 
 
 def command_generate(config: ExperimentConfig, _args: argparse.Namespace) -> None:
@@ -212,7 +218,7 @@ def command_pretrain(config: ExperimentConfig, _args: argparse.Namespace) -> Non
         examples,
         output_dir=config.output_dir / "gnn",
         epochs=int(training.get("gnn_epochs", training.get("epochs", 5))),
-        batch_size=int(training.get("batch_size", 4)),
+        batch_size=int(training.get("gnn_batch_size", training.get("batch_size", 4))),
         learning_rate=float(training.get("gnn_learning_rate", 0.002)),
         seed=int(training.get("seed", config.seed)),
     )

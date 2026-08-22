@@ -40,6 +40,9 @@ Every condition uses the same sessions and decoder:
 
 - `question_only`: shortcut check without graph information.
 - `frozen_graph_history`: initial graph tokens plus all short revisions.
+- `graph_once_then_text`: initial graph tokens on the first turn only; every
+  later turn is text-only (no graph tokens at all), isolating whether the
+  model needs a repeated graph reminder or can carry it forward itself.
 - `shuffled_graph`: graph tokens from another session.
 - `oracle_updated_graph`: gold edit, re-encoded current graph, no history.
 - `cached_no_reencode`: apply the edit but retain old graph tokens.

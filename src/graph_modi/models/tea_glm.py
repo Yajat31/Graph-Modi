@@ -6,6 +6,7 @@ components fail at construction time with an actionable installation message.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import math
@@ -182,16 +183,25 @@ class GraphSAGEConfig:
     output_dim: int = 256
     num_layers: int = 2
     dropout: float = 0.0
+    aggregation: str = "mean"
 
     def __post_init__(self) -> None:
         if min(self.input_dim, self.hidden_dim, self.output_dim, self.num_layers) <= 0:
             raise ValueError("GraphSAGE dimensions and num_layers must be positive")
         if not 0.0 <= self.dropout < 1.0:
             raise ValueError("dropout must be in [0, 1)")
+        if self.aggregation not in {"mean", "sum", "max"}:
+            raise ValueError("aggregation must be one of: mean, sum, max")
 
 
 class GraphSAGEEncoder(_Module):
-    """Mean-aggregation GraphSAGE implemented using only core PyTorch."""
+    """GraphSAGE implemented using only core PyTorch, with mean/sum/max aggregation.
+
+    Mean aggregation is invariant to neighbor count, which discards exactly the
+    signal that counting and distance-based tasks (shortest path, neighbor
+    counts) depend on. Sum preserves it; max is a permutation-invariant
+    alternative that instead reports the strongest neighbor signal per feature.
+    """
 
     def __init__(self, config: GraphSAGEConfig) -> None:
         require_tea_dependencies()
@@ -207,7 +217,28 @@ class GraphSAGEEncoder(_Module):
             nn.Linear(dimensions[i], dimensions[i + 1], bias=False)
             for i in range(config.num_layers)
         )
+        self.norms = nn.ModuleList(
+            nn.LayerNorm(dimensions[i + 1]) for i in range(config.num_layers)
+        )
         self.dropout = nn.Dropout(config.dropout)
+
+    def _aggregate(self, x: Any, sources: Any, destinations: Any, edge_weight: Any) -> Any:
+        if not sources.numel():
+            return torch.zeros_like(x)
+        weights = edge_weight.to(dtype=x.dtype).unsqueeze(-1)
+        messages = x[sources] * weights
+        if self.config.aggregation == "max":
+            index = destinations.unsqueeze(-1).expand_as(messages)
+            aggregate = torch.full_like(x, float("-inf"))
+            aggregate = aggregate.scatter_reduce(0, index, messages, reduce="amax")
+            return torch.where(torch.isinf(aggregate), torch.zeros_like(aggregate), aggregate)
+        aggregate = torch.zeros_like(x)
+        aggregate.index_add_(0, destinations, messages)
+        if self.config.aggregation == "sum":
+            return aggregate
+        degree = torch.zeros((x.shape[0], 1), dtype=x.dtype, device=x.device)
+        degree.index_add_(0, destinations, weights.abs())
+        return aggregate / degree.clamp_min(1.0)
 
     def forward(self, graph: GraphTensor) -> Any:
         x = graph.x
@@ -219,14 +250,9 @@ class GraphSAGEEncoder(_Module):
         for layer_index, (self_layer, neighbor_layer) in enumerate(
             zip(self.self_layers, self.neighbor_layers, strict=True)
         ):
-            aggregate = torch.zeros_like(x)
-            degree = torch.zeros((x.shape[0], 1), dtype=x.dtype, device=x.device)
-            if sources.numel():
-                weights = graph.edge_weight.to(dtype=x.dtype).unsqueeze(-1)
-                aggregate.index_add_(0, destinations, x[sources] * weights)
-                degree.index_add_(0, destinations, weights.abs())
-            aggregate = aggregate / degree.clamp_min(1.0)
+            aggregate = self._aggregate(x, sources, destinations, graph.edge_weight)
             x = self_layer(x) + neighbor_layer(aggregate)
+            x = self.norms[layer_index](x)
             if layer_index + 1 < self.config.num_layers:
                 x = self.dropout(torch.relu(x))
         return x
@@ -359,6 +385,7 @@ class TEAGLM(_Module):
         torch_dtype: Any = None,
         prefix_tokens: int = 8,
         projector_hidden_dim: int = 512,
+        projector_num_layers: int = 1,
     ) -> TEAGLM:
         require_tea_dependencies()
         try:
@@ -390,6 +417,7 @@ class TEAGLM(_Module):
             lm_hidden_dim=lm_hidden_dim,
             prefix_tokens=prefix_tokens,
             hidden_dim=projector_hidden_dim,
+            num_layers=projector_num_layers,
         )
         return cls(
             gnn=GraphSAGEEncoder(graph_config),
@@ -417,6 +445,21 @@ class TEAGLM(_Module):
     @property
     def device(self) -> Any:
         return next(self.projector.parameters()).device
+
+    def _lm_autocast(self) -> Any:
+        """Autocast to the language model's dtype outside of Accelerate.
+
+        Training goes through ``accelerator.prepare(..., mixed_precision=...)``,
+        which autocasts the forward pass automatically, so the fp32 GNN/projector
+        can feed a bf16 language model without a dtype mismatch. Inference paths
+        (generate/forward called directly, e.g. from evaluation) get no such
+        wrapper, so they need this explicitly or every call crashes as soon as a
+        graph-conditioned prefix (fp32) is concatenated with bf16 token embeddings.
+        """
+        lm_dtype = next(self.language_model.parameters()).dtype
+        if self.device.type == "cuda" and lm_dtype in (torch.bfloat16, torch.float16):
+            return torch.autocast(device_type="cuda", dtype=lm_dtype)
+        return contextlib.nullcontext()
 
     def encode_graphs(self, graphs: Sequence[AttributedGraph | GraphTensor]) -> Any:
         pooled = []
@@ -507,12 +550,13 @@ class TEAGLM(_Module):
             inputs_embeds[index, :length] = sequence
             attention_mask[index, :length] = 1
             labels[index, :length] = row_labels
-        return self.language_model(
-            inputs_embeds=inputs_embeds,
-            attention_mask=attention_mask,
-            labels=labels,
-            use_cache=False,
-        )
+        with self._lm_autocast():
+            return self.language_model(
+                inputs_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                labels=labels,
+                use_cache=False,
+            )
 
     @torch.no_grad() if torch is not None else (lambda function: function)
     def generate(
@@ -530,15 +574,16 @@ class TEAGLM(_Module):
         prefix = self.graph_prefix([graph])[0]
         inputs_embeds = torch.cat([prompt_embeds, prefix], dim=0).unsqueeze(0)
         attention_mask = torch.ones(inputs_embeds.shape[:2], dtype=torch.long, device=self.device)
-        generated = self.language_model.generate(
-            inputs_embeds=inputs_embeds,
-            attention_mask=attention_mask,
-            max_new_tokens=max_new_tokens,
-            use_cache=True,
-            pad_token_id=self.tokenizer.pad_token_id,
-            eos_token_id=self.tokenizer.eos_token_id,
-            **generation_kwargs,
-        )
+        with self._lm_autocast():
+            generated = self.language_model.generate(
+                inputs_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                max_new_tokens=max_new_tokens,
+                use_cache=True,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+                **generation_kwargs,
+            )
         return self.tokenizer.decode(generated[0], skip_special_tokens=True).strip()
 
     @torch.no_grad() if torch is not None else (lambda function: function)
@@ -553,15 +598,16 @@ class TEAGLM(_Module):
         token_ids, _ = self._truncate(token_ids, [])
         input_ids = torch.tensor([token_ids], dtype=torch.long, device=self.device)
         attention_mask = torch.ones_like(input_ids)
-        generated = self.language_model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            max_new_tokens=max_new_tokens,
-            use_cache=True,
-            pad_token_id=self.tokenizer.pad_token_id,
-            eos_token_id=self.tokenizer.eos_token_id,
-            **generation_kwargs,
-        )
+        with self._lm_autocast():
+            generated = self.language_model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_new_tokens=max_new_tokens,
+                use_cache=True,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+                **generation_kwargs,
+            )
         completion = generated[0, input_ids.shape[1] :]
         return self.tokenizer.decode(completion, skip_special_tokens=True).strip()
 
@@ -722,12 +768,48 @@ class TEAGLMBackend:
         self.encode_calls += 1
         return self.model.tensorizer(graph)
 
+    _EDIT_PROMPT_PREFIX = (
+        "You maintain a metro graph. Given a one-sentence revision, output exactly "
+        "one edit and nothing else, in one of these formats:\n"
+        "  SET NODE <station> status open\n"
+        "  SET NODE <station> status closed\n"
+        "  ADD EDGE <station> <station> transfer\n"
+        "  DEL EDGE <station> <station> track\n"
+        "  DEL EDGE <station> <station> transfer\n"
+        "Use the station name exactly as it appears in the revision.\n\n"
+        "Revision: Elm is closed now.\n"
+        "Edit: SET NODE Elm status closed\n\n"
+        "Revision: Service at Oak has resumed.\n"
+        "Edit: SET NODE Oak status open\n\n"
+        "Revision: Please mark Pine as closed.\n"
+        "Edit: SET NODE Pine status closed\n\n"
+        "Revision: ADD EDGE Elm Cedar transfer\n"
+        "Edit: ADD EDGE Elm Cedar transfer\n\n"
+        "Revision: DEL EDGE Oak Pine track\n"
+        "Edit: DEL EDGE Oak Pine track\n\n"
+    )
+
     def predict_edit(self, utterance: str, graph: AttributedGraph) -> Any:
-        prompt = f"Revision: {utterance}\nReturn one graph edit:"
-        generated = self.model.generate(graph, prompt, max_new_tokens=self.max_new_tokens)
+        """Extract the edit named by a revision sentence.
+
+        Text-only generation, deliberately not graph-conditioned: the target
+        node is always named explicitly in the utterance, so no graph
+        information is needed to determine the edit. Empirically, running this
+        through the graph-conditioned path corrupts generation instead of
+        helping it — the graph prefix embeddings were only ever trained
+        immediately before short QA-style prompts, so appending them after
+        this longer few-shot instruction prompt is out of distribution for the
+        frozen LM and produces incoherent output.
+        """
+        prompt = f"{self._EDIT_PROMPT_PREFIX}Revision: {utterance}\nEdit:"
+        generated = self.model.generate_text_only(prompt, max_new_tokens=self.max_new_tokens)
+        # The model has no stop token for this format and will keep rambling
+        # into hallucinated "Revision:/Edit:" continuations; only the first
+        # line is ever the actual edit.
+        first_line = generated.split("\n", 1)[0].strip()
         try:
             return parse_edit(
-                generated,
+                first_line,
                 {node.label.casefold(): node.id for node in graph.nodes},
             )
         except ValueError:
@@ -741,7 +823,10 @@ class TEAGLMBackend:
             "serialized_current_graph",
         }
         prompt = self.model.config.prompt_template.format(question=model_input.question)
-        if model_input.condition in text_only_conditions:
+        graph_once_after_first_turn = (
+            model_input.condition == "graph_once_then_text" and model_input.turn_index > 0
+        )
+        if model_input.condition in text_only_conditions or graph_once_after_first_turn:
             return self.model.generate_text_only(
                 prompt,
                 max_new_tokens=self.max_new_tokens,

@@ -19,6 +19,7 @@ class ModelInput:
     history: tuple[str, ...]
     condition: str
     encoded_graph: Any = None
+    turn_index: int = 0
 
 
 class GraphBackend(Protocol):
@@ -78,6 +79,7 @@ class SymbolicMockBackend:
         if model_input.condition in {
             "frozen_graph_history",
             "cached_no_reencode",
+            "graph_once_then_text",
         }:
             graph = model_input.initial_graph
         else:

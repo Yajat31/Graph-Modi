@@ -22,6 +22,7 @@ from graph_modi.schema import AttributedGraph, Session
 CONDITIONS = (
     "question_only",
     "frozen_graph_history",
+    "graph_once_then_text",
     "shuffled_graph",
     "oracle_updated_graph",
     "cached_no_reencode",
@@ -48,7 +49,7 @@ def _prompt(
     if condition == "token_matched_history":
         matched = token_budget_match(history_text, target_tokens=64)
         return f"{matched}\n{question}"
-    if condition in {"frozen_graph_history", "cached_no_reencode"}:
+    if condition in {"frozen_graph_history", "cached_no_reencode", "graph_once_then_text"}:
         return f"{history_text}\n{question}"
     return question
 
@@ -121,6 +122,7 @@ def evaluate_sessions(
                             history=tuple(history),
                             condition=condition,
                             encoded_graph=encoded,
+                            turn_index=turn.turn_index,
                         )
                     )
                 predicted_normalized = normalize_answer(predicted_answer)

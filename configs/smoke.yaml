@@ -37,6 +37,7 @@ evaluation:
   conditions:
     - question_only
     - frozen_graph_history
+    - graph_once_then_text
     - shuffled_graph
     - oracle_updated_graph
     - cached_no_reencode
