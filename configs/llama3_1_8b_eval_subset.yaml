@@ -19,6 +19,7 @@ model:
 evaluation:
   splits: [validation, test]
   max_new_tokens: 32
+  batch_size: 32
   conditions:
     - question_only
     - frozen_graph_history

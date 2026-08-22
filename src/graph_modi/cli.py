@@ -290,14 +290,18 @@ def command_evaluate(config: ExperimentConfig, _args: argparse.Namespace) -> Non
     _ensure_data(config)
     evaluation = config.section("evaluation")
     conditions = [str(value) for value in evaluation.get("conditions", CONDITIONS)]
+    batch_size = int(evaluation.get("batch_size", 16))
     result: dict[str, Any] = {}
     backend = _backend(config)
     for split in evaluation.get("splits", ["test"]):
         sessions = load_sessions(_data_path(config, str(split)))
+        print(f"[evaluate] split={split!r}", flush=True)
         result[str(split)] = evaluate_sessions(
             sessions,
             backend,
             conditions=conditions,
+            batch_size=batch_size,
+            progress=True,
         )
     path = config.output_dir / "evaluation.json"
     _write_json(path, result)

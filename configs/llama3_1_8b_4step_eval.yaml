@@ -5,7 +5,7 @@ data_dir: outputs/llama3_1_8b_4step_eval/data
 data:
   train_sessions: 0
   validation_sessions: 0
-  test_sessions: 150
+  test_sessions: 350
   distribution: watts_strogatz_metro_v1
   graph_degree: 4
   rewire_probability: 0.15
@@ -36,6 +36,7 @@ model:
 evaluation:
   splits: [test]
   max_new_tokens: 32
+  batch_size: 32
   conditions:
     - question_only
     - frozen_graph_history

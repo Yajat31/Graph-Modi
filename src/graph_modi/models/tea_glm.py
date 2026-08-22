@@ -611,6 +611,103 @@ class TEAGLM(_Module):
         completion = generated[0, input_ids.shape[1] :]
         return self.tokenizer.decode(completion, skip_special_tokens=True).strip()
 
+    @staticmethod
+    def _left_pad_embeds(sequences: list[Any], device: Any) -> tuple[Any, Any]:
+        """Left-pad a list of [L_i, D] embedding tensors to [B, L_max, D] plus a
+        matching attention mask. Left-padding keeps every sequence's last real
+        token aligned at the same position, which is what causal-LM `.generate()`
+        expects for a batch of unequal-length prompts."""
+        max_length = max(sequence.shape[0] for sequence in sequences)
+        hidden_dim = sequences[0].shape[-1]
+        batch = torch.zeros(
+            (len(sequences), max_length, hidden_dim),
+            dtype=sequences[0].dtype,
+            device=device,
+        )
+        mask = torch.zeros((len(sequences), max_length), dtype=torch.long, device=device)
+        for index, sequence in enumerate(sequences):
+            length = sequence.shape[0]
+            batch[index, max_length - length :] = sequence
+            mask[index, max_length - length :] = 1
+        return batch, mask
+
+    @torch.no_grad() if torch is not None else (lambda function: function)
+    def generate_batch(
+        self,
+        graphs: Sequence[AttributedGraph | GraphTensor],
+        prompts: Sequence[str],
+        *,
+        max_new_tokens: int = 64,
+        **generation_kwargs: Any,
+    ) -> list[str]:
+        """Batched, graph-conditioned generation. Equivalent to calling
+        ``generate`` once per example, but runs the whole batch through the
+        language model in a single forward pass."""
+        if not graphs or len(graphs) != len(prompts):
+            raise ValueError("graphs and prompts must be non-empty and equally sized")
+        embedding = self.language_model.get_input_embeddings()
+        prefixes = self.graph_prefix(graphs)
+        sequences = []
+        for index, prompt in enumerate(prompts):
+            prompt_ids, _ = self._truncate(self._encode_text(prompt, answer=False), [])
+            prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
+            sequences.append(torch.cat([embedding(prompt_tensor), prefixes[index]], dim=0))
+        inputs_embeds, attention_mask = self._left_pad_embeds(sequences, self.device)
+        with self._lm_autocast():
+            generated = self.language_model.generate(
+                inputs_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                max_new_tokens=max_new_tokens,
+                use_cache=True,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+                **generation_kwargs,
+            )
+        return [self.tokenizer.decode(row, skip_special_tokens=True).strip() for row in generated]
+
+    @torch.no_grad() if torch is not None else (lambda function: function)
+    def generate_text_only_batch(
+        self,
+        prompts: Sequence[str],
+        *,
+        max_new_tokens: int = 64,
+        **generation_kwargs: Any,
+    ) -> list[str]:
+        """Batched text-only generation (no graph tokens). Equivalent to
+        calling ``generate_text_only`` once per prompt, batched into one
+        forward pass."""
+        if not prompts:
+            raise ValueError("prompts must be non-empty")
+        pad_id = int(self.tokenizer.pad_token_id)
+        token_id_lists = [self._truncate(self._encode_text(p, answer=False), [])[0] for p in prompts]
+        max_length = max(len(ids) for ids in token_id_lists)
+        input_ids = torch.full(
+            (len(prompts), max_length), pad_id, dtype=torch.long, device=self.device
+        )
+        attention_mask = torch.zeros(
+            (len(prompts), max_length), dtype=torch.long, device=self.device
+        )
+        for index, ids in enumerate(token_id_lists):
+            length = len(ids)
+            input_ids[index, max_length - length :] = torch.tensor(
+                ids, dtype=torch.long, device=self.device
+            )
+            attention_mask[index, max_length - length :] = 1
+        with self._lm_autocast():
+            generated = self.language_model.generate(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                max_new_tokens=max_new_tokens,
+                use_cache=True,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+                **generation_kwargs,
+            )
+        completions = generated[:, max_length:]
+        return [
+            self.tokenizer.decode(row, skip_special_tokens=True).strip() for row in completions
+        ]
+
 
 def tokenizer_identity(tokenizer: Any) -> dict[str, Any]:
     """Return an exact, serializable tokenizer identity including its vocabulary."""
@@ -835,6 +932,70 @@ class TEAGLMBackend:
         if not isinstance(graph, GraphTensor):
             graph = self.encode(model_input.current_graph)
         return self.model.generate(graph, prompt, max_new_tokens=self.max_new_tokens)
+
+    def predict_edit_batch(
+        self, items: Sequence[tuple[str, AttributedGraph]]
+    ) -> list[Any]:
+        prompts = [
+            f"{self._EDIT_PROMPT_PREFIX}Revision: {utterance}\nEdit:" for utterance, _ in items
+        ]
+        generated = self.model.generate_text_only_batch(prompts, max_new_tokens=self.max_new_tokens)
+        results: list[Any] = []
+        for (_, graph), text in zip(items, generated, strict=True):
+            first_line = text.split("\n", 1)[0].strip()
+            try:
+                results.append(
+                    parse_edit(first_line, {node.label.casefold(): node.id for node in graph.nodes})
+                )
+            except ValueError:
+                results.append(None)
+        return results
+
+    def answer_batch(self, model_inputs: Sequence[ModelInput]) -> list[str | None]:
+        text_only_conditions = {
+            "question_only",
+            "serialized_initial_history",
+            "token_matched_history",
+            "serialized_current_graph",
+        }
+        results: list[str | None] = [None] * len(model_inputs)
+        text_indices: list[int] = []
+        text_prompts: list[str] = []
+        graph_indices: list[int] = []
+        graph_graphs: list[Any] = []
+        graph_prompts: list[str] = []
+        for index, model_input in enumerate(model_inputs):
+            prompt = self.model.config.prompt_template.format(question=model_input.question)
+            graph_once_after_first_turn = (
+                model_input.condition == "graph_once_then_text" and model_input.turn_index > 0
+            )
+            if model_input.condition in text_only_conditions or graph_once_after_first_turn:
+                text_indices.append(index)
+                text_prompts.append(prompt)
+                continue
+            graph = model_input.encoded_graph
+            if not isinstance(graph, GraphTensor):
+                graph = self.encode(model_input.current_graph)
+            graph_indices.append(index)
+            graph_graphs.append(graph)
+            graph_prompts.append(prompt)
+        if text_prompts:
+            for index, output in zip(
+                text_indices,
+                self.model.generate_text_only_batch(text_prompts, max_new_tokens=self.max_new_tokens),
+                strict=True,
+            ):
+                results[index] = output
+        if graph_prompts:
+            for index, output in zip(
+                graph_indices,
+                self.model.generate_batch(
+                    graph_graphs, graph_prompts, max_new_tokens=self.max_new_tokens
+                ),
+                strict=True,
+            ):
+                results[index] = output
+        return results
 
 
 def data_records_sha256(records: Iterable[Mapping[str, Any]]) -> str:
