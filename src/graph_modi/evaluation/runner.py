@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from graph_modi.evaluation.metrics import aggregate_rows, normalize_answer
-from graph_modi.graph.edits import execution_equivalent
+from graph_modi.graph.edits import execution_equivalent_program
 from graph_modi.graph.executor import apply_edit, apply_edit_program, graph_fingerprint
 from graph_modi.graph.serialization import (
     serialize_graph,
@@ -101,9 +101,13 @@ def _advance_round(
         items = [(task.session.turns[round_index].utterance, task.current) for task in chunk]
         predicted_edits = backend.predict_edit_batch(items)
         for task, edit in zip(chunk, predicted_edits, strict=True):
-            gold_edit = task.session.turns[round_index].gold_edit
+            turn = task.session.turns[round_index]
+            gold_edits = turn.gold_edits or (
+                turn.edit_program.edits if turn.edit_program else (turn.gold_edit,)
+            )
+            predicted = edit if isinstance(edit, tuple) else ((edit,) if edit is not None else None)
             task.predicted_edit = edit
-            task.edit_correct = execution_equivalent(edit, gold_edit)
+            task.edit_correct = execution_equivalent_program(predicted, gold_edits)
     else:
         for task in chunk:
             task.predicted_edit = None

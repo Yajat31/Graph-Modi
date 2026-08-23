@@ -15,7 +15,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from graph_modi.graph.edits import parse_edit
+from graph_modi.graph.edits import parse_edit_program
 from graph_modi.models.base import ModelInput
 from graph_modi.schema import AttributedGraph
 
@@ -921,8 +921,9 @@ class TEAGLMBackend:
         return self.model.tensorizer(graph)
 
     _EDIT_PROMPT_PREFIX = (
-        "You maintain a metro graph. Given a one-sentence revision, output exactly "
-        "one edit and nothing else, in one of these formats:\n"
+        "You maintain a metro graph. A revision may describe one or several changes "
+        "at once, separated by \" ; \". Output every edit it describes, each in one "
+        "of these formats, separated by \" ; \", and always finish with END:\n"
         "  SET NODE <station> status open\n"
         "  SET NODE <station> status closed\n"
         "  ADD EDGE <station> <station> transfer\n"
@@ -930,23 +931,46 @@ class TEAGLMBackend:
         "  DEL EDGE <station> <station> transfer\n"
         "  NOOP <reason>\n"
         "Use the station name exactly as it appears in the revision. If the revision "
-        "does not describe any change to the graph, output NOOP with a short reason.\n\n"
+        "does not describe any change to the graph, output NOOP with a short reason. "
+        "Always end your output with END.\n\n"
         "Revision: Elm is closed now.\n"
-        "Edit: SET NODE Elm status closed\n\n"
+        "Edit: SET NODE Elm status closed ; END\n\n"
         "Revision: Service at Oak has resumed.\n"
-        "Edit: SET NODE Oak status open\n\n"
+        "Edit: SET NODE Oak status open ; END\n\n"
         "Revision: Please mark Pine as closed.\n"
-        "Edit: SET NODE Pine status closed\n\n"
+        "Edit: SET NODE Pine status closed ; END\n\n"
         "Revision: ADD EDGE Elm Cedar transfer\n"
-        "Edit: ADD EDGE Elm Cedar transfer\n\n"
+        "Edit: ADD EDGE Elm Cedar transfer ; END\n\n"
         "Revision: DEL EDGE Oak Pine track\n"
-        "Edit: DEL EDGE Oak Pine track\n\n"
+        "Edit: DEL EDGE Oak Pine track ; END\n\n"
         "Revision: NOOP: no graph update this turn.\n"
-        "Edit: NOOP no change mentioned\n\n"
+        "Edit: NOOP no change mentioned ; END\n\n"
+        "Revision: Elm is closed now. ; ADD EDGE Elm Cedar transfer\n"
+        "Edit: SET NODE Elm status closed ; ADD EDGE Elm Cedar transfer ; END\n\n"
+        "Revision: Please mark Pine as closed. ; DEL EDGE Oak Pine track ; Service at Oak has resumed.\n"
+        "Edit: SET NODE Pine status closed ; DEL EDGE Oak Pine track ; SET NODE Oak status open ; END\n\n"
     )
 
+    _EDIT_MAX_NEW_TOKENS = 64
+
+    @staticmethod
+    def _extract_edit_program_text(generated: str) -> str:
+        """Truncate at the first END marker.
+
+        The model has no stop token for this format and will keep rambling
+        into hallucinated "Revision:/Edit:" continuations past the program it
+        actually meant to output; everything after the first END is noise.
+        Falls back to the first line if the model never emits END (matches
+        the old single-edit behavior for malformed output).
+        """
+        upper = generated.upper()
+        end_index = upper.find("END")
+        if end_index != -1:
+            return generated[:end_index]
+        return generated.split("\n", 1)[0]
+
     def predict_edit(self, utterance: str, graph: AttributedGraph) -> Any:
-        """Extract the edit named by a revision sentence.
+        """Extract the ordered edit program named by a revision sentence.
 
         Text-only generation, deliberately not graph-conditioned: the target
         node is always named explicitly in the utterance, so no graph
@@ -958,18 +982,16 @@ class TEAGLMBackend:
         frozen LM and produces incoherent output.
         """
         prompt = f"{self._EDIT_PROMPT_PREFIX}Revision: {utterance}\nEdit:"
-        generated = self.model.generate_text_only(prompt, max_new_tokens=self.max_new_tokens)
-        # The model has no stop token for this format and will keep rambling
-        # into hallucinated "Revision:/Edit:" continuations; only the first
-        # line is ever the actual edit.
-        first_line = generated.split("\n", 1)[0].strip()
+        generated = self.model.generate_text_only(prompt, max_new_tokens=self._EDIT_MAX_NEW_TOKENS)
+        program_text = self._extract_edit_program_text(generated)
         try:
-            return parse_edit(
-                first_line,
+            program = parse_edit_program(
+                program_text,
                 {node.label.casefold(): node.id for node in graph.nodes},
             )
         except ValueError:
             return None
+        return program.edits or None
 
     def answer(self, model_input: ModelInput) -> str | None:
         text_only_conditions = {
@@ -1002,16 +1024,20 @@ class TEAGLMBackend:
         prompts = [
             f"{self._EDIT_PROMPT_PREFIX}Revision: {utterance}\nEdit:" for utterance, _ in items
         ]
-        generated = self.model.generate_text_only_batch(prompts, max_new_tokens=self.max_new_tokens)
+        generated = self.model.generate_text_only_batch(
+            prompts, max_new_tokens=self._EDIT_MAX_NEW_TOKENS
+        )
         results: list[Any] = []
         for (_, graph), text in zip(items, generated, strict=True):
-            first_line = text.split("\n", 1)[0].strip()
+            program_text = self._extract_edit_program_text(text)
             try:
-                results.append(
-                    parse_edit(first_line, {node.label.casefold(): node.id for node in graph.nodes})
+                program = parse_edit_program(
+                    program_text, {node.label.casefold(): node.id for node in graph.nodes}
                 )
             except ValueError:
                 results.append(None)
+                continue
+            results.append(program.edits or None)
         return results
 
     def answer_batch(self, model_inputs: Sequence[ModelInput]) -> list[str | None]:

@@ -33,8 +33,8 @@ class GraphBackend(Protocol):
         self,
         utterance: str,
         graph: AttributedGraph,
-    ) -> GraphEdit | None:
-        """Convert one natural-language revision into a typed edit."""
+    ) -> GraphEdit | tuple[GraphEdit, ...] | None:
+        """Convert one natural-language revision into a typed edit or ordered program."""
 
     def answer(self, model_input: ModelInput) -> str | None:
         """Answer a graph question under an explicit evaluation condition."""
@@ -42,8 +42,8 @@ class GraphBackend(Protocol):
     def predict_edit_batch(
         self,
         items: Sequence[tuple[str, AttributedGraph]],
-    ) -> list[GraphEdit | None]:
-        """Batched ``predict_edit``: one edit per (utterance, graph) pair."""
+    ) -> list[GraphEdit | tuple[GraphEdit, ...] | None]:
+        """Batched ``predict_edit``: one edit or program per (utterance, graph) pair."""
 
     def answer_batch(self, model_inputs: Sequence[ModelInput]) -> list[str | None]:
         """Batched ``answer``: one answer per model input, same order."""
