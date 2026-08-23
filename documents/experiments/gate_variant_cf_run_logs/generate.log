@@ -1,0 +1,119 @@
+[[generate]] phase=dynamic sessions=750
+[[generate]] phase=dynamic step=75/750 elapsed=3s rate=22.96/s eta=29s sessions=75/750
+[[generate]] phase=dynamic step=150/750 elapsed=6s rate=24.35/s eta=25s sessions=150/750
+[[generate]] phase=dynamic step=225/750 elapsed=9s rate=23.87/s eta=22s sessions=225/750
+[[generate]] phase=dynamic step=300/750 elapsed=12s rate=24.14/s eta=19s sessions=300/750
+[[generate]] phase=dynamic step=375/750 elapsed=16s rate=23.50/s eta=16s sessions=375/750
+[[generate]] phase=dynamic step=450/750 elapsed=19s rate=23.82/s eta=13s sessions=450/750
+[[generate]] phase=dynamic step=525/750 elapsed=42s rate=12.37/s eta=18s sessions=525/750
+[[generate]] phase=dynamic step=600/750 elapsed=106s rate=5.68/s eta=26s sessions=600/750
+[[generate]] phase=dynamic step=675/750 elapsed=174s rate=3.88/s eta=19s sessions=675/750
+[[generate]] phase=dynamic step=750/750 elapsed=238s rate=3.16/s eta=0s sessions=750/750
+[[generate]] phase=dynamic step=750/750 elapsed=238s rate=3.16/s
+[[generate]] phase=static graphs=750 tuples_per_graph=9
+[[generate]] phase=static step=75/750 elapsed=0s rate=592.75/s eta=1s graph_i=75/750
+[[generate]] phase=static step=150/750 elapsed=0s rate=582.25/s eta=1s graph_i=150/750
+[[generate]] phase=static step=225/750 elapsed=0s rate=579.07/s eta=1s graph_i=225/750
+[[generate]] phase=static step=300/750 elapsed=1s rate=455.53/s eta=1s graph_i=300/750
+[[generate]] phase=static step=375/750 elapsed=1s rate=427.12/s eta=1s graph_i=375/750
+[[generate]] phase=static step=450/750 elapsed=1s rate=402.86/s eta=1s graph_i=450/750
+[[generate]] phase=static step=525/750 elapsed=1s rate=375.75/s eta=1s graph_i=525/750
+[[generate]] phase=static step=600/750 elapsed=2s rate=364.91/s eta=0s graph_i=600/750
+[[generate]] phase=static step=675/750 elapsed=2s rate=348.03/s eta=0s graph_i=675/750
+[[generate]] phase=static step=750/750 elapsed=2s rate=343.58/s eta=0s graph_i=750/750
+[[generate]] phase=static step=750/750 tuples=6750 elapsed=2s rate=343.57/s
+[[generate]] phase=counterfactual-static graphs=2000 pairs_per_graph=4
+[[generate]] phase=counterfactual-static step=200/2000 elapsed=5s rate=38.08/s eta=47s graph_i=200/2000
+[[generate]] phase=counterfactual-static step=400/2000 elapsed=10s rate=38.10/s eta=42s graph_i=400/2000
+[[generate]] phase=counterfactual-static step=600/2000 elapsed=17s rate=34.85/s eta=40s graph_i=600/2000
+[[generate]] phase=counterfactual-static step=800/2000 elapsed=23s rate=34.97/s eta=34s graph_i=800/2000
+[[generate]] phase=counterfactual-static step=1000/2000 elapsed=28s rate=35.44/s eta=28s graph_i=1000/2000
+[[generate]] phase=counterfactual-static step=1200/2000 elapsed=33s rate=36.04/s eta=22s graph_i=1200/2000
+[[generate]] phase=counterfactual-static step=1400/2000 elapsed=39s rate=35.60/s eta=17s graph_i=1400/2000
+[[generate]] phase=counterfactual-static step=1600/2000 elapsed=45s rate=35.45/s eta=11s graph_i=1600/2000
+[[generate]] phase=counterfactual-static step=1800/2000 elapsed=51s rate=35.17/s eta=6s graph_i=1800/2000
+[[generate]] phase=counterfactual-static step=2000/2000 elapsed=57s rate=34.79/s eta=0s graph_i=2000/2000
+[[generate]] phase=counterfactual-static step=2000/2000 tuples=15992 elapsed=57s rate=34.79/s
+{
+  "validation": {
+    "sessions": 150,
+    "turns": 350,
+    "noop_turns": 125,
+    "valid": true,
+    "failures": [],
+    "operation_distribution": {
+      "NOOP": 125,
+      "DEL": 146,
+      "SET": 164,
+      "ADD": 161
+    },
+    "reasoning_distribution": {
+      "reachability": 174,
+      "edge_exists": 158,
+      "cycle_membership": 18
+    },
+    "answer_distribution": {
+      "yes": 163,
+      "no": 187
+    },
+    "majority_answer_accuracy": 0.5342857142857143,
+    "counterfactual_pairs": 225
+  },
+  "test": {
+    "sessions": 350,
+    "turns": 815,
+    "noop_turns": 301,
+    "valid": true,
+    "failures": [],
+    "operation_distribution": {
+      "NOOP": 301,
+      "ADD": 362,
+      "SET": 353,
+      "DEL": 339
+    },
+    "reasoning_distribution": {
+      "reachability": 396,
+      "edge_exists": 370,
+      "cycle_membership": 49
+    },
+    "answer_distribution": {
+      "yes": 381,
+      "no": 434
+    },
+    "majority_answer_accuracy": 0.5325153374233129,
+    "counterfactual_pairs": 514
+  },
+  "ood": {
+    "sessions": 250,
+    "turns": 2000,
+    "noop_turns": 758,
+    "valid": true,
+    "failures": [],
+    "operation_distribution": {
+      "NOOP": 758,
+      "DEL": 778,
+      "SET": 828,
+      "ADD": 858
+    },
+    "reasoning_distribution": {
+      "reachability": 778,
+      "edge_exists": 1021,
+      "cycle_membership": 201
+    },
+    "answer_distribution": {
+      "yes": 917,
+      "no": 1083
+    },
+    "majority_answer_accuracy": 0.5415,
+    "counterfactual_pairs": 1242
+  },
+  "static_validation": {
+    "tuples": 2250
+  },
+  "static_test": {
+    "tuples": 4500
+  },
+  "static_train": {
+    "tuples": 15992
+  }
+}

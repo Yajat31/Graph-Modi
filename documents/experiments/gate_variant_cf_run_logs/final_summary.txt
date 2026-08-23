@@ -1,0 +1,13 @@
+# Counterfactual gate-variant results
+
+Static gate: TEA overall_accuracy=0.7742222222222223 passed=True
+Static gate: GraphToken overall_accuracy=0.7711111111111111 passed=True
+
+== TEA dynamic eval ==
+  ood: answer-changing-turn acc=0.640 pred-matches-stale=0.360 (n=1237) edit_pred_acc=0.8015
+  test: answer-changing-turn acc=0.757 pred-matches-stale=0.243 (n=514) edit_pred_acc=0.7938650306748466
+  validation: answer-changing-turn acc=0.818 pred-matches-stale=0.182 (n=225) edit_pred_acc=0.7542857142857143
+== GraphToken dynamic eval ==
+  ood: answer-changing-turn acc=0.639 pred-matches-stale=0.361 (n=1237) edit_pred_acc=0.802
+  test: answer-changing-turn acc=0.755 pred-matches-stale=0.245 (n=514) edit_pred_acc=0.7938650306748466
+  validation: answer-changing-turn acc=0.804 pred-matches-stale=0.196 (n=225) edit_pred_acc=0.7371428571428571

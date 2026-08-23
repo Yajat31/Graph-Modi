@@ -490,6 +490,103 @@ def generate_static_corpus(
     return result
 
 
+def generate_counterfactual_static_pairs(
+    *,
+    graph_count: int,
+    pairs_per_graph: int,
+    seed: int,
+    node_count_range: tuple[int, int],
+    topologies: Sequence[TopologyFamily],
+    tasks: Sequence[ReasoningType],
+    split: str,
+    progress: bool = True,
+) -> list[StaticQATuple]:
+    """Counterfactual (before/after-one-edit) static training pairs.
+
+    generate_static_corpus draws every tuple from an independent, freshly
+    sampled graph, so the projector never sees "same entities, graph state
+    changed, answer must track the change" -- exactly the CLEGR-style signal
+    README section 3 calls for. This reuses the dynamic-session edit/query
+    machinery (_sample_edit_program, apply_edit_program, _changed_query) to
+    build that signal directly into static training: for each base graph,
+    sample one edit and find an answer-changing query, then emit a before
+    tuple (stale answer) and an after tuple (updated answer) sharing a
+    pair_id, so both states of the same entities appear in training.
+    """
+    tracker = ProgressTracker("[generate]", graph_count, phase="counterfactual-static", enabled=progress)
+    tracker.banner(graphs=graph_count, pairs_per_graph=pairs_per_graph)
+    tuples: list[StaticQATuple] = []
+    offset = 8_000_000
+    low, high = node_count_range
+    for index in range(graph_count):
+        graph_seed = seed + offset + index
+        rng = random.Random(graph_seed)
+        node_count = rng.randint(low, high)
+        topology = topologies[index % len(topologies)]
+        before = make_graph(rng, split, index, node_count, topology)
+        scale = _scale_bin(node_count, ood=node_count >= 40)
+        for pair_index in range(pairs_per_graph):
+            preferred = tasks[(index + pair_index) % len(tasks)]
+            found: tuple[AttributedGraph, GraphQuery] | None = None
+            for _attempt in range(5):
+                program = _sample_edit_program(before, rng, force_noop=False)
+                result = apply_edit_program(before, program)
+                if not result.applied:
+                    continue
+                after = result.graph
+                query = _changed_query(before, after, preferred, rng, fallback_order=tasks)
+                if query is not None:
+                    found = (after, query)
+                    break
+            if found is None:
+                continue
+            after, query = found
+            before_query = replace(query, question=render_question(query, before))
+            after_query = replace(query, question=render_question(query, after))
+            stale_answer = answer_query(before, before_query)
+            answer = answer_query(after, after_query)
+            pair_id = f"{split}-cf-{index:06d}-{pair_index:02d}"
+            tuples.append(
+                StaticQATuple(
+                    tuple_id=f"{pair_id}-before",
+                    split=split,
+                    graph=before,
+                    query=before_query,
+                    answer=stale_answer,
+                    topology=topology,
+                    density_bin=_density_bin(len(before.nodes), len(before.edges)),
+                    hop_depth=_hop_depth(before_query, before),
+                    scale_bin=scale,
+                    metadata={
+                        "reasoning_type": query.reasoning_type.value,
+                        "counterfactual_role": "before",
+                        "pair_id": pair_id,
+                    },
+                )
+            )
+            tuples.append(
+                StaticQATuple(
+                    tuple_id=f"{pair_id}-after",
+                    split=split,
+                    graph=after,
+                    query=after_query,
+                    answer=answer,
+                    topology=topology,
+                    density_bin=_density_bin(len(after.nodes), len(after.edges)),
+                    hop_depth=_hop_depth(after_query, after),
+                    scale_bin=scale,
+                    metadata={
+                        "reasoning_type": query.reasoning_type.value,
+                        "counterfactual_role": "after",
+                        "pair_id": pair_id,
+                    },
+                )
+            )
+        tracker.tick(graph_i=f"{index + 1}/{graph_count}")
+    tracker.end(tuples=len(tuples))
+    return tuples
+
+
 def generate_dataset_v2(
     *,
     counts: dict[str, int],
@@ -498,6 +595,7 @@ def generate_dataset_v2(
     static_tuples_per_graph: int = 12,
     static_tasks: Sequence[ReasoningType] | None = None,
     dynamic_tasks: Sequence[ReasoningType] | None = None,
+    counterfactual_static_train: bool = False,
     progress: bool = True,
 ) -> tuple[dict[str, list[Session]], dict[str, list[StaticQATuple]]]:
     session_tasks = tuple(dynamic_tasks) if dynamic_tasks else _DYNAMIC_TASKS
@@ -549,19 +647,45 @@ def generate_dataset_v2(
         "validation": 10,
         "test": 20,
     }
-    static = generate_static_corpus(
-        graph_counts=static_counts,
-        tuples_per_graph=static_tuples_per_graph,
-        seed=seed,
-        node_count_ranges={
-            "train": (16, 32),
-            "validation": (16, 32),
-            "test": (16, 48),
-        },
-        topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
-        tasks=static_tasks,
-        progress=progress,
-    )
+    if counterfactual_static_train and static_counts.get("train", 0) > 0:
+        eval_counts = {key: value for key, value in static_counts.items() if key != "train"}
+        static = (
+            generate_static_corpus(
+                graph_counts=eval_counts,
+                tuples_per_graph=static_tuples_per_graph,
+                seed=seed,
+                node_count_ranges={"validation": (16, 32), "test": (16, 48)},
+                topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
+                tasks=static_tasks,
+                progress=progress,
+            )
+            if eval_counts
+            else {}
+        )
+        static["train"] = generate_counterfactual_static_pairs(
+            graph_count=static_counts["train"],
+            pairs_per_graph=max(1, static_tuples_per_graph // 2),
+            seed=seed,
+            node_count_range=(16, 32),
+            topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
+            tasks=tuple(static_tasks) if static_tasks else _STATIC_TASKS,
+            split="train",
+            progress=progress,
+        )
+    else:
+        static = generate_static_corpus(
+            graph_counts=static_counts,
+            tuples_per_graph=static_tuples_per_graph,
+            seed=seed,
+            node_count_ranges={
+                "train": (16, 32),
+                "validation": (16, 32),
+                "test": (16, 48),
+            },
+            topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
+            tasks=static_tasks,
+            progress=progress,
+        )
     return sessions, static
 
 

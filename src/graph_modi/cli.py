@@ -152,6 +152,7 @@ def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str
         static_tuples_per_graph=int(data.get("static_tuples_per_graph", 12)),
         static_tasks=_reasoning_types(data, "static_tasks"),
         dynamic_tasks=_reasoning_types(data, "dynamic_tasks"),
+        counterfactual_static_train=bool(data.get("counterfactual_static_train", False)),
         progress=progress,
     )
     report: dict[str, Any] = {}

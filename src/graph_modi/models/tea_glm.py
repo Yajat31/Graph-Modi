@@ -928,7 +928,9 @@ class TEAGLMBackend:
         "  ADD EDGE <station> <station> transfer\n"
         "  DEL EDGE <station> <station> track\n"
         "  DEL EDGE <station> <station> transfer\n"
-        "Use the station name exactly as it appears in the revision.\n\n"
+        "  NOOP <reason>\n"
+        "Use the station name exactly as it appears in the revision. If the revision "
+        "does not describe any change to the graph, output NOOP with a short reason.\n\n"
         "Revision: Elm is closed now.\n"
         "Edit: SET NODE Elm status closed\n\n"
         "Revision: Service at Oak has resumed.\n"
@@ -939,6 +941,8 @@ class TEAGLMBackend:
         "Edit: ADD EDGE Elm Cedar transfer\n\n"
         "Revision: DEL EDGE Oak Pine track\n"
         "Edit: DEL EDGE Oak Pine track\n\n"
+        "Revision: NOOP: no graph update this turn.\n"
+        "Edit: NOOP no change mentioned\n\n"
     )
 
     def predict_edit(self, utterance: str, graph: AttributedGraph) -> Any:

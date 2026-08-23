@@ -1,0 +1,10 @@
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/291 [00:00<?, ?it/s]Loading weights: 100%|██████████| 291/291 [00:00<00:00, 7969.54it/s]
+[[static-eval]] phase=oracle-qa total=2250 batch_size=96
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+[[static-eval]] phase=oracle-qa step=24/2250 correct=1742 total=2250 elapsed=18s rate=1.32/s
+{
+  "overall_accuracy": 0.7742222222222223,
+  "passed": true,
+  "failing_tasks": []
+}

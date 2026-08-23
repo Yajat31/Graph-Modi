@@ -1,0 +1,74 @@
+seed: 42
+output_dir: outputs/v2_gate_variant_cf_tea
+data_dir: datasets/metro_v2_gate_variant_cf
+
+data:
+  distribution: metro_v2_preliminary
+  train_sessions: 0
+  validation_sessions: 150
+  test_sessions: 350
+  ood_sessions: 250
+  static_train_graphs: 2000
+  static_validation_graphs: 250
+  static_test_graphs: 500
+  static_tuples_per_graph: 9
+  # Same task-balance restriction as configs/v2_gate_variant_tea.yaml (which
+  # passed the static gate at 91.9%/90.6% but showed the projector barely
+  # uses the graph on answer-changing turns: ~30% accuracy, predictions
+  # matching the stale/pre-edit answer ~65-73% of the time). Root cause:
+  # generate_static_corpus trains on independent, freshly-sampled graphs only
+  # -- never a same-entities before/after-one-edit pair -- so the model never
+  # practices tracking a graph-state change. This variant trains on
+  # counterfactual pairs instead (see generate_counterfactual_static_pairs in
+  # data/v2.py), matching CLEGR's methodology / README section 3.
+  static_tasks: [edge_exists, reachability, cycle_membership]
+  dynamic_tasks: [reachability, edge_exists, cycle_membership]
+  counterfactual_static_train: true
+
+model:
+  backend: tea
+  architecture: tea
+  lm_name: /home/arihantr/models/Meta-Llama-3.1-8B-Instruct
+  graph_hidden_size: 4096
+  graph_layers: 8
+  graph_aggregation: sum
+  prefix_tokens: 10
+  projector_num_layers: 1
+  node_feature_size: 12
+  trust_remote_code: false
+  torch_dtype: bfloat16
+  gnn_checkpoint: outputs/v2_gate_variant_cf_tea/gnn/gnn.pt
+
+training:
+  seed: 42
+  gnn_epochs: 20
+  gnn_learning_rate: 0.002
+  gnn_batch_size: 64
+  epochs: 5
+  batch_size: 24
+  learning_rate: 0.0005
+  weight_decay: 0.0001
+  gradient_accumulation_steps: 1
+  mixed_precision: bf16
+  save_every_steps: 500
+  resume_from: null
+
+evaluation:
+  splits: [validation, test, ood]
+  batch_size: 96
+  max_new_tokens: 32
+  conditions:
+    - question_only
+    - frozen_graph_history
+    - graph_once_then_text
+    - shuffled_graph
+    - oracle_updated_graph
+    - cached_no_reencode
+    - predicted_updated_graph
+    - serialized_initial_history
+    - token_matched_history
+    - serialized_current_graph
+    - tool_solver
+    - structure_only
+    - modify_and_print
+    - majority_prior
