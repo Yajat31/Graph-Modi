@@ -149,5 +149,6 @@ Everything above that sentence is framing; that sentence is what has to survive 
 
 ## Relationship to the other extensions
 
+- **[mutable-state.md](mutable-state.md)** — The broader thesis: the model edits its own representation as intermediate reasoning, and the state trajectory `S₀ → S₁ → …` is the chain of thought. Branching Worlds supplies the version-tree mechanism (branch / checkout / discard) that Mutable State uses for simulation and comparison. Branching Worlds asks *where* edits land; Mutable State asks whether edits *are* reasoning.
 - **v1 (task-specific supplementary state)** gives the GLM *derived views* of one world. Branching Worlds gives it *many worlds*. They compose: a branch can carry its own recomputed supplementary state (distances on the hypothetical graph), which is exactly the delivery-network scenario from v1 turned counterfactual ("if road A–B closed, which warehouse *would* serve X?").
 - **v2** (in progress) — to be reconciled once drafted; the version-tree mechanism is agnostic to what lives at each node of the tree, so it should sit cleanly alongside.
