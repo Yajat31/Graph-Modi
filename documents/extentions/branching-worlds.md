@@ -1,7 +1,5 @@
 # Branching Worlds: The Write Path as a Simulator
 
-*(extension proposal — successor slot after v2, given its own name to avoid collision)*
-
 ## The one-sentence idea
 
 GraphModi built a write path so the graph can track reality; this extension asks what happens when the model uses that same write path to **imagine** — answering "what if?" questions by actually editing a *branch* of the graph, re-encoding it, and reasoning over the simulated world instead of a remembered or imagined one.
@@ -29,6 +27,8 @@ If our interim result holds — that GLMs can't simulate a graph change in-conte
 That is the leap: **the edit loop is not just a state-synchronization mechanism, it is a world simulator the model can query.**
 
 ---
+
+
 
 ## The mechanism: a version tree of worlds
 
@@ -81,27 +81,34 @@ The GLM proposes candidate edits, each spawns a branch, each branch is scored by
 
 ---
 
+
+
 ## Grounding: what exists, what doesn't (checked against 2024–2026 literature)
 
 We ran a literature sweep on each pillar. Honest summary:
 
 **Counterfactual QA over graphs — adjacent, gap is real.**
+
 - *CFKGR / COULDD* (EACL 2024) does counterfactual reasoning over KGs with hypothetical edits — but symbolically/textually, no graph encoder in the loop.
 - The knowledge-editing line (*MQuAKE*, *GMeLLo*) established that explicitly applying an edit beats asking the model to imagine it — which **supports our premise** but in parametric/text settings, not GLM soft-prompt settings.
 - Nobody applies a speculative edit to a branch of a GLM's input graph and re-encodes it through the GNN. That mechanism is ours.
 
 **Branching / versioned world state — the concept is saturated, the substrate is not.**
+
 - Git-like context and world-state management for LLM agents already exists (*Git-Context-Controller* and several 2025–2026 event-graph systems). Fork-based counterfactual querying is done symbolically.
 - No prior work versions the *input graph of a GNN-fused GLM* and re-encodes alternative versions through the encoder. The novelty claim must be stated at the encoder level, not the "git for worlds" level.
 - Validity support is strong: RAP-style explicit rollouts beat in-context imagination; GPT-4-as-world-simulator studies document exactly the state-tracking failures we exploit.
 
 **The mandatory baselines (these decide whether the paper stands):**
+
 1. **Textualized-edited-graph baseline.** Apply the hypothetical edit, but serialize the edited graph as text instead of re-encoding. If this matches branch-re-encoding, the GNN path isn't earning its keep. The premise is known to hold for multi-hop questions on larger graphs and *not* necessarily for single edits on tiny in-context graphs — so the dataset must include compositional hypotheticals ("what if B closed *and* a new A–E line opened?") and graphs big enough that serialization degrades.
 2. **Symbolic replay baseline.** A non-neural system that applies the edit and runs the solver will get 100% on solver-computable questions. So the evaluation must include questions that need the *language* side (attribute-laden, fuzzy, or preference questions over the branch) where a pure solver has no answer — otherwise a reviewer correctly asks why a GLM is involved at all.
 
 **Verdict across all three sweeps: adjacent with a gap** — nothing here is already done, but each pillar has close neighbors that dictate exactly how narrowly we must aim.
 
 ---
+
+
 
 ## Why this is the right extension for *this* project
 
@@ -112,6 +119,8 @@ We ran a literature sweep on each pillar. Honest summary:
 5. **It upgrades the story.** GraphModi: "GLMs need a write path to stay grounded." Branching Worlds: "once a GLM has a write path, it has a simulator — and simulation, memory, and planning are all the same loop pointed at different versions of the graph."
 
 ---
+
+
 
 ## Experiment ladder (no code yet — this is the plan)
 
@@ -129,6 +138,8 @@ Small action sets (choose 1 of k closures), branch-per-candidate, GLM-evaluated 
 
 ---
 
+
+
 ## A flagged frontier (explicitly not the core): the graph as working memory
 
 There is a seductive further step: let the model write *annotations* into a scratch branch as it reasons — mark nodes visited, eliminated, candidate — so chain-of-thought becomes a trajectory in graph-edit space that the GNN re-encodes each step.
@@ -139,6 +150,8 @@ So we keep it as a frontier section with a kill-switch experiment: write gold an
 
 ---
 
+
+
 ## The narrowest defensible claim (for the eventual paper)
 
 > The first system in which a graph language model answers counterfactual, retrospective, and planning questions by maintaining a versioned tree of its own input graph — applying self-emitted, schema-checked edits to speculative branches and re-encoding each branch through the graph encoder — with evidence that this simulation-by-editing beats both in-context imagination and textualized-edited-graph prompting on compositional hypotheticals.
@@ -147,8 +160,11 @@ Everything above that sentence is framing; that sentence is what has to survive 
 
 ---
 
+
+
 ## Relationship to the other extensions
 
 - **[mutable-state.md](mutable-state.md)** — The broader thesis: the model edits its own representation as intermediate reasoning, and the state trajectory `S₀ → S₁ → …` is the chain of thought. Branching Worlds supplies the version-tree mechanism (branch / checkout / discard) that Mutable State uses for simulation and comparison. Branching Worlds asks *where* edits land; Mutable State asks whether edits *are* reasoning.
 - **v1 (task-specific supplementary state)** gives the GLM *derived views* of one world. Branching Worlds gives it *many worlds*. They compose: a branch can carry its own recomputed supplementary state (distances on the hypothetical graph), which is exactly the delivery-network scenario from v1 turned counterfactual ("if road A–B closed, which warehouse *would* serve X?").
 - **v2** (in progress) — to be reconciled once drafted; the version-tree mechanism is agnostic to what lives at each node of the tree, so it should sit cleanly alongside.
+
