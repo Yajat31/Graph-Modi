@@ -1,0 +1,175 @@
+\documentclass[11pt]{article}
+
+\usepackage[final]{acl}
+\usepackage{times}
+\renewcommand{\ttdefault}{lmtt}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\title{Contradiction-Aware Editing in Multi-Turn Settings\\for Graph Language Models}
+
+\author{
+Arihant Rastogi \\ 2023111012 \And
+Prasoon Dev \\ 2023111014 \And
+Yajat Lakhanpal \\ 2023111015 \And
+Hrishiraj Mitra \\ 2023111037
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Graph Language Models (GLMs) condition answers on an input graph $G$, which
+existing work treats as fixed. That breaks once the setting is conversational: if
+a user revises a fact in language, the encoder still reads the old graph. We do
+not propose a new architecture; we wrap an existing GLM in a loop that emits a
+small edit, applies it to $G$, and re-encodes before the next question. Multi-turn
+revision then produces a failure that loop cannot handle: a later utterance
+incompatible with an edit already committed. We define such a contradiction as
+unsatisfiability of the active constraint set, localize the earlier edit
+responsible, and ask which revision to keep rather than preferring the newest. We
+will evaluate on synthetic sessions where the gold resolution is deliberately
+\emph{not} the most recent revision.
+\end{abstract}
+
+\section{Introduction}
+
+A GLM answers questions from an input graph $G$, usually as a single pair
+$(G, q)$. In a conversation a user may correct a fact: the language model sees
+the correction, but the graph encoder still reads the original $G$, so later
+answers can be grounded in a stale graph.
+
+\citet{plenz-frank-2024-graph} introduced GLMs so structure and text are encoded
+together. \citet{he-2024-gretriever} describe a conversational interface, but
+GraphQA is still single-shot. TEA-GLM \citep{wang-2024-teaglm}, GraphToken
+\citep{perozzi-2024-graphtoken}, and CLEGR \citep{petkar-2026-clegr} likewise
+treat $G$ as fixed, and agentic graph token reasoning
+\citep{peng-yang-2026-agentic} only re-chooses a view of it. GraphRAG keeps state
+in an external store and SKG-Eval \citep{shil-samui-2026-skgeval} scores dialogue
+against a parallel KG, but graph tokens sit inside the forward pass: neither
+mutates the tensors the GNN encodes.
+
+Edits are also cumulative: turn three applies to $G_2$, never to the original
+graph. That introduces a second failure, because revision dialogue routinely
+produces a later utterance that \emph{cannot} sit on top of an earlier one. If
+turn~2 closes station~B and turn~5 puts through-service on the B--C line, turn~5
+is neither a no-op nor a clean reversal, yet a write path with no notion of
+conflict silently takes the newer edit and drops the closure. We propose a write
+path that knows when a revision contradicts an earlier one, and asks.
+
+\section{What Counts as a Contradiction}
+
+``Contradiction'' is overloaded. We take it from belief revision and ontology
+debugging, where a sentence set is inconsistent when it has no model, and ground
+it on the graph. Let each revision $r$ denote constraints
+$I(r)$ over attributed graphs --- the implied state of the edit, not the wording
+of the utterance --- let $\mathrm{Inv}$ be the stated invariants (schema plus task
+invariants such as connectivity or mutual exclusion), and let $R_{\mathrm{act}}$
+be the revisions not yet superseded, so that
+$T = \bigcup_{r \in R_{\mathrm{act}}} I(r) \cup \mathrm{Inv}$. A \emph{conflict}
+holds iff $T$ has no model, and the \emph{culprit set} is a minimal
+unsatisfiable subset of $T$. A conflict is a \textbf{contradiction} while no
+culprit has been retired, and a \textbf{revision} if the user intends the new $r$
+to supersede some $r_j$ in the culprit set.
+
+This makes the DECODE judgment \citep{nie-2021-decode} decidable, and it is
+inter-context conflict \citep{xu-2024-knowledge} with committed edits in place of
+retrieved passages; localization corresponds to DECODE's
+evidence indices, as in ontology debugging
+\citep{shchekotykhin-2012-interactive}. Crucially, unsatisfiability is the
+conflict, but whether it is a contradiction to surface or a revision to absorb
+depends on which constraints remain \emph{active}, which is derivable neither
+from $G$ nor from recency. That is what we propose to ask. Three cases arise:
+\textbf{invariant violations}, caught by the schema check; \textbf{silent
+incompatibilities}, solver-decidable given $\mathrm{Inv}$; and \textbf{intent
+conflicts}, valid graphs that still cannot both be what the user meant.
+
+\section{Method}
+
+A GLM forward pass cannot rewrite $G$ inside the GNN, so we wrap an existing model
+(G-Retriever, GraphToken, or TEA-GLM) in an outer loop. On each turn we prompt the
+GLM with the current graph and $u_t$ to emit an edit $\Delta$, parse it (illegal
+edits become no-ops), apply it with a schema-checked function, then re-encode $G$
+and answer $q_t$.
+
+The model has no tools. It already emits text, and we restrict that text to four
+operations: \texttt{SET} a node attribute, \texttt{ADD} an edge, \texttt{DEL} an
+edge, or \texttt{NOOP}. Two calls, same weights, and the QA prompt is only
+$(G, q_t)$ --- the revision utterance is withheld, so if QA succeeds the fact is
+genuinely in the graph. Constrained decoding or light LoRA is a fallback only if
+writing the edit is the bottleneck. Skipping re-encoding makes this GraphRAG: it
+is a GLM method only if the apply step precedes the next GNN forward pass.
+
+Around this loop we add four stages. \textbf{Detect}: a conflict gate before
+commit, using the schema check for invariant violations and a tentative apply plus
+invariant test for silent ones. \textbf{Attribute}: on a conflict at turn $k$,
+replay $G_0 \ldots G_{k-1}$ and isolate the minimal earlier edit set that makes
+$u_k$ unsatisfiable --- a decision procedure over a typed log, not a learned
+component. \textbf{Ask}: one discriminating question naming that edit.
+\textbf{Repair}: retire the loser, replay the later edits that still apply, and
+re-encode.
+
+Detection and localization are machinery, not the contribution: every strategy we
+know of resolves by recency, instruction-tuned models prefer the latest
+instruction \citep{zhang-2025-iheval}, and models detect conflicting instructions
+yet rarely disclose them \citep{he-2026-coninstruct}. Asking earns its place on
+items where \textbf{recency is wrong} and the earlier edit should be preserved.
+
+\section{Dataset}
+
+Items come from a synthetic graph in the style of CLEGR: a fictional metro with
+invented station names and attributes, so parametric memory cannot skip $G$. The
+generator samples a graph $G_0$ of 15 to 30 nodes with
+attributes such as open or closed, and two paths between a query pair so that
+closing a node changes the answer. It fixes an executable query --- say the
+shortest path through open stations --- samples \texttt{SET},
+\texttt{ADD}, and \texttt{DEL} operations that change that answer, and verbalizes
+each as an utterance. Gold answers come from a solver. We discard an item if the
+question is answerable without the graph, if the utterance plus question recover
+the answer, or if $G_0$ already yields the new answer.
+
+For contradictions the generator must stop drawing every edit from the current
+graph. To plant a conflict at turn $k$ against turn $j < k$, we sample the later
+edit from an ancestor state $G_{j-1}$, so it is coherent alone but incompatible
+with what the log has committed. Each item carries the
+conflicting turn index, the gold culprit set, the intended graph, the stated
+invariant where needed, and a \texttt{keep\_decision} in $\{$earlier, later,
+amend$\}$. Gold answers stay solver-computable \emph{after} the decision: replay
+the repaired log and solve on the intended graph. Only \texttt{keep\_decision} is
+planted rather than derived, the one label neither the graph nor the log supplies;
+simulated user replies come from it, so no human is needed at evaluation. The \textbf{recency-wrong subset} is the items where
+\texttt{keep\_decision} is not \emph{later}; without it the rest is not worth
+generating.
+
+\section{Evaluation}
+
+A frozen graph should keep the old answer after a revision; if it does not, the
+item is too easy. Applying the gold edit and re-encoding, then asking $q_t$ with
+no revision text, checks the GLM can read an updated graph; if prompting the
+revision in text over a frozen $G_0$ matches that oracle, rewriting $G$ is
+unnecessary. We compare the self-edit loop against a GraphRAG-style baseline that
+never re-encodes.
+
+We add four contradiction baselines, reported even where they should win. A
+\textbf{symbolic solver} over the edit log replays, checks invariants, and
+enumerates culprit sets, and should be near-exact on the first two cases; we
+include it to make clear we claim neither detection nor localization as a result. A
+\textbf{transcript-only LLM} reads a frozen graph plus the history;
+\textbf{last-write-wins} commits the newest edit and fails by construction on the
+recency-wrong subset; \textbf{oracle attribution} supplies the true culprit set,
+so if accuracy does not move, localization is not the bottleneck. Beyond exact
+match and edit correctness we report detection, localization, questions asked, and
+post-repair state exactness against the intended graph, and that exactness on the
+recency-wrong subset --- the decisive number. One risk: if contradictions are
+imperceptible through graph tokens, detection falls to the symbolic gate; we will
+probe this with an oracle-injected violation.
+
+\bibliography{custom}
+
+\end{document}

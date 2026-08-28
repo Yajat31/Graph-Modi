@@ -1,0 +1,64 @@
+\begin{thebibliography}{12}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{He et~al.(2024)He, Tian, Sun, Chawla, Laurent, LeCun, Bresson, and Hooi}]{he-2024-gretriever}
+Xiaoxin He, Yijun Tian, Yifei Sun, Nitesh~V. Chawla, Thomas Laurent, Yann LeCun, Xavier Bresson, and Bryan Hooi. 2024.
+\newblock {G}-{R}etriever: Retrieval-augmented generation for textual graph understanding and question answering.
+\newblock In \emph{Advances in Neural Information Processing Systems}.
+
+\bibitem[{He et~al.(2025)He, Zhang, Jin, Ma, Yuan, and Yiu}]{he-2026-coninstruct}
+Xingwei He, Qianru Zhang, A-Long Jin, Yuan Ma, Zhenghao Yuan, and Siu~Ming Yiu. 2025.
+\newblock \href {https://arxiv.org/abs/2511.14342} {{C}on{I}nstruct: Evaluating large language models on conflict detection and resolution in instructions}.
+\newblock \emph{Preprint}, arXiv:2511.14342.
+
+\bibitem[{Nie et~al.(2021)Nie, Williamson, Bansal, Kiela, and Weston}]{nie-2021-decode}
+Yixin Nie, Mary Williamson, Mohit Bansal, Douwe Kiela, and Jason Weston. 2021.
+\newblock I like fish, especially dolphins: Addressing contradictions in dialogue modeling.
+\newblock In \emph{Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing (Volume 1: Long Papers)}, pages 1699--1713. Association for Computational Linguistics.
+
+\bibitem[{Peng and Yang(2026)}]{peng-yang-2026-agentic}
+Zhuoyi Peng and Yi~Yang. 2026.
+\newblock \href {https://arxiv.org/abs/2608.00542} {Agentic graph token reasoning}.
+\newblock \emph{Preprint}, arXiv:2608.00542.
+
+\bibitem[{Perozzi et~al.(2024)Perozzi, Fatemi, Zelle, Tsitsulin, Kazemi, Al-Rfou, and Halcrow}]{perozzi-2024-graphtoken}
+Bryan Perozzi, Bahare Fatemi, Dustin Zelle, Anton Tsitsulin, Mehran Kazemi, Rami Al-Rfou, and Jonathan Halcrow. 2024.
+\newblock \href {https://arxiv.org/abs/2402.05862} {Let your graph do the talking: Encoding structured data for {LLM}s}.
+\newblock \emph{Preprint}, arXiv:2402.05862.
+
+\bibitem[{Petkar et~al.(2026)Petkar, Aakash~K, Vempati, Sinha, Kumaraguru, and Agarwal}]{petkar-2026-clegr}
+Soham Petkar, Hari Aakash~K, Anirudh Vempati, Akshit Sinha, Ponnurangam Kumaraguru, and Chirag Agarwal. 2026.
+\newblock A graph talks, but who's listening? rethinking evaluations for graph-language models.
+\newblock In \emph{Findings of the Association for Computational Linguistics: ACL 2026}, pages 32441--32462, San Diego, California, United States. Association for Computational Linguistics.
+
+\bibitem[{Plenz and Frank(2024)}]{plenz-frank-2024-graph}
+Moritz Plenz and Anette Frank. 2024.
+\newblock Graph language models.
+\newblock In \emph{Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)}, pages 4477--4494, Bangkok, Thailand. Association for Computational Linguistics.
+
+\bibitem[{Shchekotykhin et~al.(2012)Shchekotykhin, Friedrich, Fleiss, and Rodler}]{shchekotykhin-2012-interactive}
+Kostyantyn Shchekotykhin, Gerhard Friedrich, Philipp Fleiss, and Patrick Rodler. 2012.
+\newblock Interactive ontology debugging: Two query strategies for efficient fault localization.
+\newblock \emph{Journal of Web Semantics}, 12--13:88--103.
+
+\bibitem[{Shil and Samui(2026)}]{shil-samui-2026-skgeval}
+Avijit Shil and Suman Samui. 2026.
+\newblock \href {https://arxiv.org/abs/2605.16650} {{SKG}-{E}val: Stateful evaluation of multi-turn dialogue via incremental semantic knowledge graphs}.
+\newblock \emph{Preprint}, arXiv:2605.16650.
+
+\bibitem[{Wang et~al.(2024)Wang, Zuo, Li, and Wu}]{wang-2024-teaglm}
+Duo Wang, Yuan Zuo, Fengzhi Li, and Junjie Wu. 2024.
+\newblock {LLM}s as zero-shot graph learners: Alignment of {GNN} representations with {LLM} token embeddings.
+\newblock In \emph{Advances in Neural Information Processing Systems}.
+
+\bibitem[{Xu et~al.(2024)Xu, Qi, Guo, Wang, Wang, Zhang, and Xu}]{xu-2024-knowledge}
+Rongwu Xu, Zehan Qi, Zhijiang Guo, Cunxiang Wang, Hongru Wang, Yue Zhang, and Wei Xu. 2024.
+\newblock Knowledge conflicts for {LLM}s: A survey.
+\newblock In \emph{Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing}, pages 8541--8565, Miami, Florida, USA. Association for Computational Linguistics.
+
+\bibitem[{Zhang et~al.(2025)Zhang, Li, Zhang, Liu, Jiang, Tang, Gao, Li, Wang, Tan, Li, Yin, Yin, and Jiang}]{zhang-2025-iheval}
+Zhihan Zhang, Shiyang Li, Zixuan Zhang, Xin Liu, Haoming Jiang, Xianfeng Tang, Yifan Gao, Zheng Li, Haodong Wang, Zhaoxuan Tan, Yichuan Li, Qingyu Yin, Bing Yin, and Meng Jiang. 2025.
+\newblock {IHE}val: Evaluating language models on following the instruction hierarchy.
+\newblock In \emph{Proceedings of the 2025 Conference of the Nations of the Americas Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers)}, pages 8374--8398. Association for Computational Linguistics.
+
+\end{thebibliography}
