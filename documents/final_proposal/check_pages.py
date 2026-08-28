@@ -28,10 +28,14 @@ def main() -> int:
     WORK.mkdir(exist_ok=True)
     for name in ("acl.sty", "acl_natbib.bst", "custom.bib"):
         shutil.copy(HERE / name, WORK / name)
-    tex = (HERE / "final_proposal.tex").read_text().replace(
-        "\\begin{document}",
-        "\\pdfcompresslevel=0\n\\pdfobjcompresslevel=0\n\\begin{document}",
-        1,
+    tex = (
+        (HERE / "final_proposal.tex")
+        .read_text()
+        .replace(
+            "\\begin{document}",
+            "\\pdfcompresslevel=0\n\\pdfobjcompresslevel=0\n\\begin{document}",
+            1,
+        )
     )
     (WORK / "m.tex").write_text(tex)
     subprocess.run(
@@ -41,8 +45,7 @@ def main() -> int:
     )
     pdf = (WORK / "m.pdf").read_bytes()
     streams = sorted(
-        (m.start(), m.group(1))
-        for m in re.finditer(rb"stream\r?\n(.*?)endstream", pdf, re.S)
+        (m.start(), m.group(1)) for m in re.finditer(rb"stream\r?\n(.*?)endstream", pdf, re.S)
     )
     pages = [ls for ls in (show_text_lines(s) for _, s in streams) if len(ls) > 5]
 
