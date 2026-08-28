@@ -52,7 +52,7 @@ def main() -> int:
         return 0
 
     third = pages[2]
-    ref_at = next((i for i, l in enumerate(third) if "References" in l), None)
+    ref_at = next((i for i, line in enumerate(third) if "References" in line), None)
     if ref_at is None:
         print(f"FAIL: {len(third)} body lines on page 3, no References heading")
         return 1
