@@ -1,0 +1,60 @@
+seed: 42
+output_dir: outputs/v2_gate_variant_cf_factorial_graphtoken
+data_dir: datasets/metro_v2_gate_variant_cf_factorial
+
+data:
+  distribution: metro_v2_preliminary
+  dynamic_only: true
+  session_layout: factorial
+  sessions_per_cell:
+    validation: 2
+    test: 20
+  train_sessions: 0
+  ood_sessions: 0
+  static_tasks: [edge_exists, reachability, cycle_membership]
+  dynamic_tasks: [reachability, edge_exists, cycle_membership]
+  counterfactual_static_train: true
+
+model:
+  backend: tea
+  architecture: graph_token
+  lm_name: /home/arihantr/models/Meta-Llama-3.1-8B-Instruct
+  graph_hidden_size: 4096
+  graph_layers: 8
+  graph_aggregation: sum
+  prefix_tokens: 10
+  projector_num_layers: 1
+  node_feature_size: 12
+  trust_remote_code: false
+  torch_dtype: bfloat16
+  gnn_checkpoint: outputs/v2_gate_variant_cf_tea/gnn/gnn.pt
+  checkpoint: outputs/v2_gate_variant_cf_graphtoken/projector/checkpoint-final
+
+training:
+  seed: 42
+  epochs: 5
+  batch_size: 24
+  learning_rate: 0.0005
+  weight_decay: 0.0001
+  gradient_accumulation_steps: 1
+  mixed_precision: bf16
+
+evaluation:
+  splits: [validation, test]
+  batch_size: 96
+  max_new_tokens: 32
+  conditions:
+    - question_only
+    - frozen_graph_history
+    - graph_once_then_text
+    - shuffled_graph
+    - oracle_updated_graph
+    - cached_no_reencode
+    - predicted_updated_graph
+    - serialized_initial_history
+    - token_matched_history
+    - serialized_current_graph
+    - tool_solver
+    - structure_only
+    - modify_and_print
+    - majority_prior

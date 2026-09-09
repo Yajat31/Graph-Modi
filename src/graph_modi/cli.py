@@ -23,6 +23,7 @@ from graph_modi.data.multiturn import (
 from graph_modi.data.v2 import (
     DISTRIBUTION_V2,
     generate_dataset_v2,
+    generate_factorial_sessions,
     load_static_tuples,
     save_static_tuples,
 )
@@ -134,43 +135,100 @@ def _reasoning_types(data: dict[str, Any], key: str) -> list[ReasoningType] | No
 
 def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str, Any]:
     data = config.section("data")
-    counts = {
-        "train": int(data.get("train_sessions", 0)),
-        "validation": int(data.get("validation_sessions", 0)),
-        "test": int(data.get("test_sessions", 0)),
-        "ood": int(data.get("ood_sessions", 0)),
-    }
-    counts = {key: value for key, value in counts.items() if value > 0}
-    sessions, static = generate_dataset_v2(
-        counts=counts,
-        seed=config.seed,
-        static_graph_counts={
-            "train": int(data.get("static_train_graphs", 80)),
-            "validation": int(data.get("static_validation_graphs", 10)),
-            "test": int(data.get("static_test_graphs", 20)),
-        },
-        static_tuples_per_graph=int(data.get("static_tuples_per_graph", 12)),
-        static_tasks=_reasoning_types(data, "static_tasks"),
-        dynamic_tasks=_reasoning_types(data, "dynamic_tasks"),
-        counterfactual_static_train=bool(data.get("counterfactual_static_train", False)),
-        progress=progress,
-    )
+    dynamic_only = bool(data.get("dynamic_only", False))
+    session_layout = str(data.get("session_layout", "default"))
+    dynamic_tasks = _reasoning_types(data, "dynamic_tasks")
+
+    if session_layout == "factorial":
+        per_cell_cfg = data.get("sessions_per_cell", {})
+        if not isinstance(per_cell_cfg, dict) or not per_cell_cfg:
+            raise ValueError(
+                "data.session_layout=factorial requires data.sessions_per_cell "
+                "mapping (e.g. {validation: 2, test: 20})"
+            )
+        sessions = generate_factorial_sessions(
+            sessions_per_cell={str(key): int(value) for key, value in per_cell_cfg.items()},
+            seed=config.seed,
+            dynamic_tasks=dynamic_tasks,
+            progress=progress,
+        )
+        static: dict[str, list[StaticQATuple]] = {}
+    else:
+        counts = {
+            "train": int(data.get("train_sessions", 0)),
+            "validation": int(data.get("validation_sessions", 0)),
+            "test": int(data.get("test_sessions", 0)),
+            "ood": int(data.get("ood_sessions", 0)),
+        }
+        counts = {key: value for key, value in counts.items() if value > 0}
+        if dynamic_only:
+            sessions, static = generate_dataset_v2(
+                counts=counts,
+                seed=config.seed,
+                static_graph_counts={},
+                static_tuples_per_graph=int(data.get("static_tuples_per_graph", 12)),
+                static_tasks=_reasoning_types(data, "static_tasks"),
+                dynamic_tasks=dynamic_tasks,
+                counterfactual_static_train=False,
+                progress=progress,
+            )
+        else:
+            sessions, static = generate_dataset_v2(
+                counts=counts,
+                seed=config.seed,
+                static_graph_counts={
+                    "train": int(data.get("static_train_graphs", 80)),
+                    "validation": int(data.get("static_validation_graphs", 10)),
+                    "test": int(data.get("static_test_graphs", 20)),
+                },
+                static_tuples_per_graph=int(data.get("static_tuples_per_graph", 12)),
+                static_tasks=_reasoning_types(data, "static_tasks"),
+                dynamic_tasks=dynamic_tasks,
+                counterfactual_static_train=bool(data.get("counterfactual_static_train", False)),
+                progress=progress,
+            )
+
     report: dict[str, Any] = {}
+    if dynamic_only and _audit_path(config).exists():
+        try:
+            report = json.loads(_audit_path(config).read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            report = {}
+
     for split, split_sessions in sessions.items():
         save_sessions(_data_path(config, split), split_sessions)
         report[split] = audit_sessions(split_sessions, allow_noop=True)
         if not report[split]["valid"]:
             raise RuntimeError(f"Generated invalid {split} data: {report[split]['failures'][:5]}")
-    for split, tuples in static.items():
-        save_static_tuples(_static_path(config, split), tuples)
-        report[f"static_{split}"] = {"tuples": len(tuples)}
+        report[split]["session_layout"] = session_layout
+
+    if not dynamic_only:
+        for split, tuples in static.items():
+            save_static_tuples(_static_path(config, split), tuples)
+            report[f"static_{split}"] = {"tuples": len(tuples)}
+    else:
+        # Preserve static audit entries; refresh tuple counts from files if present.
+        for split in ("train", "validation", "test"):
+            path = _static_path(config, split)
+            if path.exists():
+                report[f"static_{split}"] = {"tuples": sum(1 for _ in path.open(encoding="utf-8"))}
+
+    # Drop empty ood key noise when unused.
+    if int(data.get("ood_sessions", 0)) == 0 and "ood" not in sessions:
+        report.pop("ood", None)
+
     _write_json(_audit_path(config), report)
     _experiment_log(
         config,
-        {"phase": "generate-v2", "report": report, "distribution": DISTRIBUTION_V2},
+        {
+            "phase": "generate-v2",
+            "report": {key: (value if key.startswith("static_") else {"sessions": value.get("sessions"), "turns": value.get("turns"), "valid": value.get("valid")}) for key, value in report.items()},
+            "distribution": DISTRIBUTION_V2,
+            "session_layout": session_layout,
+            "dynamic_only": dynamic_only,
+        },
     )
     return report
-
 
 def _ensure_data(config: ExperimentConfig) -> None:
     if not _data_path(config, "test").exists():

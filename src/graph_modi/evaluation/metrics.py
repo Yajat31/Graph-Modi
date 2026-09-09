@@ -82,3 +82,75 @@ def aggregate_rows(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
             ),
         }
     return report
+
+
+def stratified_accuracy(
+    rows: list[dict[str, Any]],
+    *,
+    stratum_key: str,
+) -> dict[str, dict[str, Any]]:
+    """CLEGR-style per-stratum answer accuracy with Wilson CIs.
+
+    ``rows`` must already carry the stratum field (joined from session metadata).
+    """
+    buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        if stratum_key not in row or row[stratum_key] is None:
+            continue
+        buckets[str(row[stratum_key])].append(row)
+    out: dict[str, dict[str, Any]] = {}
+    for label, bucket in sorted(buckets.items(), key=lambda item: item[0]):
+        successes = sum(bool(row.get("answer_correct")) for row in bucket)
+        total = len(bucket)
+        out[label] = {
+            "n": total,
+            "answer_accuracy": successes / max(1, total),
+            "answer_accuracy_ci95": list(wilson_interval(successes, total)),
+            "stale_rate": (
+                sum(bool(row.get("stale")) for row in bucket if row.get("stale") is not None)
+                / max(1, sum(row.get("stale") is not None for row in bucket))
+            ),
+            "execution_equivalent_edit_accuracy": (
+                sum(bool(row.get("edit_correct")) for row in bucket if row.get("edit_correct") is not None)
+                / max(1, sum(row.get("edit_correct") is not None for row in bucket))
+            ),
+        }
+    return out
+
+
+def paired_accuracy_delta(
+    left_rows: list[dict[str, Any]],
+    right_rows: list[dict[str, Any]],
+    *,
+    key_fields: tuple[str, ...] = ("session_id", "turn_index"),
+) -> dict[str, Any]:
+    """Mean paired Δ (left − right) on aligned turns, with Wilson-free summary."""
+    right_map = {
+        tuple(row[field] for field in key_fields): row
+        for row in right_rows
+    }
+    deltas: list[float] = []
+    wins = loses = ties = 0
+    for row in left_rows:
+        key = tuple(row[field] for field in key_fields)
+        other = right_map.get(key)
+        if other is None:
+            continue
+        left_ok = bool(row.get("answer_correct"))
+        right_ok = bool(other.get("answer_correct"))
+        deltas.append(float(left_ok) - float(right_ok))
+        if left_ok and not right_ok:
+            wins += 1
+        elif right_ok and not left_ok:
+            loses += 1
+        else:
+            ties += 1
+    n = len(deltas)
+    mean = sum(deltas) / max(1, n)
+    return {
+        "n": n,
+        "mean_delta": mean,
+        "wins": wins,
+        "loses": loses,
+        "ties": ties,
+    }

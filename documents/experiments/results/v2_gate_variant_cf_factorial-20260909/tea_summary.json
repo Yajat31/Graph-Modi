@@ -1,0 +1,430 @@
+{
+  "test": {
+    "summary": {
+      "cached_no_reencode": {
+        "answer_accuracy": 0.54,
+        "answer_accuracy_ci95": [
+          0.5073368503750609,
+          0.572323125443711
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.5416666666666666,
+        "mean_input_tokens": 49.04222222222222,
+        "mean_latency_seconds": 0.03988603434214989,
+        "sessions": 240,
+        "stale_rate": 0.4955555555555556,
+        "turns": 900
+      },
+      "frozen_graph_history": {
+        "answer_accuracy": 0.5344444444444445,
+        "answer_accuracy_ci95": [
+          0.5017779843120074,
+          0.5668181059763795
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.525,
+        "mean_input_tokens": 49.04222222222222,
+        "mean_latency_seconds": 0.04088898233551946,
+        "sessions": 240,
+        "stale_rate": 0.49777777777777776,
+        "turns": 900
+      },
+      "graph_once_then_text": {
+        "answer_accuracy": 0.49444444444444446,
+        "answer_accuracy_ci95": [
+          0.46187288977499286,
+          0.5270632246946221
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.5208333333333334,
+        "mean_input_tokens": 49.04222222222222,
+        "mean_latency_seconds": 0.03960353950762914,
+        "sessions": 240,
+        "stale_rate": 0.37444444444444447,
+        "turns": 900
+      },
+      "majority_prior": {
+        "answer_accuracy": 0.3888888888888889,
+        "answer_accuracy_ci95": [
+          0.3575755233491925,
+          0.42114676604310797
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.3958333333333333,
+        "mean_input_tokens": 12.713333333333333,
+        "mean_latency_seconds": 9.093231107625696e-05,
+        "sessions": 240,
+        "stale_rate": 1.0,
+        "turns": 900
+      },
+      "modify_and_print": {
+        "answer_accuracy": 0.5488888888888889,
+        "answer_accuracy_ci95": [
+          0.5162394564716077,
+          0.58112273619578
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.55,
+        "mean_input_tokens": 272.87666666666667,
+        "mean_latency_seconds": 0.07586102038104502,
+        "sessions": 240,
+        "stale_rate": 0.4955555555555556,
+        "turns": 900
+      },
+      "oracle_updated_graph": {
+        "answer_accuracy": 0.5944444444444444,
+        "answer_accuracy_ci95": [
+          0.5620301381110384,
+          0.6260559159055061
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.5958333333333333,
+        "mean_input_tokens": 12.713333333333333,
+        "mean_latency_seconds": 0.00841564328616692,
+        "sessions": 240,
+        "stale_rate": 0.4855555555555556,
+        "turns": 900
+      },
+      "predicted_updated_graph": {
+        "answer_accuracy": 0.6033333333333334,
+        "answer_accuracy_ci95": [
+          0.5709976673200075,
+          0.6347906035451532
+        ],
+        "exact_graph_state": 0.9655555555555555,
+        "execution_equivalent_edit_accuracy": 0.9777777777777777,
+        "final_state_accuracy": 0.5916666666666667,
+        "mean_input_tokens": 12.713333333333333,
+        "mean_latency_seconds": 0.12900278726489178,
+        "sessions": 240,
+        "stale_rate": 0.4777777777777778,
+        "turns": 900
+      },
+      "question_only": {
+        "answer_accuracy": 0.4477777777777778,
+        "answer_accuracy_ci95": [
+          0.41558009001007745,
+          0.4804193860043037
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.4666666666666667,
+        "mean_input_tokens": 12.713333333333333,
+        "mean_latency_seconds": 0.019548621035905347,
+        "sessions": 240,
+        "stale_rate": 0.5388888888888889,
+        "turns": 900
+      },
+      "serialized_current_graph": {
+        "answer_accuracy": 0.41333333333333333,
+        "answer_accuracy_ci95": [
+          0.3815958248244221,
+          0.44580756090157225
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.425,
+        "mean_input_tokens": 236.54777777777778,
+        "mean_latency_seconds": 0.0727744130541881,
+        "sessions": 240,
+        "stale_rate": 0.45111111111111113,
+        "turns": 900
+      },
+      "serialized_initial_history": {
+        "answer_accuracy": 0.49666666666666665,
+        "answer_accuracy_ci95": [
+          0.46408438451148676,
+          0.5292772841702821
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.45416666666666666,
+        "mean_input_tokens": 272.8433333333333,
+        "mean_latency_seconds": 0.07290735832622482,
+        "sessions": 240,
+        "stale_rate": 0.37666666666666665,
+        "turns": 900
+      },
+      "shuffled_graph": {
+        "answer_accuracy": 0.47555555555555556,
+        "answer_accuracy_ci95": [
+          0.4431010938587564,
+          0.5082178098075496
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.4875,
+        "mean_input_tokens": 12.713333333333333,
+        "mean_latency_seconds": 0.008187674573726125,
+        "sessions": 240,
+        "stale_rate": 0.46555555555555556,
+        "turns": 900
+      },
+      "structure_only": {
+        "answer_accuracy": 0.5211111111111111,
+        "answer_accuracy_ci95": [
+          0.4884531564730724,
+          0.5535896085423905
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.5208333333333334,
+        "mean_input_tokens": 12.713333333333333,
+        "mean_latency_seconds": 0.008020562124955985,
+        "sessions": 240,
+        "stale_rate": 0.5566666666666666,
+        "turns": 900
+      },
+      "token_matched_history": {
+        "answer_accuracy": 0.4955555555555556,
+        "answer_accuracy_ci95": [
+          0.46297855698893314,
+          0.5281703345867588
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.475,
+        "mean_input_tokens": 46.473333333333336,
+        "mean_latency_seconds": 0.040037858760398295,
+        "sessions": 240,
+        "stale_rate": 0.37444444444444447,
+        "turns": 900
+      },
+      "tool_solver": {
+        "answer_accuracy": 1.0,
+        "answer_accuracy_ci95": [
+          0.9957496977346473,
+          0.9999999999999999
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 1.0,
+        "mean_input_tokens": 12.713333333333333,
+        "mean_latency_seconds": 0.00013020372535619472,
+        "sessions": 240,
+        "stale_rate": 0.3888888888888889,
+        "turns": 900
+      }
+    }
+  },
+  "validation": {
+    "summary": {
+      "cached_no_reencode": {
+        "answer_accuracy": 0.5444444444444444,
+        "answer_accuracy_ci95": [
+          0.4418444949284148,
+          0.6434055434341024
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.625,
+        "mean_input_tokens": 48.98888888888889,
+        "mean_latency_seconds": 0.07764997046647801,
+        "sessions": 24,
+        "stale_rate": 0.5333333333333333,
+        "turns": 90
+      },
+      "frozen_graph_history": {
+        "answer_accuracy": 0.5,
+        "answer_accuracy_ci95": [
+          0.39883544540986604,
+          0.601164554590134
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.5833333333333334,
+        "mean_input_tokens": 48.98888888888889,
+        "mean_latency_seconds": 0.08861969866686398,
+        "sessions": 24,
+        "stale_rate": 0.5222222222222223,
+        "turns": 90
+      },
+      "graph_once_then_text": {
+        "answer_accuracy": 0.4777777777777778,
+        "answer_accuracy_ci95": [
+          0.37761880660358116,
+          0.5797561742151601
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.5,
+        "mean_input_tokens": 48.98888888888889,
+        "mean_latency_seconds": 0.09353307455571161,
+        "sessions": 24,
+        "stale_rate": 0.34444444444444444,
+        "turns": 90
+      },
+      "majority_prior": {
+        "answer_accuracy": 0.34444444444444444,
+        "answer_accuracy_ci95": [
+          0.2544576592146297,
+          0.44716720651655983
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.3333333333333333,
+        "mean_input_tokens": 12.7,
+        "mean_latency_seconds": 4.813276852170626e-05,
+        "sessions": 24,
+        "stale_rate": 1.0,
+        "turns": 90
+      },
+      "modify_and_print": {
+        "answer_accuracy": 0.5555555555555556,
+        "answer_accuracy_ci95": [
+          0.4527174112548652,
+          0.6538451366982815
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.6666666666666666,
+        "mean_input_tokens": 194.96666666666667,
+        "mean_latency_seconds": 0.129962130708413,
+        "sessions": 24,
+        "stale_rate": 0.5555555555555556,
+        "turns": 90
+      },
+      "oracle_updated_graph": {
+        "answer_accuracy": 0.6444444444444445,
+        "answer_accuracy_ci95": [
+          0.54149980634835,
+          0.7355628183298311
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.7083333333333334,
+        "mean_input_tokens": 12.7,
+        "mean_latency_seconds": 0.011462778494589859,
+        "sessions": 24,
+        "stale_rate": 0.43333333333333335,
+        "turns": 90
+      },
+      "predicted_updated_graph": {
+        "answer_accuracy": 0.6444444444444445,
+        "answer_accuracy_ci95": [
+          0.54149980634835,
+          0.7355628183298311
+        ],
+        "exact_graph_state": 0.8888888888888888,
+        "execution_equivalent_edit_accuracy": 0.9444444444444444,
+        "final_state_accuracy": 0.75,
+        "mean_input_tokens": 12.7,
+        "mean_latency_seconds": 0.24133280840598875,
+        "sessions": 24,
+        "stale_rate": 0.4222222222222222,
+        "turns": 90
+      },
+      "question_only": {
+        "answer_accuracy": 0.45555555555555555,
+        "answer_accuracy_ci95": [
+          0.3565944565658975,
+          0.5581555050715851
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.625,
+        "mean_input_tokens": 12.7,
+        "mean_latency_seconds": 0.08441792894154787,
+        "sessions": 24,
+        "stale_rate": 0.5666666666666667,
+        "turns": 90
+      },
+      "serialized_current_graph": {
+        "answer_accuracy": 0.5222222222222223,
+        "answer_accuracy_ci95": [
+          0.4202438257848399,
+          0.6223811933964188
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.4583333333333333,
+        "mean_input_tokens": 158.67777777777778,
+        "mean_latency_seconds": 0.12650471322445406,
+        "sessions": 24,
+        "stale_rate": 0.4444444444444444,
+        "turns": 90
+      },
+      "serialized_initial_history": {
+        "answer_accuracy": 0.4777777777777778,
+        "answer_accuracy_ci95": [
+          0.37761880660358116,
+          0.5797561742151601
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.4583333333333333,
+        "mean_input_tokens": 194.33333333333334,
+        "mean_latency_seconds": 0.12635184338109362,
+        "sessions": 24,
+        "stale_rate": 0.5,
+        "turns": 90
+      },
+      "shuffled_graph": {
+        "answer_accuracy": 0.5666666666666667,
+        "answer_accuracy_ci95": [
+          0.4636391101764269,
+          0.664235947367349
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.5,
+        "mean_input_tokens": 12.7,
+        "mean_latency_seconds": 0.01393772071848313,
+        "sessions": 24,
+        "stale_rate": 0.4111111111111111,
+        "turns": 90
+      },
+      "structure_only": {
+        "answer_accuracy": 0.5333333333333333,
+        "answer_accuracy_ci95": [
+          0.4310200470971506,
+          0.6329174816747374
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.5833333333333334,
+        "mean_input_tokens": 12.7,
+        "mean_latency_seconds": 0.01066253548488021,
+        "sessions": 24,
+        "stale_rate": 0.5666666666666667,
+        "turns": 90
+      },
+      "token_matched_history": {
+        "answer_accuracy": 0.5333333333333333,
+        "answer_accuracy_ci95": [
+          0.4310200470971506,
+          0.6329174816747374
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.7083333333333334,
+        "mean_input_tokens": 46.2,
+        "mean_latency_seconds": 0.0967435363576644,
+        "sessions": 24,
+        "stale_rate": 0.32222222222222224,
+        "turns": 90
+      },
+      "tool_solver": {
+        "answer_accuracy": 1.0,
+        "answer_accuracy_ci95": [
+          0.9590629315783191,
+          0.9999999999999999
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 1.0,
+        "mean_input_tokens": 12.7,
+        "mean_latency_seconds": 7.376822953422865e-05,
+        "sessions": 24,
+        "stale_rate": 0.34444444444444444,
+        "turns": 90
+      }
+    }
+  }
+}

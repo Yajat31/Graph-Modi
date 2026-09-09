@@ -3,7 +3,7 @@
 **Date:** 2026-08-23
 **Run ID:** `v2_gate_variant_cf-20260823`
 **Supersedes (for interpretation, not reproducibility):** [`v2_gate_variant_tea/graphtoken`](../../../../outputs/v2_gate_variant_tea/) (task-balance-only variant) and the full-task-mix run (`v2_full_tea/graphtoken`) — both are kept on disk as documented, labeled baselines; this is the current best result.
-**Configs:** [`configs/v2_gate_variant_cf_tea.yaml`](../../../../configs/v2_gate_variant_cf_tea.yaml), [`configs/v2_gate_variant_cf_graphtoken.yaml`](../../../../configs/v2_gate_variant_cf_graphtoken.yaml)
+**Configs:** [`configs/v2_gate_variant_cf_tea.yaml`](../../../../configs/v2_gate_variant_cf_tea.yaml), [`configs/v2_gate_variant_cf_graphtoken.yaml`](../../../../configs/v2_gate_variant_cf_graphtoken.yaml), [`configs/v2_gate_variant_cf_soft_prompt.yaml`](../../../../configs/v2_gate_variant_cf_soft_prompt.yaml) (text-only admission-test baseline, same corpus)
 **Pipeline logs:** [`documents/experiments/gate_variant_cf_run_logs/`](../../gate_variant_cf_run_logs/) (`STATUS.txt`, per-stage logs, `final_summary.json` — training/static-eval only; the multi-op re-evaluation below ran after that log was written)
 **Git:** uncommitted at time of writing — `src/graph_modi/data/v2.py`, `src/graph_modi/data/multiturn.py`, `src/graph_modi/models/tea_glm.py`, `src/graph_modi/models/base.py`, `src/graph_modi/evaluation/runner.py`, `src/graph_modi/cli.py`
 
@@ -27,10 +27,12 @@ Task-balance restriction: `static_tasks`/`dynamic_tasks: [edge_exists, reachabil
 
 ### Static oracle-QA gate (i.i.d. validation, unaffected by any of the three fixes above)
 
-| | TEA | GraphToken |
-|---|---|---|
-| Overall accuracy | 77.4% | 77.1% |
-| Gate (≥70%, no task <50%) | ✅ Passed | ✅ Passed |
+| | TEA | GraphToken | `soft_prompt` (text-only, no topology) |
+|---|---|---|---|
+| Overall accuracy | 77.4% | 77.1% | 48.9% |
+| Gate (≥70%, no task <50%) | ✅ Passed | ✅ Passed | ❌ Failed (`cycle_membership`, `reachability` <50%) |
+
+`soft_prompt` is a fourth checkpoint — the README §5/CLEGR-style admission-test baseline: one learned `10 × d_model` soft-prompt matrix, frozen Llama-3.1-8B, **no GNN, no projector, no topology channel at all** (`models/soft_prompt.py`) — trained on the identical counterfactual-training corpus as TEA/GraphToken so it's directly comparable. Failing the gate here is the *expected, correct* result: it demonstrates the static-QA gate genuinely requires graph-grounding rather than being solvable from question text alone.
 
 ### Coarse: dynamic-eval answer accuracy, turn-weighted average across validation+test+ood (n=3165 turns/condition)
 
@@ -38,6 +40,7 @@ Task-balance restriction: `static_tasks`/`dynamic_tasks: [edge_exists, reachabil
 |---|---|---|
 | `question_only` (no graph) | 46.8% | 46.8% |
 | `majority_prior` (guess stale answer) | 37.6% | 37.6% |
+| `soft_prompt` (text/history only, no topology; own checkpoint) | 53.5% | 53.5% |
 | `shuffled_graph` (wrong graph) | 49.0% | 50.5% |
 | `structure_only` (topology, no semantics) | 49.3% | 48.1% |
 | `serialized_current_graph` (text-only graph) | 40.3% | 39.2% |
@@ -51,6 +54,8 @@ Task-balance restriction: `static_tasks`/`dynamic_tasks: [edge_exists, reachabil
 | **Edit-prediction accuracy** | **96.4%** | **96.4%** |
 
 **Oracle − GraphModi gap: 1.1pp (TEA) / 1.8pp (GraphToken)** — down from ~7.5pp before the multi-op fix, and ~23pp before the counterfactual-training fix (see "How we got here" below).
+
+**Multimodal gain** (README §3: `full GLM − max(text-only, structure-only)`) — using `soft_prompt` (53.5%) as the text-only channel and `structure_only` (49.3%/48.1%) as the structure-only channel, the stronger of the two is `soft_prompt` at 53.5%: **oracle multimodal gain = 70.1% − 53.5% = 16.6pp (TEA) / 71.2% − 53.5% = 17.7pp (GraphToken)**. Both are single-checkpoint conditions except `soft_prompt`, which is a genuinely separate trained model (own checkpoint, same corpus) rather than a condition toggle on the TEA/GraphToken backend — see the caveat below on why that distinction matters for this specific number.
 
 ### Per-split breakdown: answer accuracy [95% CI], edit accuracy
 
@@ -91,6 +96,12 @@ Task-balance restriction: `static_tasks`/`dynamic_tasks: [edge_exists, reachabil
 | `modify_and_print` | 0.417 [0.367,0.469] | 0.382 [0.349,0.415] | 0.412 [0.390,0.433] |
 | `majority_prior` | 0.357 [0.309,0.409] | 0.369 [0.337,0.403] | 0.382 [0.360,0.403] |
 | `tool_solver` | 1.000 [0.989,1.000] | 1.000 [0.995,1.000] | 1.000 [0.998,1.000] |
+
+**`soft_prompt` baseline** (own checkpoint, `configs/v2_gate_variant_cf_soft_prompt.yaml`, same corpus)
+
+| Split | Validation (n=350) | Test (n=815) | OOD (n=2000) |
+|---|---|---|---|
+| `soft_prompt` | 0.529 [0.476,0.580] | 0.497 [0.463,0.531] | 0.552 [0.530,0.573] |
 
 ### Fine-grained: stratified by the dataset's built-in complexity buckets
 
@@ -195,8 +206,9 @@ Before the multi-op fix these were 59.2%/58.5% (2-op) and 43.4%/43.7% (3-op) —
 
 1. Oracle-current-graph QA passes the static capability threshold (77.4%/77.1% ≥ 70%, no task <50%). ✅
 2. `oracle_updated_graph` clearly separates from `question_only` (+23-24pp) and `majority_prior` (+32-34pp) — the dynamic-update hypothesis has a fair, positive test. ✅
-3. `predicted_updated_graph` (GraphModi, full pipeline) beats stale-graph and graph-once baselines on paired sessions (69-69.4% vs 40-51% for stale-family conditions). ✅
-4. Oracle-GraphModi gap (1.1-1.8pp coarse) is now almost entirely attributable to batched-decoding noise, not edit-prediction failure (96.4% accurate) or graph-reasoning capability — report oracle and GraphModi as statistically near-equivalent, per README §7.4.
+3. Both modality-admission tests pass: the trained `soft_prompt` (text-only) baseline fails the static gate outright (48.9% vs. the 70% threshold, `cycle_membership`/`reachability` <50%), and the full GLMs beat the stronger unimodal channel by a real margin — multimodal gain of +16.6pp (TEA) / +17.7pp (GraphToken) over `soft_prompt`, the stronger of the text-only/structure-only pair. ✅
+4. `predicted_updated_graph` (GraphModi, full pipeline) beats stale-graph and graph-once baselines on paired sessions (69-69.4% vs 40-51% for stale-family conditions). ✅
+5. Oracle-GraphModi gap (1.1-1.8pp coarse) is now almost entirely attributable to batched-decoding noise, not edit-prediction failure (96.4% accurate) or graph-reasoning capability — report oracle and GraphModi as statistically near-equivalent, per README §7.4.
 
 **Caveats:**
 - This remains a **narrowed task mix** (3 binary/near-binary reasoning types: `edge_exists`, `reachability`, `cycle_membership`), a deliberate, labeled diagnostic isolating the dynamic-update mechanism from the separate numeric-reasoning capability gap documented in the full-task-mix run — not a replacement for that harder, more representative benchmark.
@@ -205,3 +217,4 @@ Before the multi-op fix these were 59.2%/58.5% (2-op) and 43.4%/43.7% (3-op) —
 - The validation→ood accuracy gap (both oracle and predicted, ~80%→~65-67%) is confounded with scale-OOD and turn_count in this dataset (8-turn sessions are exactly the OOD-scale ones) — not yet possible to separate "harder because longer" from "harder because bigger graph."
 - `oracle_updated_graph`/`predicted_updated_graph` accuracy oscillates by turn_index (dips at turns 1 and 4, consistent in both architectures) rather than decaying smoothly — not yet explained.
 - The residual oracle-GraphModi gap is dominated by batched bf16 generation non-determinism, a known property of this codebase's batched inference — not something further edit-prediction or training work is likely to close.
+- **`soft_prompt` is a separately trained checkpoint**, not a condition toggle on the TEA/GraphToken backend (`SoftPromptGLM` has no GNN/projector at all — a different model architecture, per README §5). The multimodal-gain figure above therefore compares across three distinct trained models (TEA, GraphToken, soft-prompt), not three conditions of one model — a slightly different (and arguably more honest, since soft-prompt genuinely can't see the graph under any condition) framing than README §3's original same-model condition-ablation design.
