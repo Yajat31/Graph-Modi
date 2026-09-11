@@ -70,23 +70,45 @@ def test_factorial_sessions_cross_scale_and_turns() -> None:
     assert "medium" in all_densities
 
 
-def test_target_density_hits_bin() -> None:
-    import random
+def test_exact_uniform_sessions_grid() -> None:
+    from collections import Counter
 
-    from graph_modi.data.v2 import make_graph, _graph_density
-    from graph_modi.schema import DensityBin, TopologyFamily
+    from graph_modi.data.v2 import generate_exact_uniform_sessions
+    from graph_modi.schema import ReasoningType
 
-    rng = random.Random(0)
-    for target in DensityBin:
-        graph = make_graph(
-            rng,
-            "test",
-            0,
-            40,
-            TopologyFamily.WATTS_STROGATZ,
-            target_density=target,
-        )
-        assert _graph_density(graph) is target, (target, _graph_density(graph), len(graph.edges))
+    sessions = generate_exact_uniform_sessions(
+        replicates_per_split={"validation": 1},
+        seed=3,
+        dynamic_tasks=[
+            ReasoningType.EDGE_EXISTS,
+            ReasoningType.REACHABILITY,
+            ReasoningType.CYCLE_MEMBERSHIP,
+        ],
+        progress=False,
+    )
+    assert len(sessions["validation"]) == 26 * 4 * 3 * 3
+    report = audit_sessions(sessions["validation"], allow_noop=True)
+    assert report["valid"], report["failures"][:3]
+
+    cells = Counter()
+    n_by_bin: dict[str, Counter] = {"scale_small": Counter(), "scale_medium": Counter(), "scale_large": Counter()}
+    for session in sessions["validation"]:
+        types = {turn.query.reasoning_type.value for turn in session.turns}
+        assert len(types) == 1
+        t0 = session.turns[0]
+        cells[t0.complexity["factorial_cell"]] += 1
+        n = len(session.initial_graph.nodes)
+        n_by_bin[t0.complexity["scale_bin"]][n] += 1
+        assert t0.complexity["session_length"] == len(session.turns)
+    assert len(cells) == 26 * 4 * 3 * 3
+    assert all(v == 1 for v in cells.values())
+    assert len(n_by_bin["scale_small"]) == 9
+    assert len(n_by_bin["scale_medium"]) == 8
+    assert len(n_by_bin["scale_large"]) == 9
+    # each exact n appears equally often within a bin (4 lengths × 3 dens × 3 tasks = 36)
+    assert set(n_by_bin["scale_small"].values()) == {36}
+    assert set(n_by_bin["scale_medium"].values()) == {36}
+    assert set(n_by_bin["scale_large"].values()) == {36}
 
 
 def test_progress_tracker_emits(monkeypatch) -> None:

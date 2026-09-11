@@ -1,0 +1,40 @@
+{
+  "test": {
+    "summary": {
+      "soft_prompt": {
+        "answer_accuracy": 0.5042735042735043,
+        "answer_accuracy_ci95": [
+          0.48773707033547153,
+          0.5208005939690321
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.5064102564102564,
+        "mean_input_tokens": 47.91994301994302,
+        "mean_latency_seconds": 0.017120376620388608,
+        "sessions": 936,
+        "stale_rate": 0.4897435897435897,
+        "turns": 3510
+      }
+    }
+  },
+  "validation": {
+    "summary": {
+      "soft_prompt": {
+        "answer_accuracy": 0.4928774928774929,
+        "answer_accuracy_ci95": [
+          0.4763545903512055,
+          0.5094159691412886
+        ],
+        "exact_graph_state": 1.0,
+        "execution_equivalent_edit_accuracy": 0.0,
+        "final_state_accuracy": 0.5,
+        "mean_input_tokens": 47.37321937321937,
+        "mean_latency_seconds": 0.0169742899920335,
+        "sessions": 936,
+        "stale_rate": 0.48547008547008547,
+        "turns": 3510
+      }
+    }
+  }
+}

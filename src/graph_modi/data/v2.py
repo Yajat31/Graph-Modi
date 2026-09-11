@@ -806,6 +806,86 @@ def generate_factorial_sessions(
     return sessions
 
 
+def _exact_uniform_node_counts() -> list[tuple[str, int]]:
+    """(scale_bin, exact n) pairs with flat coverage inside each bin."""
+    pairs: list[tuple[str, int]] = []
+    for scale_name, (low, high) in _FACTORIAL_SCALES.items():
+        for node_count in range(low, high + 1):
+            pairs.append((scale_name, node_count))
+    return pairs
+
+
+def generate_exact_uniform_sessions(
+    *,
+    replicates_per_split: dict[str, int],
+    seed: int,
+    dynamic_tasks: Sequence[ReasoningType] | None = None,
+    progress: bool = True,
+) -> dict[str, list[Session]]:
+    """Cross exact n × session_length × density × task with fixed task per session.
+
+    Each split gets ``replicates`` full passes over the grid. Within a scale bin,
+    every integer node count appears equally often.
+    """
+    tasks = tuple(dynamic_tasks) if dynamic_tasks else (
+        ReasoningType.EDGE_EXISTS,
+        ReasoningType.REACHABILITY,
+        ReasoningType.CYCLE_MEMBERSHIP,
+    )
+    node_pairs = _exact_uniform_node_counts()
+    cells = [
+        (scale_name, node_count, turn_count, density, task)
+        for scale_name, node_count in node_pairs
+        for turn_count in _FACTORIAL_TURNS
+        for density in _FACTORIAL_DENSITIES
+        for task in tasks
+    ]
+    total = sum(int(count) * len(cells) for count in replicates_per_split.values() if int(count) > 0)
+    tracker = ProgressTracker("[generate]", total, phase="exact-uniform-dynamic", enabled=progress)
+    tracker.banner(sessions=total, cells=len(cells))
+    split_offsets = {"train": 0, "validation": 1_000_000, "test": 2_000_000, "ood": 3_000_000}
+    sessions: dict[str, list[Session]] = {}
+    done = 0
+    for split, replicates in replicates_per_split.items():
+        replicates = int(replicates)
+        if replicates <= 0:
+            continue
+        offset = split_offsets.get(split, 4_000_000)
+        split_sessions: list[Session] = []
+        index = 0
+        for replicate in range(replicates):
+            for scale_name, node_count, turn_count, density, task in cells:
+                session_seed = seed + offset + index
+                cell_id = (
+                    f"{scale_name}|n{node_count}|turns_{turn_count}|"
+                    f"{density.value}|{task.value}"
+                )
+                split_sessions.append(
+                    generate_session_v2(
+                        split=split,
+                        index=index,
+                        seed=session_seed,
+                        node_count=node_count,
+                        turn_count=turn_count,
+                        topology=TopologyFamily.WATTS_STROGATZ,
+                        reasoning_types=(task,),
+                        ood=scale_name == "scale_large",
+                        scale_bin=scale_name,
+                        target_density=density,
+                        factorial_cell=cell_id,
+                        fallback_tasks=(task,),
+                    )
+                )
+                index += 1
+                done += 1
+                tracker.tick(sessions=f"{done}/{total}", cell=cell_id)
+        sessions[split] = split_sessions
+    tracker.end()
+    if sessions:
+        assert_disjoint_splits({key: value for key, value in sessions.items() if key != "ood"})
+    return sessions
+
+
 def generate_dataset_v2(
     *,
     counts: dict[str, int],

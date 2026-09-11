@@ -23,6 +23,7 @@ from graph_modi.data.multiturn import (
 from graph_modi.data.v2 import (
     DISTRIBUTION_V2,
     generate_dataset_v2,
+    generate_exact_uniform_sessions,
     generate_factorial_sessions,
     load_static_tuples,
     save_static_tuples,
@@ -153,6 +154,29 @@ def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str
             progress=progress,
         )
         static: dict[str, list[StaticQATuple]] = {}
+    elif session_layout == "exact_uniform":
+        eu_cfg = data.get("exact_uniform", {})
+        if not isinstance(eu_cfg, dict):
+            raise ValueError("data.exact_uniform must be a mapping")
+        replicates = {
+            "validation": int(eu_cfg.get("validation_replicates", 0)),
+            "test": int(eu_cfg.get("test_replicates", 0)),
+            "train": int(eu_cfg.get("train_replicates", 0)),
+            "ood": int(eu_cfg.get("ood_replicates", 0)),
+        }
+        replicates = {key: value for key, value in replicates.items() if value > 0}
+        if not replicates:
+            raise ValueError(
+                "data.session_layout=exact_uniform requires at least one of "
+                "exact_uniform.{validation,test}_replicates > 0"
+            )
+        sessions = generate_exact_uniform_sessions(
+            replicates_per_split=replicates,
+            seed=config.seed,
+            dynamic_tasks=dynamic_tasks,
+            progress=progress,
+        )
+        static = {}
     else:
         counts = {
             "train": int(data.get("train_sessions", 0)),
