@@ -27,23 +27,18 @@ OUT = {
 FIG_DIR = ROOT / "documents" / "experiments" / "figures"
 RESULT_DIR = ROOT / "documents" / "experiments" / "results" / "v2_gate_variant_cf_exact2x-20260911"
 
-FOCUS = [
+# Hero set for story figures: floor → stale → method → ceiling.
+HERO = [
     "question_only",
-    "majority_prior",
-    "structure_only",
-    "shuffled_graph",
-    "frozen_graph_history",
+    "soft_prompt",
     "graph_once_then_text",
-    "cached_no_reencode",
-    "serialized_current_graph",
-    "serialized_initial_history",
-    "token_matched_history",
-    "modify_and_print",
-    "oracle_updated_graph",
+    "frozen_graph_history",
     "predicted_updated_graph",
+    "oracle_updated_graph",
 ]
-# soft_prompt is a separate checkpoint; included in overall / trend overlays.
-KEY_CONDITIONS = FOCUS + ["soft_prompt"]
+# GLM-backed hero conditions (soft_prompt is a separate checkpoint).
+FOCUS = [c for c in HERO if c != "soft_prompt"]
+KEY_CONDITIONS = list(HERO)
 SPLIT_ORDER = ["validation", "test"]
 SCALE_ORDER = ["scale_small", "scale_medium", "scale_large"]
 TURN_ORDER = [1, 2, 4, 8]
@@ -52,19 +47,11 @@ REASON_ORDER = ["edge_exists", "reachability", "cycle_membership"]
 
 CONDITION_COLORS = {
     "question_only": "#9b2226",
-    "majority_prior": "#ae2012",
     "soft_prompt": "#bb3e03",
-    "structure_only": "#ca6702",
-    "shuffled_graph": "#ee9b00",
-    "frozen_graph_history": "#e9d8a6",
     "graph_once_then_text": "#94d2bd",
-    "cached_no_reencode": "#0a9396",
-    "serialized_current_graph": "#005f73",
-    "serialized_initial_history": "#001219",
-    "token_matched_history": "#3d405b",
-    "modify_and_print": "#81b29a",
-    "oracle_updated_graph": "#2a9d8f",
+    "frozen_graph_history": "#ca6702",
     "predicted_updated_graph": "#264653",
+    "oracle_updated_graph": "#2a9d8f",
 }
 
 
@@ -168,13 +155,10 @@ def plot_conditions_overall(joined: pd.DataFrame, soft: pd.DataFrame) -> None:
     sp = soft.copy()
     sp_acc = _acc_table(sp, ["condition"])
     sp_acc["model"] = "soft_prompt"
-    order = list(FOCUS)
-    if "majority_prior" in order:
-        idx = order.index("majority_prior") + 1
-        order = order[:idx] + ["soft_prompt"] + order[idx:]
+    order = list(HERO)
     plot_df = pd.concat([tea_gt, sp_acc], ignore_index=True)
     plot_df = plot_df[plot_df["condition"].isin(order)]
-    plt.figure(figsize=(14, 5.8))
+    plt.figure(figsize=(10, 5.2))
     ax = sns.barplot(
         data=plot_df,
         x="condition",
@@ -189,8 +173,8 @@ def plot_conditions_overall(joined: pd.DataFrame, soft: pd.DataFrame) -> None:
     ax.set_ylim(0, 1.05)
     ax.set_ylabel("Answer accuracy (turn-weighted)")
     ax.set_xlabel("")
-    ax.set_title("Exact2x dynamic eval: condition accuracy (validation+test; no tool_solver)")
-    ax.tick_params(axis="x", rotation=55)
+    ax.set_title("Exact2x dynamic eval: hero conditions (validation+test)")
+    ax.tick_params(axis="x", rotation=35)
     for label in ax.get_xticklabels():
         label.set_ha("right")
     ax.legend(title="", fontsize=9)
@@ -202,13 +186,10 @@ def plot_conditions_by_split(joined: pd.DataFrame, soft: pd.DataFrame) -> None:
     sp = soft.copy()
     sp["model"] = "soft_prompt"
     combined = pd.concat([glm, sp], ignore_index=True)
-    order = list(FOCUS)
-    if "majority_prior" in order:
-        idx = order.index("majority_prior") + 1
-        order = order[:idx] + ["soft_prompt"] + order[idx:]
+    order = list(HERO)
     tab = _acc_table(combined, ["model", "split", "condition"])
     models = ["TEA", "GraphToken", "soft_prompt"]
-    fig, axes = plt.subplots(1, 3, figsize=(16, 7.5), sharey=True)
+    fig, axes = plt.subplots(1, 3, figsize=(14, 5.5), sharey=True)
     for ax, model in zip(axes, models):
         mdf = tab[tab["model"] == model].pivot(index="condition", columns="split", values="accuracy")
         mdf = mdf.reindex(index=order, columns=SPLIT_ORDER)
@@ -225,7 +206,7 @@ def plot_conditions_by_split(joined: pd.DataFrame, soft: pd.DataFrame) -> None:
         ax.set_title(model)
         ax.set_xlabel("")
         ax.set_ylabel("")
-    fig.suptitle("Exact2x: per-split answer accuracy (all frameworks except tool_solver)", y=1.01)
+    fig.suptitle("Exact2x: per-split answer accuracy (hero conditions)", y=1.01)
     savefig("exact2x_conditions_by_split.png")
 
 
@@ -252,15 +233,24 @@ def plot_marginal_trends(joined: pd.DataFrame, soft: pd.DataFrame) -> None:
     sp2 = soft.copy()
     sp2["model"] = "GraphToken"
     trend = pd.concat([joined[joined["condition"].isin(FOCUS)], sp, sp2], ignore_index=True)
-    conditions = list(FOCUS)
-    if "majority_prior" in conditions:
-        idx = conditions.index("majority_prior") + 1
-        conditions = conditions[:idx] + ["soft_prompt"] + conditions[idx:]
+    conditions = list(HERO)
 
     for x, order, title, fname, xlabel in [
-        ("scale_bin", SCALE_ORDER, "Exact2x: accuracy vs scale (all frameworks)", "exact2x_trend_scale.png", "Scale"),
-        ("session_length", TURN_ORDER, "Exact2x: accuracy vs session length (all frameworks)", "exact2x_trend_session_length.png", "Session length"),
-        ("target_density", DENSITY_ORDER, "Exact2x: accuracy vs target density (all frameworks)", "exact2x_trend_density.png", "Target density"),
+        ("scale_bin", SCALE_ORDER, "Exact2x: accuracy vs scale (hero conditions)", "exact2x_trend_scale.png", "Scale"),
+        (
+            "session_length",
+            TURN_ORDER,
+            "Exact2x: accuracy vs session length (hero conditions)",
+            "exact2x_trend_session_length.png",
+            "Session length",
+        ),
+        (
+            "target_density",
+            DENSITY_ORDER,
+            "Exact2x: accuracy vs target density (hero conditions)",
+            "exact2x_trend_density.png",
+            "Target density",
+        ),
     ]:
         tab = _acc_table(trend, ["model", "condition", x])
         fig, axes = plt.subplots(1, 2, figsize=(14, 5.2), sharey=True)
@@ -274,11 +264,11 @@ def plot_marginal_trends(joined: pd.DataFrame, soft: pd.DataFrame) -> None:
             ax.grid(True, axis="y", alpha=0.3)
             if ax is axes[0]:
                 ax.set_ylabel("Answer accuracy")
-            ax.legend(fontsize=6, loc="lower left", ncol=2, framealpha=0.9)
+            ax.legend(fontsize=8, loc="lower left", ncol=1, framealpha=0.9)
         fig.suptitle(title, y=1.02)
         savefig(fname)
 
-    # exact n within bins — all frameworks (TEA / GraphToken panels)
+    # exact n within bins — hero conditions (TEA / GraphToken panels)
     fig, axes = plt.subplots(1, 2, figsize=(14, 5.0), sharey=True)
     for ax, model in zip(axes, ["TEA", "GraphToken"]):
         mdf = trend[(trend["model"] == model) & (trend["condition"].isin(conditions))]
@@ -289,40 +279,62 @@ def plot_marginal_trends(joined: pd.DataFrame, soft: pd.DataFrame) -> None:
                 continue
             color = CONDITION_COLORS.get(cond, "#333333")
             lw = 2.2 if cond in ("oracle_updated_graph", "predicted_updated_graph") else 1.2
-            ax.plot(cdf["node_count"], cdf["accuracy"], marker="o", label=cond, color=color, linewidth=lw, markersize=3)
+            ax.plot(
+                cdf["node_count"],
+                cdf["accuracy"],
+                marker="o",
+                label=cond,
+                color=color,
+                linewidth=lw,
+                markersize=3,
+            )
         ax.set_title(model)
         ax.set_xlabel("Exact node count")
         ax.set_ylim(0.2, 1.0)
         ax.grid(True, axis="y", alpha=0.3)
         if ax is axes[0]:
             ax.set_ylabel("Answer accuracy")
-        ax.legend(fontsize=5.5, loc="lower left", ncol=2, framealpha=0.9)
-    fig.suptitle("Exact2x: accuracy vs exact n (all frameworks except tool_solver)", y=1.02)
+        ax.legend(fontsize=8, loc="lower left", ncol=1, framealpha=0.9)
+    fig.suptitle("Exact2x: accuracy vs exact n (hero conditions)", y=1.02)
     savefig("exact2x_trend_exact_n.png")
 
 
 def plot_interaction_heatmap(joined: pd.DataFrame) -> None:
-    # One small heatmap per condition (TEA and GraphToken as two pages/files).
+    # One small heatmap per GLM hero condition (TEA and GraphToken as two files).
     n = len(FOCUS)
-    ncols = 4
+    ncols = min(3, n)
     nrows = (n + ncols - 1) // ncols
     for model in ["TEA", "GraphToken"]:
-        fig, axes = plt.subplots(nrows, ncols, figsize=(14, 3.1 * nrows), sharex=True, sharey=True)
-        axes_flat = axes.flatten()
+        fig, axes = plt.subplots(nrows, ncols, figsize=(12, 3.2 * nrows), sharex=True, sharey=True)
+        axes_flat = axes.flatten() if n > 1 else [axes]
         for i, cond in enumerate(FOCUS):
             ax = axes_flat[i]
             mdf = joined[(joined["model"] == model) & (joined["condition"] == cond)]
             tab = _acc_table(mdf, ["scale_bin", "session_length"])
             pivot = tab.pivot(index="scale_bin", columns="session_length", values="accuracy")
             pivot = pivot.reindex(index=SCALE_ORDER, columns=TURN_ORDER)
-            sns.heatmap(pivot, annot=True, fmt=".2f", cmap="Blues", vmin=0.3, vmax=1.0, ax=ax, cbar=False, annot_kws={"size": 7})
-            ax.set_title(cond, fontsize=8)
+            sns.heatmap(
+                pivot,
+                annot=True,
+                fmt=".2f",
+                cmap="Blues",
+                vmin=0.3,
+                vmax=1.0,
+                ax=ax,
+                cbar=False,
+                annot_kws={"size": 8},
+            )
+            ax.set_title(cond, fontsize=9)
             ax.set_xlabel("L" if i >= n - ncols else "")
             ax.set_ylabel("Scale" if i % ncols == 0 else "")
         for j in range(n, len(axes_flat)):
             axes_flat[j].axis("off")
-        fig.suptitle(f"Exact2x interaction: {model} scale × length (all frameworks except tool_solver)", y=1.01)
-        fname = "exact2x_interaction_heatmap.png" if model == "TEA" else "exact2x_interaction_heatmap_graphtoken.png"
+        fig.suptitle(f"Exact2x interaction: {model} scale × length (hero conditions)", y=1.01)
+        fname = (
+            "exact2x_interaction_heatmap.png"
+            if model == "TEA"
+            else "exact2x_interaction_heatmap_graphtoken.png"
+        )
         savefig(fname)
 
 
@@ -332,10 +344,7 @@ def plot_turn_index(joined: pd.DataFrame, soft: pd.DataFrame) -> None:
     sp2 = soft.copy()
     sp2["model"] = "GraphToken"
     trend = pd.concat([joined[joined["condition"].isin(FOCUS)], sp, sp2], ignore_index=True)
-    conditions = list(FOCUS)
-    if "majority_prior" in conditions:
-        idx = conditions.index("majority_prior") + 1
-        conditions = conditions[:idx] + ["soft_prompt"] + conditions[idx:]
+    conditions = list(HERO)
     tab = _acc_table(trend, ["model", "condition", "turn_index"])
     fig, axes = plt.subplots(1, 2, figsize=(14, 5.2), sharey=True)
     for ax, model in zip(axes, ["TEA", "GraphToken"]):
@@ -346,15 +355,23 @@ def plot_turn_index(joined: pd.DataFrame, soft: pd.DataFrame) -> None:
                 continue
             color = CONDITION_COLORS.get(cond, "#333333")
             lw = 2.4 if cond in ("oracle_updated_graph", "predicted_updated_graph") else 1.3
-            ax.plot(cdf["turn_index"], cdf["accuracy"], marker="o", color=color, label=cond, linewidth=lw, markersize=4)
+            ax.plot(
+                cdf["turn_index"],
+                cdf["accuracy"],
+                marker="o",
+                color=color,
+                label=cond,
+                linewidth=lw,
+                markersize=4,
+            )
         ax.set_title(model)
         ax.set_xlabel("Turn index")
         ax.set_ylim(0.25, 1.0)
         ax.grid(True, axis="y", alpha=0.3)
         if ax is axes[0]:
             ax.set_ylabel("Answer accuracy")
-        ax.legend(fontsize=5.5, loc="lower left", ncol=2, framealpha=0.9)
-    fig.suptitle("Exact2x: turn-index (all frameworks except tool_solver)", y=1.02)
+        ax.legend(fontsize=8, loc="lower left", ncol=1, framealpha=0.9)
+    fig.suptitle("Exact2x: turn-index (hero conditions)", y=1.02)
     savefig("exact2x_trend_turn_index.png")
 
 
@@ -364,12 +381,9 @@ def plot_reasoning_and_answer_changing(joined: pd.DataFrame, soft: pd.DataFrame)
     sp2 = soft.copy()
     sp2["model"] = "GraphToken"
     trend = pd.concat([joined[joined["condition"].isin(FOCUS)], sp, sp2], ignore_index=True)
-    conditions = list(FOCUS)
-    if "majority_prior" in conditions:
-        idx = conditions.index("majority_prior") + 1
-        conditions = conditions[:idx] + ["soft_prompt"] + conditions[idx:]
+    conditions = list(HERO)
 
-    fig, axes = plt.subplots(1, 2, figsize=(15, 5.2), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.2), sharey=True)
     tab = _acc_table(trend, ["model", "condition", "reasoning_type"])
     for ax, model in zip(axes, ["TEA", "GraphToken"]):
         mdf = tab[tab["model"] == model]
@@ -390,11 +404,11 @@ def plot_reasoning_and_answer_changing(joined: pd.DataFrame, soft: pd.DataFrame)
         ax.set_xlabel("")
         if ax is axes[0]:
             ax.set_ylabel("Accuracy")
-        ax.legend(fontsize=5.5, loc="lower left", ncol=2, framealpha=0.9)
-    fig.suptitle("Exact2x: task strata (all frameworks except tool_solver)", y=1.02)
+        ax.legend(fontsize=7, loc="lower left", ncol=1, framealpha=0.9)
+    fig.suptitle("Exact2x: task strata (hero conditions)", y=1.02)
     savefig("exact2x_reasoning_type.png")
 
-    # answer-changing vs stable for every framework
+    # answer-changing vs stable for hero conditions
     rows = []
     for cond in conditions:
         if cond == "soft_prompt":
@@ -408,8 +422,6 @@ def plot_reasoning_and_answer_changing(joined: pd.DataFrame, soft: pd.DataFrame)
         tmp["condition"] = cond
         rows.append(tmp)
     ac = pd.concat(rows, ignore_index=True)
-    # pool models for TEA/GT conditions; soft_prompt already tagged
-    # plot TEA and GraphToken separately
     fig, axes = plt.subplots(1, 2, figsize=(14, 5.0), sharey=True)
     for ax, model in zip(axes, ["TEA", "GraphToken"]):
         mdf = ac[ac["model"] == model]
@@ -430,8 +442,8 @@ def plot_reasoning_and_answer_changing(joined: pd.DataFrame, soft: pd.DataFrame)
         ax.set_xlabel("")
         if ax is axes[0]:
             ax.set_ylabel("Accuracy")
-        ax.legend(fontsize=5.5, loc="lower left", ncol=2, framealpha=0.9)
-    fig.suptitle("Exact2x: answer-changing vs stable (all frameworks except tool_solver)", y=1.02)
+        ax.legend(fontsize=7, loc="lower left", ncol=1, framealpha=0.9)
+    fig.suptitle("Exact2x: answer-changing vs stable (hero conditions)", y=1.02)
     savefig("exact2x_answer_changing.png")
 
 
