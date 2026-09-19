@@ -21,10 +21,14 @@ from graph_modi.data.multiturn import (
     save_sessions,
 )
 from graph_modi.data.v2 import (
+    CLEGR_EXTENDED_STATIC_TASKS,
     DISTRIBUTION_V2,
+    generate_counterfactual_static_pairs,
     generate_dataset_v2,
     generate_exact_uniform_sessions,
     generate_factorial_sessions,
+    generate_static_corpus,
+    generate_static_exact_uniform,
     load_static_tuples,
     save_static_tuples,
 )
@@ -34,7 +38,7 @@ from graph_modi.evaluation.static_eval import evaluate_static_oracle
 from graph_modi.graph.solvers import render_question
 from graph_modi.models.base import GraphBackend, SymbolicMockBackend
 from graph_modi.pipeline.multiturn import materialize_states, run_session
-from graph_modi.schema import ReasoningType, Session, StaticQATuple
+from graph_modi.schema import ReasoningType, Session, StaticQATuple, TopologyFamily
 from graph_modi.training import (
     ProjectorTrainingConfig,
     TrainingExample,
@@ -212,6 +216,55 @@ def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str
                 progress=progress,
             )
 
+    static_layout = str(data.get("static_layout", "default"))
+    if static_layout == "exact_uniform":
+        static_tasks = _reasoning_types(data, "static_tasks")
+        su_cfg = data.get("static_exact_uniform", {})
+        if not isinstance(su_cfg, dict):
+            raise ValueError("data.static_exact_uniform must be a mapping")
+        eval_replicates = {
+            "validation": int(su_cfg.get("validation_replicates", 0)),
+            "test": int(su_cfg.get("test_replicates", 0)),
+        }
+        eval_replicates = {key: value for key, value in eval_replicates.items() if value > 0}
+        if not eval_replicates:
+            raise ValueError(
+                "data.static_layout=exact_uniform requires at least one of "
+                "static_exact_uniform.{validation,test}_replicates > 0"
+            )
+        static = generate_static_exact_uniform(
+            replicates_per_split=eval_replicates,
+            seed=config.seed,
+            tasks=static_tasks,
+            progress=progress,
+        )
+        # Validation/test are exact-uniform; train stays free-sampled, matching
+        # generate_exact_uniform_sessions' own train-split convention.
+        train_graphs = int(data.get("static_train_graphs", 0))
+        if train_graphs > 0:
+            if bool(data.get("counterfactual_static_train", False)):
+                static["train"] = generate_counterfactual_static_pairs(
+                    graph_count=train_graphs,
+                    pairs_per_graph=max(1, int(data.get("static_tuples_per_graph", 12)) // 2),
+                    seed=config.seed,
+                    node_count_range=(16, 32),
+                    topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
+                    tasks=tuple(static_tasks) if static_tasks else CLEGR_EXTENDED_STATIC_TASKS,
+                    split="train",
+                    progress=progress,
+                )
+            else:
+                train_static = generate_static_corpus(
+                    graph_counts={"train": train_graphs},
+                    tuples_per_graph=int(data.get("static_tuples_per_graph", 12)),
+                    seed=config.seed,
+                    node_count_ranges={"train": (16, 32)},
+                    topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
+                    tasks=static_tasks,
+                    progress=progress,
+                )
+                static["train"] = train_static.get("train", [])
+
     report: dict[str, Any] = {}
     if dynamic_only and _audit_path(config).exists():
         try:
@@ -226,12 +279,15 @@ def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str
             raise RuntimeError(f"Generated invalid {split} data: {report[split]['failures'][:5]}")
         report[split]["session_layout"] = session_layout
 
-    if not dynamic_only:
+    if static:
+        # Either a full generate-v2 run, or static_layout=exact_uniform generated
+        # fresh static data on top of a dynamic_only=true session run: save it.
         for split, tuples in static.items():
             save_static_tuples(_static_path(config, split), tuples)
             report[f"static_{split}"] = {"tuples": len(tuples)}
     else:
-        # Preserve static audit entries; refresh tuple counts from files if present.
+        # Nothing generated this run; preserve static audit entries, refreshing
+        # tuple counts from files already on disk (e.g. a copied static corpus).
         for split in ("train", "validation", "test"):
             path = _static_path(config, split)
             if path.exists():
@@ -275,6 +331,7 @@ def _static_examples(tuples: list[StaticQATuple]) -> list[TrainingExample]:
                 "scale_bin": item.scale_bin,
                 "source_id": item.query.source,
                 "target_id": item.query.target,
+                "hops": item.query.hops,
             },
         )
         for item in tuples
@@ -301,6 +358,7 @@ def _examples(sessions: list[Session]) -> list[TrainingExample]:
                         "graph_fingerprint": turn.after_fingerprint,
                         "source_id": turn.query.source,
                         "target_id": turn.query.target,
+                        "hops": turn.query.hops,
                     },
                 )
             )

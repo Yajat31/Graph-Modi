@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from graph_modi.evaluation.metrics import aggregate_rows, normalize_answer
+from graph_modi.evaluation.metrics import aggregate_rows, answers_match, normalize_answer
 from graph_modi.graph.edits import execution_equivalent_program
 from graph_modi.graph.executor import apply_edit, apply_edit_program, graph_fingerprint
 from graph_modi.graph.serialization import (
@@ -173,6 +173,7 @@ def _advance_round(
 
 def _row_for(task: _Task, round_index: int, latency_seconds: float) -> dict[str, Any]:
     turn = task.session.turns[round_index]
+    reasoning_type = turn.query.reasoning_type.value
     predicted_normalized = normalize_answer(task.predicted_answer)
     gold = normalize_answer(turn.gold_answer)
     stale = normalize_answer(turn.stale_answer)
@@ -186,8 +187,12 @@ def _row_for(task: _Task, round_index: int, latency_seconds: float) -> dict[str,
         "gold_answer": gold,
         "stale_answer": stale,
         "predicted_answer": predicted_normalized,
-        "answer_correct": predicted_normalized == gold,
-        "stale": predicted_normalized == stale,
+        "answer_correct": answers_match(
+            turn.gold_answer, task.predicted_answer, reasoning_type=reasoning_type
+        ),
+        "stale": answers_match(
+            turn.stale_answer, task.predicted_answer, reasoning_type=reasoning_type
+        ),
         "edit_correct": task.edit_correct,
         "state_exact": graph_fingerprint(task.current) == turn.after_fingerprint,
         "input_tokens": len(prompt.split()),

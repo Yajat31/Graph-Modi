@@ -74,6 +74,64 @@ def reachable(graph: AttributedGraph, source: str, target: str) -> bool:
     return bool(shortest_path(graph, source, target))
 
 
+def reachable_avoiding(
+    graph: AttributedGraph,
+    source: str,
+    target: str,
+    attribute: str,
+    value: Scalar,
+) -> bool:
+    """Reachability that additionally excludes intermediate nodes matching a filter.
+
+    Endpoints are always exempt from the exclusion, so a query about a source or
+    target that happens to match the avoided class still has a well-defined answer.
+    """
+    nodes = graph.node_map()
+    if source not in nodes or target not in nodes:
+        return False
+
+    def allowed(node_id: str) -> bool:
+        if node_id in (source, target):
+            return True
+        return nodes[node_id].attributes.get(attribute) != value
+
+    neighbors = adjacency(graph, available_only=False)
+    visited = {source}
+    queue: deque[str] = deque([source])
+    while queue:
+        node = queue.popleft()
+        if node == target:
+            return True
+        for neighbor, _ in neighbors[node]:
+            if neighbor not in visited and allowed(neighbor):
+                visited.add(neighbor)
+                queue.append(neighbor)
+    return False
+
+
+def nodes_within_hops(
+    graph: AttributedGraph,
+    source: str,
+    hops: int,
+    *,
+    available_only: bool = False,
+) -> dict[str, int]:
+    """Map of node id -> hop distance from ``source``, excluding ``source`` itself."""
+    neighbors = adjacency(graph, available_only=available_only)
+    distances: dict[str, int] = {source: 0}
+    queue: deque[str] = deque([source])
+    while queue:
+        node = queue.popleft()
+        if distances[node] >= hops:
+            continue
+        for neighbor, _ in neighbors[node]:
+            if neighbor not in distances:
+                distances[neighbor] = distances[node] + 1
+                queue.append(neighbor)
+    distances.pop(source, None)
+    return distances
+
+
 def _cycle_member(graph: AttributedGraph, source: str) -> bool:
     if graph.directed or source not in graph.node_map():
         return False
@@ -164,6 +222,53 @@ def answer_query(graph: AttributedGraph, query: GraphQuery) -> str:
             if any(neighbor == query.target for neighbor, _ in graph_adjacency[query.source])
             else "no"
         )
+    if query.reasoning_type is ReasoningType.CONSTRAINED_REACHABILITY:
+        if query.target is None or query.attribute is None:
+            return "invalid"
+        return (
+            "yes"
+            if reachable_avoiding(graph, query.source, query.target, query.attribute, query.value)
+            else "no"
+        )
+    if query.reasoning_type is ReasoningType.WITHIN_HOPS_COUNT:
+        hops = query.hops or 2
+        in_range = nodes_within_hops(graph, query.source, hops)
+        if query.attribute is not None:
+            return str(
+                sum(
+                    nodes[node_id].attributes.get(query.attribute) == query.value
+                    for node_id in in_range
+                )
+            )
+        return str(len(in_range))
+    if query.reasoning_type is ReasoningType.WITHIN_HOPS_LIST:
+        hops = query.hops or 2
+        in_range = nodes_within_hops(graph, query.source, hops)
+        matching = [
+            node_id
+            for node_id in in_range
+            if query.attribute is None
+            or nodes[node_id].attributes.get(query.attribute) == query.value
+        ]
+        labels = sorted(nodes[node_id].label for node_id in matching)
+        return ", ".join(labels) if labels else "none"
+    if query.reasoning_type is ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS:
+        if query.attribute is None:
+            return "invalid"
+        hops = query.hops or 2
+        sample_ids = set(nodes_within_hops(graph, query.source, hops)) | {query.source}
+        counts: dict[str, int] = {}
+        for node_id in sample_ids:
+            attribute_value = nodes[node_id].attributes.get(query.attribute)
+            if attribute_value is None:
+                continue
+            key = str(attribute_value)
+            counts[key] = counts.get(key, 0) + 1
+        if not counts:
+            return "none"
+        best_count = max(counts.values())
+        winners = sorted(key for key, count in counts.items() if count == best_count)
+        return winners[0]
     raise ValueError(f"Unsupported reasoning type: {query.reasoning_type}")
 
 
@@ -200,5 +305,35 @@ def render_question(query: GraphQuery, graph: AttributedGraph) -> str:
         return (
             f"What is the total travel cost along the shortest open path from "
             f"{source} to {target}? Answer with a number or unreachable."
+        )
+    if query.reasoning_type is ReasoningType.CONSTRAINED_REACHABILITY:
+        return (
+            f"Can {target} be reached from {source} without passing through any station "
+            f"where {query.attribute} is {query.value}? Answer yes or no."
+        )
+    if query.reasoning_type is ReasoningType.WITHIN_HOPS_COUNT:
+        hops = query.hops or 2
+        if query.attribute is not None:
+            return (
+                f"How many other stations within {hops} hops of {source} have "
+                f"{query.attribute} equal to {query.value}? Answer with a number."
+            )
+        return f"How many other stations are within {hops} hops of {source}? Answer with a number."
+    if query.reasoning_type is ReasoningType.WITHIN_HOPS_LIST:
+        hops = query.hops or 2
+        if query.attribute is not None:
+            return (
+                f"Which stations within {hops} hops of {source} have {query.attribute} "
+                f"equal to {query.value}? Answer with a comma-separated list, or 'none'."
+            )
+        return (
+            f"Which stations are within {hops} hops of {source}? "
+            "Answer with a comma-separated list, or 'none'."
+        )
+    if query.reasoning_type is ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS:
+        hops = query.hops or 2
+        return (
+            f"What is the most common {query.attribute} among stations within {hops} "
+            f"hops of {source}, including {source} itself?"
         )
     return f"Is there a direct edge between {source} and {target}? Answer yes or no."

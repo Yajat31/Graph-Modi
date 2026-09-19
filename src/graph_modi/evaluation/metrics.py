@@ -31,6 +31,80 @@ def normalize_answer(value: str | None) -> str | None:
     return normalized
 
 
+# Reasoning types whose answer is a number, compared with tolerance rather
+# than exact string equality (LLM-generated formatting varies, e.g. "12" vs
+# "12.0"; PATH_COST in particular can be a non-integer weighted-path cost).
+_NUMERIC_REASONING_TYPES = {
+    "node_degree",
+    "node_count",
+    "path_cost",
+    "filtered_neighbor_count",
+    "filtered_path_count",
+    "within_hops_count",
+    "shortest_path",
+}
+# Reasoning types whose answer is a comma-separated set of entities.
+_LIST_REASONING_TYPES = {"within_hops_list"}
+
+
+def _as_float(value: str | None) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _list_answer_set(value: str) -> frozenset[str]:
+    if value in {"none", ""}:
+        return frozenset()
+    return frozenset(token.strip() for token in value.split(",") if token.strip())
+
+
+def answers_match(
+    gold: str | None,
+    predicted: str | None,
+    *,
+    reasoning_type: str | None = None,
+    numeric_tolerance: float = 0.01,
+) -> bool:
+    """Task-aware correctness check, replacing blind exact-match for numeric/list tasks.
+
+    Boolean and categorical tasks keep exact string equality (unchanged
+    behavior); numeric tasks (e.g. PATH_COST) get a tolerance; list tasks
+    (e.g. WITHIN_HOPS_LIST) compare as sets rather than literal strings.
+    """
+    gold_norm = normalize_answer(gold)
+    pred_norm = normalize_answer(predicted)
+    if gold_norm is None or pred_norm is None:
+        return gold_norm == pred_norm
+    if reasoning_type in _LIST_REASONING_TYPES:
+        return _list_answer_set(gold_norm) == _list_answer_set(pred_norm)
+    if reasoning_type in _NUMERIC_REASONING_TYPES:
+        gold_value = _as_float(gold_norm)
+        pred_value = _as_float(pred_norm)
+        if gold_value is not None and pred_value is not None:
+            return abs(gold_value - pred_value) <= numeric_tolerance
+    return gold_norm == pred_norm
+
+
+def set_f1(gold: str | None, predicted: str | None) -> float:
+    """Set-valued F1 for list answers (e.g. WITHIN_HOPS_LIST); README's target metric."""
+    gold_set = _list_answer_set(normalize_answer(gold) or "")
+    pred_set = _list_answer_set(normalize_answer(predicted) or "")
+    if not gold_set and not pred_set:
+        return 1.0
+    if not gold_set or not pred_set:
+        return 0.0
+    overlap = len(gold_set & pred_set)
+    if overlap == 0:
+        return 0.0
+    precision = overlap / len(pred_set)
+    recall = overlap / len(gold_set)
+    return 2 * precision * recall / (precision + recall)
+
+
 def wilson_interval(successes: int, total: int, z: float = 1.96) -> tuple[float, float]:
     if total == 0:
         return 0.0, 0.0

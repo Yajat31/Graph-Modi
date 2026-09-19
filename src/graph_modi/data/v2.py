@@ -72,6 +72,10 @@ _STATIC_TASKS = (
     ReasoningType.FILTERED_PATH_COUNT,
     ReasoningType.SHORTEST_PATH,
     ReasoningType.PATH_COST,
+    ReasoningType.CONSTRAINED_REACHABILITY,
+    ReasoningType.WITHIN_HOPS_COUNT,
+    ReasoningType.WITHIN_HOPS_LIST,
+    ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS,
 )
 
 _DYNAMIC_TASKS = (
@@ -80,7 +84,17 @@ _DYNAMIC_TASKS = (
     ReasoningType.FILTERED_NEIGHBOR_COUNT,
     ReasoningType.EDGE_EXISTS,
     ReasoningType.PATH_COST,
+    ReasoningType.CONSTRAINED_REACHABILITY,
+    ReasoningType.WITHIN_HOPS_COUNT,
+    ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS,
 )
+
+# CLEGR-style task families layered on top of the original 3-task yes/no gate:
+# filtered aggregation (FILTERED_NEIGHBOR_COUNT/FILTERED_PATH_COUNT/WITHIN_HOPS_COUNT),
+# weighted path cost (PATH_COST), constrained reachability (CONSTRAINED_REACHABILITY),
+# and topology-with-filter (WITHIN_HOPS_LIST/MOST_COMMON_ATTRIBUTE_WITHIN_HOPS).
+CLEGR_EXTENDED_STATIC_TASKS = _STATIC_TASKS
+CLEGR_EXTENDED_DYNAMIC_TASKS = _DYNAMIC_TASKS
 
 
 def _density_bin(node_count: int, edge_count: int) -> DensityBin:
@@ -238,6 +252,19 @@ def _hop_depth(query: GraphQuery, graph: AttributedGraph) -> HopDepth:
             return HopDepth.MID
         return HopDepth.GLOBAL
     if query.reasoning_type is ReasoningType.CYCLE_MEMBERSHIP:
+        return HopDepth.GLOBAL
+    if query.reasoning_type is ReasoningType.CONSTRAINED_REACHABILITY:
+        return HopDepth.GLOBAL
+    if query.reasoning_type in {
+        ReasoningType.WITHIN_HOPS_COUNT,
+        ReasoningType.WITHIN_HOPS_LIST,
+        ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS,
+    }:
+        hops = query.hops or 2
+        if hops <= 2:
+            return HopDepth.LOCAL
+        if hops <= 4:
+            return HopDepth.MID
         return HopDepth.GLOBAL
     return HopDepth.MID
 
@@ -413,6 +440,14 @@ def make_graph(
                     "density": _graph_density(graph).value,
                 },
             )
+        # Watts-Strogatz edges otherwise keep the schema default weight of 1.0,
+        # which makes PATH_COST degenerate (every path costs its hop count).
+        # Assign the same weight range SBM/ER already use so cost tasks are
+        # meaningful on this topology too.
+        graph = replace(
+            graph,
+            edges=tuple(replace(edge, weight=float(rng.randint(1, 5))) for edge in graph.edges),
+        )
         return graph
     if topology is TopologyFamily.SBM:
         density = target_density or _density_bin(node_count, node_count * degree // 2)
@@ -884,6 +919,89 @@ def generate_exact_uniform_sessions(
     if sessions:
         assert_disjoint_splits({key: value for key, value in sessions.items() if key != "ood"})
     return sessions
+
+
+def generate_static_exact_uniform(
+    *,
+    replicates_per_split: dict[str, int],
+    seed: int,
+    tasks: Sequence[ReasoningType] | None = None,
+    progress: bool = True,
+) -> dict[str, list[StaticQATuple]]:
+    """Cross exact n x density x task once per split for static (G, Q, A) tuples.
+
+    Mirrors ``generate_exact_uniform_sessions`` (same exact-n grid and density
+    bins) but for independent static tuples instead of dynamic sessions: each
+    cell draws one fresh Watts-Strogatz graph at that exact size/density and
+    one query for that task, so static val/test coverage is balanced the same
+    way exact2x balances dynamic val/test.
+    """
+    static_tasks = tuple(tasks) if tasks else _STATIC_TASKS
+    node_pairs = _exact_uniform_node_counts()
+    cells = [
+        (scale_name, node_count, density, task)
+        for scale_name, node_count in node_pairs
+        for density in _FACTORIAL_DENSITIES
+        for task in static_tasks
+    ]
+    total = sum(
+        int(count) * len(cells) for count in replicates_per_split.values() if int(count) > 0
+    )
+    tracker = ProgressTracker("[generate]", total, phase="exact-uniform-static", enabled=progress)
+    tracker.banner(tuples=total, cells=len(cells))
+    split_offsets = {"train": 5_000_000, "validation": 6_000_000, "test": 7_000_000}
+    result: dict[str, list[StaticQATuple]] = {}
+    done = 0
+    for split, replicates in replicates_per_split.items():
+        replicates = int(replicates)
+        if replicates <= 0:
+            continue
+        offset = split_offsets.get(split, 8_000_000)
+        split_tuples: list[StaticQATuple] = []
+        index = 0
+        for _replicate in range(replicates):
+            for scale_name, node_count, density, task in cells:
+                graph_seed = seed + offset + index
+                rng = random.Random(graph_seed)
+                graph = make_graph(
+                    rng,
+                    split,
+                    index,
+                    node_count,
+                    TopologyFamily.WATTS_STROGATZ,
+                    target_density=density,
+                )
+                cell_id = f"{scale_name}|n{node_count}|{density.value}|{task.value}"
+                candidates = list(_static_queries(graph, task))
+                if candidates:
+                    rng.shuffle(candidates)
+                    query = candidates[0]
+                    answer = answer_query(graph, query)
+                    query = replace(query, question=render_question(query, graph))
+                    split_tuples.append(
+                        StaticQATuple(
+                            tuple_id=f"{split}-static-exact-{index:06d}",
+                            split=split,
+                            graph=graph,
+                            query=query,
+                            answer=answer,
+                            topology=TopologyFamily.WATTS_STROGATZ,
+                            density_bin=_graph_density(graph),
+                            hop_depth=_hop_depth(query, graph),
+                            scale_bin=scale_name,
+                            metadata={
+                                "reasoning_type": task.value,
+                                "factorial_cell": cell_id,
+                                "target_density": density.value,
+                            },
+                        )
+                    )
+                index += 1
+                done += 1
+                tracker.tick(tuples=f"{done}/{total}", cell=cell_id)
+        result[split] = split_tuples
+    tracker.end(tuples=sum(len(items) for items in result.values()))
+    return result
 
 
 def generate_dataset_v2(

@@ -17,7 +17,38 @@ from typing import Any
 
 from graph_modi.graph.edits import parse_edit_program
 from graph_modi.models.base import ModelInput
-from graph_modi.schema import AttributedGraph
+from graph_modi.schema import AttributedGraph, ReasoningType
+
+# WITHIN_HOPS_COUNT/WITHIN_HOPS_LIST/MOST_COMMON_ATTRIBUTE_WITHIN_HOPS queries
+# name a hop radius (2 or 3) that the GraphSAGE readout otherwise has no way
+# to see: node_repr is the *final*, num_layers-mixed embedding, which
+# conflates every radius up to num_layers into one vector per node. Appending
+# the raw hop count lets the projector at least condition on which radius a
+# query means, instead of the frozen LM having to infer it purely from the
+# question text.
+HOPS_FEATURE_DIM = 1
+
+# Training on many heterogeneous task types (boolean, numeric, list, string)
+# with no explicit task-identity signal causes answer-format leakage: e.g. a
+# cycle_membership (yes/no) query answered with a bare number, or a
+# most_common_attribute_within_hops (categorical) query answered with a
+# station-ID list -- the model apparently can't reliably infer which of the
+# ~12 task formats applies from the question text plus a graph prefix alone,
+# and defaults to whatever format is best-represented in the training mix.
+# A one-hot task-identity feature (covering every ReasoningType, not just the
+# ones observed to leak) removes that ambiguity the same way HOPS_FEATURE_DIM
+# does for hop radius.
+_REASONING_TYPE_VALUES = tuple(member.value for member in ReasoningType)
+_REASONING_TYPE_INDEX = {value: index for index, value in enumerate(_REASONING_TYPE_VALUES)}
+REASONING_TYPE_FEATURE_DIM = len(_REASONING_TYPE_VALUES)
+
+
+def _reasoning_type_onehot(reasoning_type: str | None, *, dtype: Any, device: Any) -> Any:
+    vector = torch.zeros(REASONING_TYPE_FEATURE_DIM, dtype=dtype, device=device)
+    index = _REASONING_TYPE_INDEX.get(reasoning_type) if reasoning_type is not None else None
+    if index is not None:
+        vector[index] = 1.0
+    return vector
 
 _TEA_IMPORT_ERROR: ImportError | None = None
 try:
@@ -358,10 +389,15 @@ class TEAGLM(_Module):
         self.tensorizer = tensorizer
         self.config = config or TEAGLMConfig()
         lm_hidden_dim = int(language_model.get_input_embeddings().embedding_dim)
-        if gnn.config.output_dim * 3 != projector.config.graph_dim:
+        expected_graph_dim = (
+            gnn.config.output_dim * 3 + HOPS_FEATURE_DIM + REASONING_TYPE_FEATURE_DIM
+        )
+        if expected_graph_dim != projector.config.graph_dim:
             raise ValueError(
-                "projector graph_dim must equal 3 * GNN output_dim "
-                "(pooled graph vector concatenated with source and target node embeddings)"
+                "projector graph_dim must equal 3 * GNN output_dim + HOPS_FEATURE_DIM "
+                "+ REASONING_TYPE_FEATURE_DIM (pooled graph vector concatenated with "
+                "source and target node embeddings, plus the query's hop-radius "
+                "scalar and one-hot task identity)"
             )
         if projector.config.lm_hidden_dim != lm_hidden_dim:
             raise ValueError(
@@ -416,7 +452,7 @@ class TEAGLM(_Module):
             raise ValueError("Tensorizer feature_dim must equal GNN input_dim")
         lm_hidden_dim = int(language_model.get_input_embeddings().embedding_dim)
         prefix_config = projector_config or PrefixProjectorConfig(
-            graph_dim=graph_config.output_dim * 3,
+            graph_dim=graph_config.output_dim * 3 + HOPS_FEATURE_DIM + REASONING_TYPE_FEATURE_DIM,
             lm_hidden_dim=lm_hidden_dim,
             prefix_tokens=prefix_tokens,
             hidden_dim=projector_hidden_dim,
@@ -470,9 +506,11 @@ class TEAGLM(_Module):
         *,
         source_ids: Sequence[str | None] | None = None,
         target_ids: Sequence[str | None] | None = None,
+        hops: Sequence[int | None] | None = None,
+        reasoning_types: Sequence[str | None] | None = None,
     ) -> Any:
         """Pooled graph vector concatenated with the query's source/target node
-        embeddings.
+        embeddings, its hop radius, and its task identity.
 
         Mean pooling alone collapses every node into one vector, discarding
         which node(s) a query is about -- fatal for path/reachability/
@@ -481,14 +519,29 @@ class TEAGLM(_Module):
         one repeated mean-pooled vector"). This mirrors the pooled+source+
         target representation pretrain_graph_encoder's classification head
         already uses (training.py::_batch_query_vectors); zero-filled when a
-        task has no source/target (e.g. pure graph-level tasks).
+        task has no source/target (e.g. pure graph-level tasks). ``hops`` is
+        appended as a raw scalar (0.0 when absent) for WITHIN_HOPS_*/
+        MOST_COMMON_ATTRIBUTE_WITHIN_HOPS queries, whose answer depends on a
+        radius node_repr alone cannot distinguish (see HOPS_FEATURE_DIM).
+        ``reasoning_types`` is appended as a one-hot over every ReasoningType
+        (all zeros when absent) so the model has an explicit task-identity
+        signal instead of inferring answer format from question text plus an
+        otherwise task-agnostic graph prefix -- observed to leak badly across
+        the ~12-task mix (e.g. cycle_membership answered with a bare number;
+        see REASONING_TYPE_FEATURE_DIM).
         """
         if source_ids is None:
             source_ids = [None] * len(graphs)
         if target_ids is None:
             target_ids = [None] * len(graphs)
+        if hops is None:
+            hops = [None] * len(graphs)
+        if reasoning_types is None:
+            reasoning_types = [None] * len(graphs)
         vectors = []
-        for graph, source_id, target_id in zip(graphs, source_ids, target_ids, strict=True):
+        for graph, source_id, target_id, hop_count, reasoning_type in zip(
+            graphs, source_ids, target_ids, hops, reasoning_types, strict=True
+        ):
             tensor_graph = self.tensorizer(graph) if isinstance(graph, AttributedGraph) else graph
             tensor_graph = tensor_graph.to(self.device)
             if self.config.freeze_gnn:
@@ -501,7 +554,17 @@ class TEAGLM(_Module):
             node_index = {node_id: position for position, node_id in enumerate(tensor_graph.node_ids)}
             source_row = node_repr[node_index[source_id]] if source_id in node_index else zeros
             target_row = node_repr[node_index[target_id]] if target_id in node_index else zeros
-            vectors.append(torch.cat([pooled, source_row, target_row], dim=-1))
+            hop_feature = torch.tensor(
+                [float(hop_count) if hop_count is not None else 0.0],
+                dtype=node_repr.dtype,
+                device=node_repr.device,
+            )
+            task_feature = _reasoning_type_onehot(
+                reasoning_type, dtype=node_repr.dtype, device=node_repr.device
+            )
+            vectors.append(
+                torch.cat([pooled, source_row, target_row, hop_feature, task_feature], dim=-1)
+            )
         return torch.stack(vectors)
 
     def graph_prefix(
@@ -510,6 +573,8 @@ class TEAGLM(_Module):
         *,
         source_ids: Sequence[str | None] | None = None,
         target_ids: Sequence[str | None] | None = None,
+        hops: Sequence[int | None] | None = None,
+        reasoning_types: Sequence[str | None] | None = None,
     ) -> Any:
         """Project pooled+source+target graph vectors, then cast to the LM's embedding dtype.
 
@@ -522,7 +587,13 @@ class TEAGLM(_Module):
         projections, which run at the LM's native (bf16) parameter dtype.
         """
         embedding_dtype = self.language_model.get_input_embeddings().weight.dtype
-        vectors = self.encode_graphs(graphs, source_ids=source_ids, target_ids=target_ids)
+        vectors = self.encode_graphs(
+            graphs,
+            source_ids=source_ids,
+            target_ids=target_ids,
+            hops=hops,
+            reasoning_types=reasoning_types,
+        )
         return self.projector(vectors).to(dtype=embedding_dtype)
 
     def _encode_text(self, text: str, *, answer: bool) -> list[int]:
@@ -552,12 +623,20 @@ class TEAGLM(_Module):
         answers: Sequence[str],
         source_ids: Sequence[str | None] | None = None,
         target_ids: Sequence[str | None] | None = None,
+        hops: Sequence[int | None] | None = None,
+        reasoning_types: Sequence[str | None] | None = None,
     ) -> Any:
         """Compute causal loss over every answer token, masking prompt and graph prefix."""
         if not graphs or not (len(graphs) == len(prompts) == len(answers)):
             raise ValueError("graphs, prompts, and answers must be non-empty and equally sized")
         embedding = self.language_model.get_input_embeddings()
-        prefixes = self.graph_prefix(graphs, source_ids=source_ids, target_ids=target_ids)
+        prefixes = self.graph_prefix(
+            graphs,
+            source_ids=source_ids,
+            target_ids=target_ids,
+            hops=hops,
+            reasoning_types=reasoning_types,
+        )
         sequences: list[Any] = []
         label_rows: list[Any] = []
         for index, (prompt, answer) in enumerate(zip(prompts, answers, strict=True)):
@@ -617,6 +696,8 @@ class TEAGLM(_Module):
         *,
         source_id: str | None = None,
         target_id: str | None = None,
+        hops: int | None = None,
+        reasoning_type: str | None = None,
         max_new_tokens: int = 64,
         **generation_kwargs: Any,
     ) -> str:
@@ -624,7 +705,13 @@ class TEAGLM(_Module):
         prompt_ids, _ = self._truncate(prompt_ids, [])
         prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
         prompt_embeds = self.language_model.get_input_embeddings()(prompt_tensor)
-        prefix = self.graph_prefix([graph], source_ids=[source_id], target_ids=[target_id])[0]
+        prefix = self.graph_prefix(
+            [graph],
+            source_ids=[source_id],
+            target_ids=[target_id],
+            hops=[hops],
+            reasoning_types=[reasoning_type],
+        )[0]
         inputs_embeds = torch.cat([prompt_embeds, prefix], dim=0).unsqueeze(0)
         attention_mask = torch.ones(inputs_embeds.shape[:2], dtype=torch.long, device=self.device)
         with self._lm_autocast():
@@ -692,6 +779,8 @@ class TEAGLM(_Module):
         *,
         source_ids: Sequence[str | None] | None = None,
         target_ids: Sequence[str | None] | None = None,
+        hops: Sequence[int | None] | None = None,
+        reasoning_types: Sequence[str | None] | None = None,
         max_new_tokens: int = 64,
         **generation_kwargs: Any,
     ) -> list[str]:
@@ -701,7 +790,13 @@ class TEAGLM(_Module):
         if not graphs or len(graphs) != len(prompts):
             raise ValueError("graphs and prompts must be non-empty and equally sized")
         embedding = self.language_model.get_input_embeddings()
-        prefixes = self.graph_prefix(graphs, source_ids=source_ids, target_ids=target_ids)
+        prefixes = self.graph_prefix(
+            graphs,
+            source_ids=source_ids,
+            target_ids=target_ids,
+            hops=hops,
+            reasoning_types=reasoning_types,
+        )
         sequences = []
         for index, prompt in enumerate(prompts):
             prompt_ids, _ = self._truncate(self._encode_text(prompt, answer=False), [])
@@ -1017,6 +1112,8 @@ class TEAGLMBackend:
             prompt,
             source_id=model_input.query.source,
             target_id=model_input.query.target,
+            hops=model_input.query.hops,
+            reasoning_type=model_input.query.reasoning_type.value,
             max_new_tokens=self.max_new_tokens,
         )
 
@@ -1055,6 +1152,8 @@ class TEAGLMBackend:
         graph_prompts: list[str] = []
         graph_source_ids: list[str | None] = []
         graph_target_ids: list[str | None] = []
+        graph_hops: list[int | None] = []
+        graph_reasoning_types: list[str | None] = []
         for index, model_input in enumerate(model_inputs):
             prompt = self.model.config.prompt_template.format(question=model_input.question)
             graph_once_after_first_turn = (
@@ -1072,6 +1171,8 @@ class TEAGLMBackend:
             graph_prompts.append(prompt)
             graph_source_ids.append(model_input.query.source)
             graph_target_ids.append(model_input.query.target)
+            graph_hops.append(model_input.query.hops)
+            graph_reasoning_types.append(model_input.query.reasoning_type.value)
         if text_prompts:
             generated = self.model.generate_text_only_batch(
                 text_prompts,
@@ -1087,6 +1188,8 @@ class TEAGLMBackend:
                     graph_prompts,
                     source_ids=graph_source_ids,
                     target_ids=graph_target_ids,
+                    hops=graph_hops,
+                    reasoning_types=graph_reasoning_types,
                     max_new_tokens=self.max_new_tokens,
                 ),
                 strict=True,

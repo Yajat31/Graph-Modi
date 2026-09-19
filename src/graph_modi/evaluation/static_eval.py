@@ -7,7 +7,7 @@ from collections import defaultdict
 from collections.abc import Sequence
 from typing import Any
 
-from graph_modi.evaluation.metrics import normalize_answer
+from graph_modi.evaluation.metrics import answers_match, normalize_answer
 from graph_modi.graph.solvers import render_question
 from graph_modi.models.base import GraphBackend, ModelInput, SymbolicMockBackend
 from graph_modi.schema import StaticQATuple
@@ -51,22 +51,25 @@ def evaluate_static_oracle(
         ]
         predictions = solver.answer_batch(inputs)
         for item, predicted in zip(chunk, predictions, strict=True):
+            reasoning_type = str(
+                item.metadata.get("reasoning_type", item.query.reasoning_type.value)
+            )
             gold = normalize_answer(item.answer)
             pred = normalize_answer(predicted)
             rows.append(
                 {
                     "tuple_id": item.tuple_id,
                     "split": item.split,
-                    "reasoning_type": item.metadata.get(
-                        "reasoning_type", item.query.reasoning_type.value
-                    ),
+                    "reasoning_type": reasoning_type,
                     "topology": item.topology.value,
                     "density_bin": item.density_bin.value,
                     "hop_depth": item.hop_depth.value,
                     "scale_bin": item.scale_bin,
                     "gold_answer": gold,
                     "predicted_answer": pred,
-                    "correct": pred == gold,
+                    "correct": answers_match(
+                        item.answer, predicted, reasoning_type=reasoning_type
+                    ),
                 }
             )
         tracker.tick(batch=f"{min(offset + batch_size, total)}/{total}")

@@ -514,6 +514,10 @@ def train_projector(
                     answers=[example.answer for example in batch],
                     source_ids=[example.metadata.get("source_id") for example in batch],
                     target_ids=[example.metadata.get("target_id") for example in batch],
+                    hops=[example.metadata.get("hops") for example in batch],
+                    reasoning_types=[
+                        example.metadata.get("reasoning_type") for example in batch
+                    ],
                 )
                 loss = output.loss
                 accelerator.backward(loss)

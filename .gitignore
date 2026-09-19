@@ -26,3 +26,4 @@ outputs/
 .env.*
 !.env.example
 wandb/
+irel

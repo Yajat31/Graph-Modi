@@ -263,6 +263,39 @@ def _queries(graph: AttributedGraph, reasoning_type: ReasoningType) -> Iterable[
     if reasoning_type is ReasoningType.CYCLE_MEMBERSHIP:
         for source in nodes:
             yield GraphQuery(reasoning_type, source)
+        return
+    if reasoning_type is ReasoningType.NODE_DEGREE:
+        for source in nodes:
+            yield GraphQuery(reasoning_type, source)
+        return
+    if reasoning_type is ReasoningType.CONSTRAINED_REACHABILITY:
+        # One filter (avoid inaccessible stations) rather than every line too:
+        # keeps the task about tracking a single exclusion class consistently,
+        # not generalizing across five differently-shaped ones at once.
+        for left_index, source in enumerate(nodes):
+            for target in nodes[left_index + 1 :]:
+                yield GraphQuery(
+                    reasoning_type, source, target, attribute="accessible", value=False
+                )
+        return
+    if reasoning_type is ReasoningType.WITHIN_HOPS_COUNT:
+        # hops=2 only: a fixed radius removes the ambiguity of the model
+        # having to disentangle "just 2 hops" from "just 3 hops" out of a
+        # single, num_layers-mixed node embedding (see HOPS_FEATURE_DIM).
+        for source in nodes:
+            yield GraphQuery(reasoning_type, source, hops=2)
+            yield GraphQuery(reasoning_type, source, attribute="accessible", value=True, hops=2)
+        return
+    if reasoning_type is ReasoningType.WITHIN_HOPS_LIST:
+        # Filtered only: "list everyone nearby" tests traversal alone and can
+        # run long; requiring the attribute match keeps answers short and
+        # keeps the task about filtering, the actual skill being probed.
+        for source in nodes:
+            yield GraphQuery(reasoning_type, source, attribute="accessible", value=True, hops=2)
+        return
+    if reasoning_type is ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS:
+        for source in nodes:
+            yield GraphQuery(reasoning_type, source, attribute="line", hops=2)
 
 
 _DEFAULT_CHANGED_QUERY_FALLBACK = (

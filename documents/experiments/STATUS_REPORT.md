@@ -466,6 +466,14 @@ TEA has a small rate of malformed answer strings (~0.8% oracle preds outside `{y
 ## 10. Limitations and claim boundary
 
 1. **Narrowed task mix** — three yes/no tasks only; not a full-benchmark claim.
+   CLEGR-style filtered aggregation, weighted path cost, constrained
+   reachability, and topology-with-filter task families are implemented and
+   exact-uniform-balanced for both static and dynamic val/test
+   (`configs/v2_clegr_extended_*.yaml`). Full status, iteration history, root
+   causes found/fixed (answer-format leakage, missing hop-radius signal, a
+   dead `node_degree` candidate-generation bug), the current TEA-only
+   results, and the deferred/next-step items:
+   [`results/v2_clegr_extended-20260919/report.md`](results/v2_clegr_extended-20260919/report.md).
 2. **`cycle_membership` class imbalance** inflates pooled majority and absolute cycle accuracy; models lose to majority on cycle.
 3. **Pooled majority is a bad primary comparator** on this mix; use task strata / balanced accuracy / answer-changing.
 4. **Absolute complexity trends are confounded by label skew** (especially density and scale); length flatness for oracle is expected by construction.

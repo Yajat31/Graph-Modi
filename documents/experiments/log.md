@@ -73,3 +73,5 @@ history.
 - `00ae618f` evaluate: {"phase": "evaluate", "splits": ["validation", "test"]}
 - `00ae618f` evaluate: {"phase": "evaluate", "splits": ["validation", "test"]}
 - `00ae618f` evaluate: {"phase": "evaluate", "splits": ["validation", "test"]}
+- `d478455b` generate-v2: {"distribution": "metro_v2_preliminary", "dynamic_only": true, "phase": "generate-v2", "report": {"static_validation": {"tuples": 234}, "validation": {"sessions": 312, "turns": 1170, "valid": true}}, "session_layout": "exact_uniform"}
+- `d478455b` (+uncommitted CLEGR task-family expansion) `v2_clegr_extended_exact2x_tea` static-eval, exploratory/in-progress, run on remote GPU box: {"phase": "static-eval", "overall_accuracy_before": 0.256, "overall_accuracy_v1_hops": 0.222, "overall_accuracy_v2_reasoning_type": 0.248, "splits": ["validation", "test"], "passed": false}. GraphToken/soft_prompt not yet retrained on this architecture; dynamic eval not yet run. Full writeup: [`results/v2_clegr_extended-20260919/report.md`](results/v2_clegr_extended-20260919/report.md).

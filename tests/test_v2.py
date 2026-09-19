@@ -111,6 +111,69 @@ def test_exact_uniform_sessions_grid() -> None:
     assert set(n_by_bin["scale_large"].values()) == {36}
 
 
+def test_watts_strogatz_edges_get_nontrivial_weights() -> None:
+    import random
+
+    from graph_modi.data.v2 import make_graph
+    from graph_modi.schema import TopologyFamily
+
+    graph = make_graph(random.Random(5), "train", 0, 24, TopologyFamily.WATTS_STROGATZ)
+    weights = {edge.weight for edge in graph.edges}
+    # PATH_COST is degenerate (== hop count) if every edge stays at the schema
+    # default of 1.0; Watts-Strogatz graphs must get the same weight range as
+    # SBM/Erdos-Renyi for weighted-path tasks to be meaningful on this topology.
+    assert weights != {1.0}
+    assert all(1.0 <= weight <= 5.0 for weight in weights)
+
+
+def test_generate_static_corpus_no_longer_drops_node_degree() -> None:
+    from graph_modi.data.v2 import generate_static_corpus
+    from graph_modi.schema import ReasoningType, TopologyFamily
+
+    static = generate_static_corpus(
+        graph_counts={"train": 2},
+        tuples_per_graph=3,
+        seed=9,
+        node_count_ranges={"train": (16, 24)},
+        topologies=(TopologyFamily.WATTS_STROGATZ,),
+        tasks=[ReasoningType.NODE_DEGREE],
+        progress=False,
+    )
+    # NODE_DEGREE previously had no _queries() branch, so every candidate list
+    # was empty and generate_static_corpus silently skipped it (0 tuples).
+    assert len(static["train"]) == 2 * 3
+    assert all(item.metadata["reasoning_type"] == "node_degree" for item in static["train"])
+
+
+def test_static_exact_uniform_grid_covers_every_cell_including_new_tasks() -> None:
+    from collections import Counter
+
+    from graph_modi.data.v2 import generate_static_exact_uniform
+    from graph_modi.schema import ReasoningType
+
+    tasks = [
+        ReasoningType.EDGE_EXISTS,
+        ReasoningType.NODE_DEGREE,
+        ReasoningType.CONSTRAINED_REACHABILITY,
+        ReasoningType.WITHIN_HOPS_COUNT,
+        ReasoningType.WITHIN_HOPS_LIST,
+        ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS,
+        ReasoningType.PATH_COST,
+    ]
+    tuples = generate_static_exact_uniform(
+        replicates_per_split={"validation": 1},
+        seed=5,
+        tasks=tasks,
+        progress=False,
+    )["validation"]
+    assert len(tuples) == 26 * 3 * len(tasks)
+    seen_tasks = {item.metadata["reasoning_type"] for item in tuples}
+    assert seen_tasks == {task.value for task in tasks}
+    cells = Counter(item.metadata["factorial_cell"] for item in tuples)
+    assert len(cells) == 26 * 3 * len(tasks)
+    assert all(count == 1 for count in cells.values())
+
+
 def test_progress_tracker_emits(monkeypatch) -> None:
     lines: list[str] = []
 
