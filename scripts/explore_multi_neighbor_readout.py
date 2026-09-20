@@ -38,6 +38,7 @@ from graph_modi.models.multi_neighbor_readout import (  # noqa: E402
     MultiNeighborConfig,
     MultiNeighborTEAGLM,
     NeighborTokenProjector,
+    save_neighbor_checkpoint,
 )
 from graph_modi.models.tea_glm import TEAGLMBackend, load_external_component  # noqa: E402
 
@@ -59,6 +60,12 @@ def main() -> None:
         "--eval-tasks", nargs="*", default=None, help="restrict eval print-out to these tasks"
     )
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--neighbor-checkpoint-out",
+        default=None,
+        help="where to save the trained neighbor projector "
+        "(default: <output_dir>/multi_neighbor_projector)",
+    )
     args = parser.parse_args()
 
     import torch
@@ -145,6 +152,12 @@ def main() -> None:
             f"[explore] epoch {epoch + 1}/{args.epochs} done mean_loss={mean_loss:.4f}",
             flush=True,
         )
+
+    neighbor_checkpoint_dir = Path(
+        args.neighbor_checkpoint_out or (Path(eval_config.output_dir) / "multi_neighbor_projector")
+    )
+    save_neighbor_checkpoint(neighbor_projector, neighbor_checkpoint_dir)
+    print(f"[explore] saved neighbor projector to {neighbor_checkpoint_dir}", flush=True)
 
     print("[explore] evaluating on static exact-uniform validation/test...", flush=True)
     max_new_tokens = int(eval_config.section("evaluation").get("max_new_tokens", 96))

@@ -24,8 +24,10 @@ the pooled path, keep both available.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
+from pathlib import Path
 from typing import Any
 
 from graph_modi.models.tea_glm import (
@@ -219,3 +221,39 @@ class MultiNeighborTEAGLM(TEAGLM):
         )
         neighbor_tokens = self.neighbor_projector(neighbor_vectors)
         return torch.cat([summary_tokens, neighbor_tokens], dim=1).to(dtype=embedding_dtype)
+
+
+_NEIGHBOR_CHECKPOINT_FORMAT = "graph-modi-multi-neighbor-readout-v1"
+
+
+def save_neighbor_checkpoint(
+    neighbor_projector: NeighborTokenProjector, checkpoint_dir: str | Path
+) -> None:
+    """Persist the trained neighbor projector -- the exploratory harness
+    originally trained and evaluated it in one process without ever writing
+    it to disk, so a v3 run couldn't be reused for a later, separate dynamic
+    eval. Mirrors the format/metadata style of the main checkpoint saver in
+    training.py, scoped down to this one extra component."""
+    require_tea_dependencies()
+    output = Path(checkpoint_dir)
+    output.mkdir(parents=True, exist_ok=True)
+    torch.save(neighbor_projector.state_dict(), output / "neighbor_projector.pt")
+    metadata = {
+        "format": _NEIGHBOR_CHECKPOINT_FORMAT,
+        "config": asdict(neighbor_projector.config),
+    }
+    (output / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+
+
+def load_neighbor_checkpoint(checkpoint_dir: str | Path) -> NeighborTokenProjector:
+    """Reconstruct a trained NeighborTokenProjector from
+    ``save_neighbor_checkpoint``'s output."""
+    require_tea_dependencies()
+    checkpoint = Path(checkpoint_dir)
+    metadata = json.loads((checkpoint / "metadata.json").read_text(encoding="utf-8"))
+    if metadata.get("format") != _NEIGHBOR_CHECKPOINT_FORMAT:
+        raise ValueError(f"Unsupported neighbor-projector checkpoint metadata: {checkpoint}")
+    config = MultiNeighborConfig(**metadata["config"])
+    projector = NeighborTokenProjector(config)
+    projector.load_state_dict(torch.load(checkpoint / "neighbor_projector.pt", map_location="cpu"))
+    return projector
