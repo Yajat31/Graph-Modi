@@ -1,0 +1,28 @@
+This directory vendors five files from the official CLEGR benchmark
+repository:
+
+  https://github.com/rethinking-graph-language-evals/CLEGR
+
+  (arXiv 2508.20583, "A Graph Talks, But Who's Listening? Rethinking
+  Evaluations for Graph-Language Models", NeurIPS 2025 New Perspectives on
+  Graph Machine Learning workshop)
+
+Vendored files (from src/data/gqa/ upstream), unmodified except as noted:
+  - types_.py
+  - functional.py
+  - questions.py
+  - generate_graph.py   (one dependency patch: `import bezier` and its one
+                          call site replaced with an equivalent pure-numpy
+                          cubic Bezier evaluation, since the `bezier` PyPI
+                          package ships no wheels for Python 3.13+ and fails
+                          to build from source in this project's
+                          environment -- see `_cubic_bezier_evaluate_multi`
+                          in the file for the exact substitution. No other
+                          logic was changed.)
+  - args.py
+
+Original repository licensed under the Apache License, Version 2.0. See:
+  https://github.com/rethinking-graph-language-evals/CLEGR/blob/main/LICENSE
+
+A copy of the Apache License, Version 2.0 is available at:
+  http://www.apache.org/licenses/LICENSE-2.0
