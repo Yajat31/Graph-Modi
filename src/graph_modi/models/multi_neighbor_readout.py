@@ -193,13 +193,16 @@ class MultiNeighborTEAGLM(TEAGLM):
             tensor_graph = tensor_graph.to(self.device)
             with torch.no_grad():
                 node_repr = self.gnn(tensor_graph)
-            pooled = node_repr.mean(dim=0)
             zeros = torch.zeros(node_repr.shape[-1], dtype=node_repr.dtype, device=node_repr.device)
             node_index = {
                 node_id: position for position, node_id in enumerate(tensor_graph.node_ids)
             }
             source_row = node_repr[node_index[source_id]] if source_id in node_index else zeros
             target_row = node_repr[node_index[target_id]] if target_id in node_index else zeros
+            # Task-conditional pooling, matching TEAGLM.encode_graphs -- see that
+            # function's docstring (tea_glm.py) for why.
+            has_node_anchor = source_id in node_index or target_id in node_index
+            pooled = zeros if has_node_anchor else node_repr.mean(dim=0)
             hop_feature = torch.tensor(
                 [float(hop_count) if hop_count is not None else 0.0],
                 dtype=node_repr.dtype,

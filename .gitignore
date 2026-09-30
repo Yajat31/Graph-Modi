@@ -27,3 +27,4 @@ outputs/
 !.env.example
 wandb/
 irel
+*.pdf

@@ -184,7 +184,7 @@ Full per-task breakdown (validation / test, percent):
   real BERT-768 text embeddings, larger GraphSAGE) saturate on fact-retrieval but do **not**
   clearly outperform a graph-blind soft-prompted LLM on CLEGR-Reasoning (filtering/aggregation/
   path/topology) — the paper's central finding, not a gap specific to this implementation. See
-  §12 for how this project's dynamic (multi-turn) extension relates to that finding.
+  §13 for how this project's dynamic (multi-turn) extension relates to that finding.
 - TEA-GLM's own paper reports in-domain supervised node-classification accuracy of ~58-66%
   (Arxiv, Computer) and cross-dataset link-prediction AUC of ~55-69% — simpler, single-step
   tasks, offered here only as a rough scale reference for "what this architecture family
@@ -612,9 +612,9 @@ majority-baseline check on the new 12-static/8-dynamic CLEGR-extended task famil
 §8.5) already has this rigor; it had never been ported to the newer, larger task family this
 whole v2_clegr_extended effort is built on. `scripts/analyze_clegr_extended_dynamic.py` applies
 the same methodology (Wilson 95% CIs via `graph_modi.evaluation.metrics`, majority-class-shortcut
-audit, per-class + balanced accuracy) to all 5 completed full dynamic-eval result sets (TEA v2/v3,
-GraphToken v2/v3, aspect-readout), averaged across the 12 real conditions (excluding
-`tool_solver`/`majority_prior`).
+audit, per-class + balanced accuracy) to all 6 completed full dynamic-eval result sets (TEA v2/v3,
+GraphToken v2/v3, aspect-readout, and the graph-blind `soft_prompt` floor baseline added below),
+averaged across the 12 real conditions (excluding `tool_solver`/`majority_prior`).
 
 **Finding 1 (reassuring): no architecture is a trivial majority-labeler on any task.**
 Across all 5 architectures × 8 tasks × 2 splits (80 checks), `P(predict = majority label)` never
@@ -637,6 +637,7 @@ to be exactly 50%):
 | GraphToken v2 (pooled) | 39.0 / 39.8 | **36.5 / 36.4** | 40.8 / 41.2 | 46.9 / 47.2 | **40.8 / 41.1** |
 | GraphToken v3 (multi-neighbor) | 47.9 / 48.5 | 48.6 / 46.7 | 45.5 / 45.5 | 47.5 / 46.8 | **47.4 / 46.9** |
 | TEA aspect-readout | 48.9 / 50.7 | 48.0 / 46.2 | 49.4 / 48.8 | 48.4 / 48.2 | **48.7 / 48.5** |
+| soft_prompt (graph-blind) | 51.6 / 49.9 | 50.0 / 50.6 | 52.0 / 51.2 | 50.1 / 53.4 | **50.9 / 51.3** |
 
 (balanced accuracy = mean of accuracy-given-gold-majority-class and accuracy-given-gold-minority-
 class; 50% is the score a coin flip -- or any constant predictor -- gets by construction on a
@@ -646,7 +647,7 @@ binary task)
 for class balance, despite its raw accuracy (37.1/37.7%, §7.4) looking merely "weak" rather than
 alarming next to the 75.5/75.8% majority-class baseline. TEA v2's `constrained_reachability`
 (39.9/39.8%) and `edge_exists` (42.9/42.2%) are also below chance. **Ranking by this corrected
-metric matches the raw-accuracy ranking already reported in §7.4/§8.5/§10.3** (TEA v3 > aspect-
+metric matches the raw-accuracy ranking already reported in §7.4/§8.5/§11.3** (TEA v3 > aspect-
 readout > GraphToken v3 > TEA v2 > GraphToken v2) -- so the qualitative comparisons elsewhere in
 this report hold up under the stricter metric -- but the *absolute* performance floor revealed
 here is far more sobering than raw accuracy suggested, and this is exactly the kind of check a
@@ -661,7 +662,109 @@ raw accuracy relegated to a secondary/diagnostic role -- raw accuracy on a 75%-s
 below-chance once corrected, which raw-accuracy-only reporting throughout §6-8 of this document
 did not catch.
 
-## 10. Validation against the real CLEGR benchmark (in progress)
+**Finding 3 (the headline result): the graph-blind floor is not a floor.** `soft_prompt` --
+the same architecture used as the graph-blind baseline throughout this report, given no graph at
+all, only the question text -- was run through the identical 12-condition dynamic-eval harness
+(same sessions, same turns, same scoring) for the first time this pass. As expected for a model
+that cannot see graph structure, its binary-task balanced accuracy sits almost exactly at the
+50% chance floor (50.9/51.3% mean, table above) -- it is not secretly solving these tasks via a
+label-skew shortcut (Finding 1 already ruled that out generally, and this confirms it
+specifically for the one architecture that has no other way to be right). But its **overall raw
+accuracy across all 8 dynamic tasks is 30.7%/31.4%** -- higher than TEA v2 pooled's 27.8/27.6%
+(§7.4) and statistically indistinguishable from TEA v3's 31.7/31.6% (§7.3), despite TEA v2/v3
+both having a real GNN, a trained projector, and access to the actual graph at every turn. A
+model with zero graph access is matching or beating architectures that are given the graph.
+
+This is not a new phenomenon in isolation -- it is the exact finding the source CLEGR paper
+reports for the **static** setting (§13) -- but it had never been checked for the **dynamic,
+multi-turn** setting this project adds. The fact that it replicates here, at a comparable
+magnitude, across a completely different task distribution (8-task dynamic roster vs. CLEGR's
+original two-way Facts/Reasoning split) and a completely different evaluation harness (14-
+condition representation-robustness suite vs. single-shot QA), is the strongest single piece of
+evidence that (a) this project's baselines are implemented correctly (they reproduce a known,
+independently-published effect rather than an idiosyncratic bug) and (b) the effect CLEGR
+identified is not an artifact of static single-shot evaluation -- it persists, undiminished, when
+the same graph has to be tracked across a multi-turn session. Aspect-readout (§8, 39.6/38.9%
+static; 30.3/30.0% dynamic) is the one architecture in this report that clears the soft-prompt
+floor by a wide margin statically and by a real (if much smaller) margin dynamically -- see §8.5
+for why that gap narrows so much between the two settings, which is itself evidence for why
+static-only evaluation of graph-LM architectures is insufficient.
+
+**Full ranking, all 6 architectures, dynamic overall accuracy (validation / test, percent):**
+
+| Architecture | Validation | Test |
+|---|---|---|
+| TEA v3 (multi-neighbor) | 31.7 [31.4,32.0] | 31.6 [31.3,31.9] |
+| soft_prompt (graph-blind) | 30.7 [29.8,31.6] | 31.4 [30.5,32.4] |
+| TEA aspect-readout | 30.3 | 30.0 |
+| GraphToken v3 (multi-neighbor) | 29.0 | 28.7 |
+| TEA v2 (pooled) | 27.8 | 27.6 |
+| GraphToken v2 (pooled) | 26.1 | 25.9 |
+
+(95% Wilson CIs shown where computed via `analyze_clegr_extended_dynamic.py`; soft_prompt's is
+wider because it was evaluated on 1 condition x 9,360 turns/split vs. the GLMs' 12 conditions x
+~131k turns/split -- an artifact of its eval harness config, not of the model.)
+
+**The graph-blind baseline does not consistently underperform -- it consistently competes.** It
+clearly beats 3 of 4 GraphToken/TEA-v2 configurations (TEA v2 pooled, GraphToken v2 pooled,
+GraphToken v3), is statistically indistinguishable from aspect-readout, and is only edged out by
+the single best-tuned GLM variant, TEA v3 -- by about one point, with the two 95% CIs nearly
+touching (soft_prompt's test-split upper bound of 32.4% overlaps TEA v3's lower bound of 31.3%).
+No architecture in this study puts daylight between itself and a model that cannot see the graph
+at all. That is the uncomfortable, publication-relevant version of this result: it is not that
+GLMs universally lose to soft-prompting in the dynamic setting, but that **only the single most
+carefully-tuned variant manages a marginal, borderline-significant win**, and every simpler or
+less-tuned GLM configuration tested here does not.
+
+## 10. Multi-seed check on the reference model: TEA v2 pooled
+
+Everything above (§7-9) is a single training seed (42) per architecture. To find out whether the
+comparisons this report leans on (soft_prompt vs. TEA v2, TEA v2 vs. TEA v3, etc.) are stable
+across training reruns or are themselves within noise, TEA v2 pooled -- the architecture named as
+the "reference model" for this check -- was retrained from scratch twice more (seeds 43, 44; same
+data, same hyperparameters, only the training seed differs) and run through the identical full
+14-condition dynamic-eval harness both times.
+
+| Seed | Validation | Test |
+|---|---|---|
+| 42 (original) | 27.8% | 27.6% |
+| 43 | 32.2% [31.9%,32.5%] | 32.2% [31.9%,32.5%] |
+| 44 | 30.5% [30.3%,30.8%] | 30.6% [30.3%,30.8%] |
+| **mean +/- range** | **30.2% +/- 2.2** (27.8-32.2) | **30.1% +/- 2.3** (27.6-32.2) |
+
+(each seed's own 95% Wilson CI, shown where computed, is under +/-0.3 points -- the ~4.5-point
+seed-to-seed spread is real training variance, not sampling noise within a single eval run)
+
+**This is the single most important caveat in this report.** A ~4.5-point range from training
+seed alone is *larger than* several of the architecture-vs-architecture gaps §7.4, §8.5, and §9
+treat as meaningful (TEA v3's +3.9/+4.0 over TEA v2 in §7.4; GraphToken v3's +2.9/+2.8 over
+GraphToken v2; aspect-readout's dynamic edge over TEA v2 in §8.5). Concretely: soft_prompt's
+30.7%/31.4% point estimate, which §9's Finding 3 treats as "beating TEA v2 pooled" using only
+seed 42 (27.8/27.6%), in fact **falls inside TEA v2 pooled's own 3-seed range (27.6-32.2%)** --
+seed 43 alone (32.2%) would have made TEA v2 pooled look like it clearly beats soft_prompt. Which
+story is "true" depends entirely on which of three equally-valid training runs happened to be
+reported. Neither §9's framing nor its reverse is wrong exactly -- both are single-seed anecdotes
+being over-interpreted.
+
+**What this does and does not undermine:**
+- It does **not** undermine the qualitative finding that no architecture in this study clearly and
+  robustly separates itself from the graph-blind floor -- if anything it strengthens that claim,
+  since even TEA v2's *best* seed-43 run (32.2%) only ties, not beats, TEA v3's single-seed result
+  (31.6/31.7%), and the "TEA v3 marginally beats soft_prompt" claim in §9 was already flagged there
+  as borderline-significant before this section existed.
+- It **does** undermine treating any single-seed gap smaller than ~4-5 points between two
+  *different* architectures (as opposed to two seeds of the *same* architecture) as a confirmed
+  ranking, until that architecture is also seed-checked. §7.4's GraphToken-v2-vs-v3 gap (+2.9/+2.8)
+  and §8.5's aspect-vs-TEA-v2 gap are exactly this size and have not yet been seed-checked.
+- **Recommendation:** report point estimates from single seeds as provisional throughout this
+  document unless explicitly marked otherwise; before any external submission, either (a) extend
+  this same 3-seed check to TEA v3, GraphToken v2/v3, and aspect-readout so every headline
+  comparison in §7-9 has error bars, or (b) reframe the paper's claims at the granularity this
+  data actually supports ("no architecture tested clearly and robustly beats graph-blind" survives
+  seed noise; "architecture X beats architecture Y by N points" mostly does not, at this sample
+  size of one seed per architecture).
+
+## 11. Validation against the real CLEGR benchmark (in progress)
 
 Everything in §1-9 evaluates a synthetic benchmark deliberately modeled on CLEGR's design (arXiv
 2508.20583) but never validated against the actual released dataset/code. Started building that
@@ -717,7 +820,7 @@ already-working TEA/GraphToken pipeline, rather than reproducing their full trai
    (only Figure 4, an image), so comparison will be qualitative/directional, not a numeric
    head-to-head.
 
-### 10.1 Full-scale run: real dataset generated, TEA trained and evaluated
+### 11.1 Full-scale run: real dataset generated, TEA trained and evaluated
 
 Generated the full 500-graph dataset (`--small`, matching the paper's own graph-size default):
 **55,244 real CLEGR examples** (33,156 train / 11,047 validation / 11,037 test), split by
@@ -760,7 +863,7 @@ near **0%** — expected, since nothing in this architecture gives the LLM a way
 string it has never seen written out in its prefix tokens (the graph is never serialized as
 text in this training path, only encoded numerically).
 
-### 10.2 GraphToken result and combined comparison
+### 11.2 GraphToken result and combined comparison
 
 **GraphToken on real CLEGR test (11,037 examples), 3 epochs, warm-started from the same GNN
 pretrain checkpoint as TEA:**
@@ -785,12 +888,12 @@ hyperparameters, differing only in whether the GNN stays frozen or trains jointl
 The same handful of task types hit ~100% for **both** architectures independently
 (`EdgeFilterAirconCount`, `PathEarliestBuilt`, `PathYearSpan`, `StationExistence1/2`) — two
 separately-trained models converging on the exact same near-perfect scores on the exact same
-tasks is stronger evidence for the majority-class-shortcut concern raised in §10.1 than either
+tasks is stronger evidence for the majority-class-shortcut concern raised in §11.1 than either
 result alone; a proper majority-baseline comparator (as used throughout §6-9 of this report for
 the synthetic benchmark) would be needed before treating these as genuine capability wins,
 and is flagged as the most important follow-up before drawing further conclusions from this run.
 
-### 10.3 Aspect-readout, trained fresh on the same real CLEGR data — the fair 3-way comparison
+### 11.3 Aspect-readout, trained fresh on the same real CLEGR data — the fair 3-way comparison
 
 An initial attempt at this check evaluated the *existing* synthetic-benchmark-trained TEA
 checkpoint (v2 pooled) zero-shot against real CLEGR, with no retraining — user-flagged
@@ -798,7 +901,7 @@ correctly as not a fair comparison (apples-to-oranges: a checkpoint that never s
 exact phrasing/vocabulary vs. checkpoints trained on 33k real CLEGR examples). That run was
 killed after reaching ~13% accuracy (consistent with poor transfer, as expected) and is not
 reported further; instead, aspect-readout was trained **from scratch on the identical real
-CLEGR data**, same GNN-pretrain regime, same 3 epochs, same eval methodology as §10.1/§10.2 --
+CLEGR data**, same GNN-pretrain regime, same 3 epochs, same eval methodology as §11.1/§11.2 --
 `scripts/train_aspect_readout_clegr_real.py`, mirroring `train_aspect_readout_from_scratch.py`'s
 architecture (fresh GNN, MHLA-style sparse-routed heads, no hand-fed task/neighbor signal) but
 loading real `TrainingExample`s directly instead of the synthetic static corpus.
@@ -825,7 +928,7 @@ The same near-100%-accuracy tasks (`EdgeFilterAirconCount`, `PathEarliestBuilt`,
 `StationExistence1/2`) appear for **all three** independently-trained architectures now --
 three separate models, three different readout mechanisms, converging on identical near-perfect
 scores on the identical handful of tasks is stronger evidence still for the majority-class-
-shortcut concern raised in §10.1-10.2. **This remains the most important open follow-up**: run
+shortcut concern raised in §11.1-10.2. **This remains the most important open follow-up**: run
 a majority-baseline comparator (as used throughout §6-9 for the synthetic benchmark) against
 these specific task types before treating them as genuine capability wins.
 
@@ -833,15 +936,63 @@ these specific task types before treating them as genuine capability wins.
 architectures, trained from scratch on 33k real CLEGR examples for 3 epochs, reach 40-41%
 overall accuracy on the real held-out test set -- comfortably above chance on most task types.
 Aspect-readout's edge over TEA/GraphToken replicates cleanly on real external data, consistent
-with (and now validated beyond) the synthetic-benchmark results in §8. Not yet checked: the
-paper's own central finding (GLMs failing to clear soft-prompted baselines specifically on
-*reasoning* tasks) -- no soft-prompt baseline was trained in this batch -- and the
-majority-baseline check flagged above. Both are natural next steps before the absolute accuracy
-numbers (as opposed to the relative TEA-vs-GraphToken-vs-aspect-readout ranking, which is on
-firmer footing) can be read as more than "the pipeline produces working, learning models on
-real external data."
+with (and now validated beyond) the synthetic-benchmark results in §8. Not yet checked at the time
+this was written: the paper's own central finding (GLMs failing to clear soft-prompted baselines
+specifically on *reasoning* tasks) -- see §11.4 below, run immediately after -- and the
+majority-baseline check flagged above, still open.
 
-### 10.4 Control: is aspect-readout's win just a bigger token budget?
+### 11.4 Soft-prompt (graph-blind) on real CLEGR -- the paper's central finding, checked directly
+
+Every other real-CLEGR comparison so far (§11.1-11.3) only cited the source CLEGR paper's own
+claim that a graph-blind soft-prompted LLM is "highly competitive with" its GLM baselines (§13);
+none of it had been verified on this project's own data-generation code, training pipeline, and
+scoring logic. Wrote `scripts/train_soft_prompt_clegr_real.py` (mirrors `train_clegr_real.py`'s
+Phase 2/3 pattern exactly, minus the GNN phase entirely -- `SoftPromptGLM` from
+`src/graph_modi/models/soft_prompt.py` sees only the question text via one learned 10-token
+prefix shared across every example, never the graph) and trained it from scratch on the identical
+33k-example real CLEGR training split used for TEA/GraphToken/aspect-readout.
+
+| | TEA | GraphToken | Aspect-readout | **soft_prompt (graph-blind)** |
+|---|---|---|---|---|
+| **Overall** | 40.2% | 39.8% | 41.2% | **41.15%** |
+| FactBased | 40.7% | 39.8% | 41.0% | **42.02%** |
+| ReasoningBased | 39.9% | 39.9% | **41.4%** | 40.58% |
+| — Aggregation | 27.4% | 26.9% | **29.6%** | 28.65% |
+| — Filter | 38.9% | 37.1% | 38.9% | 39.88% |
+| — PathReasoning | **49.1%** | 48.3% | 49.4% | 48.42% |
+| — Topology | 43.4% | 46.3% | **46.7%** | 44.61% |
+
+**This replicates the paper's central finding cleanly, on our own pipeline.** Soft-prompt (zero
+graph access) is statistically tied with aspect-readout, the best of the three graph-aware
+architectures, and **beats TEA and GraphToken outright** on overall accuracy -- including beating
+all three on `FactBased`, the category where having the actual graph should matter least (pure
+node/edge property lookup) but arguably should still help TEA/GraphToken more than a model that
+never sees the graph at all.
+
+**Direct, strong evidence the graph pathway isn't silently broken (a genuine correctness check,
+not just a numbers-match):** the exact same five task types flagged as suspicious in §11.1-11.2
+(`EdgeFilterAirconCount`, `PathEarliestBuilt`, `PathYearSpan`, `StationExistence1/2`) hit **exactly
+1.0** for soft_prompt too. A model with literally zero graph access cannot be affected by a bug in
+this project's GNN or projector code -- if it independently reaches the same near-perfect scores
+on the same task types as TEA and GraphToken, that is a property of the CLEGR data/task design
+(surface-level textual cues or severe answer-label skew answerable without structure), not
+evidence of a broken graph-encoding pathway in this project's own architectures. This is more
+convincing than the relative soft-prompt-vs-GLM comparison alone, which by itself cannot
+distinguish "the architecture genuinely doesn't need the graph here" from "our GLM has a bug that
+stops it from using the graph" -- a broken GLM would produce the *same* soft-prompt-ties-GLM
+pattern. Three independently-trained models, one of them structurally incapable of using the
+graph, converging on identical scores on identical tasks rules out the second explanation for
+this specific pattern.
+
+**Still the most important open follow-up, now more clearly needed than before:** a formal
+majority-baseline audit (as used throughout §6-10 for the synthetic benchmark, and not yet ported
+to real CLEGR) against these five task types specifically, to determine whether they are
+solvable from severe label skew (a trivial constant-answer shortcut) or from some other
+text-only signal (e.g. a phrasing pattern) -- either way, they are answerable without the graph
+and should probably be excluded or reweighted before quoting an "overall accuracy" number on real
+CLEGR as a graph-reasoning result.
+
+### 11.5 Control: is aspect-readout's win just a bigger token budget?
 
 Direct question worth answering before crediting the sparse-routing mechanism: aspect-readout's
 graph prefix is **13 tokens** (10 unchanged summary tokens + 3 routed aspect tokens), strictly
@@ -884,9 +1035,9 @@ bottleneck (backward-pass activation memory through the full frozen 32-layer sta
 reducing batch size alone did not touch). The run then completed cleanly once the other job
 finished and freed the partition.
 
-## 11. Proposed next step 3: Perceiver/Q-Former-style cross-attention resampler (in progress)
+## 12. Proposed next step 3: Perceiver/Q-Former-style cross-attention resampler (in progress)
 
-### 11.1 Motivation
+### 12.1 Motivation
 
 TEA and GraphToken both project graph features into the LLM's *input embedding space* and
 concatenate them into the token sequence — the same pattern LLaVA uses for images (and the
@@ -902,7 +1053,7 @@ cross-attention module that *resamples* the graph representation into a handful 
 *before* the LLM, still just prepended to the input sequence like v2/v3/aspect-readout — no
 surgery on the frozen LLM's attention, `forward`/`generate`/`generate_batch` unchanged.
 
-### 11.2 Design: learned queries cross-attending over the full node matrix
+### 12.2 Design: learned queries cross-attending over the full node matrix
 
 Implemented as `src/graph_modi/models/perceiver_readout.py`:
 
@@ -925,7 +1076,7 @@ Implemented as `src/graph_modi/models/perceiver_readout.py`:
   v3/aspect-readout, which are additive) — it's being tested as a full alternative readout, not
   an extra channel alongside the old one.
 
-### 11.3 Also trained with a fresh GNN, in parallel with §8
+### 12.3 Also trained with a fresh GNN, in parallel with §8
 
 Originally scoped to reuse v2's frozen GNN (this resampler attends over the *full* per-node
 matrix, which already has genuine per-node diversity from message passing — unlike aspect
@@ -937,7 +1088,7 @@ attributable to the readout mechanism, not to different underlying GNNs. Both jo
 is independently capped at 50% via `torch.cuda.set_per_process_memory_fraction`; observed
 combined usage ~40GB of 97GB while both were active, well within bounds.
 
-### 11.4 Status: complete, negative result
+### 12.4 Status: complete, negative result
 
 Launched 2026-09-21, immediately after §8. Integration-tested first (forward + backward pass
 with the real Llama-3.1-8B and variable-sized graphs in one batch, confirmed the resampler's
@@ -987,7 +1138,7 @@ Training loss plateaued at ~0.95-0.99 for the last 6 of 10 epochs (vs. §8's ste
    same budget.
 
 **Not concluded from this:** that cross-attention resamplers are a bad idea in general, or that
-the full node matrix doesn't carry enough information (§11.1's original architectural argument for
+the full node matrix doesn't carry enough information (§12.1's original architectural argument for
 why this shouldn't need a from-scratch GNN retrain still holds) — the likely fix is optimization
 hygiene (LR warmup + decay, more epochs, possibly zero-initializing the attention output
 projection so the block starts as a near-identity/no-op like Flamingo's gating does), not a
@@ -996,26 +1147,28 @@ direction unless there's specific interest in debugging the optimization, and tr
 aspect-readout as the result to build on** — it beat v3 on overall accuracy with a harder,
 more general setup, at a fraction of this probe's engineering and debugging cost.
 
-## 12. Related work: positioning the multi-turn benchmark
+## 13. Related work: positioning the multi-turn benchmark
 
 The core contribution of this project is the **benchmark methodology** — exact-uniform
 balancing, dynamic graph-update sessions, and the 14-condition representation-robustness suite
-(§7) — not any one architecture probed with it (§8/§11 are case studies run *using* the
+(§7) — not any one architecture probed with it (§8/§12 are case studies run *using* the
 benchmark, not the thing being published). This section positions that methodology against the
 closest prior work.
 
 **CLEGR / "A Graph Talks, But Who's Listening? Rethinking Evaluations for Graph-Language
 Models" (arXiv:2508.20583).** This is the direct source of the task family used throughout
-(§1-§10): a synthetic subway-graph domain split into CLEGR-Facts (pure node/edge property
+(§1-§11): a synthetic subway-graph domain split into CLEGR-Facts (pure node/edge property
 retrieval, 22k questions) and CLEGR-Reasoning (compositional filtering/aggregation/path/topology
 reasoning, 32k questions). Its central finding — that a graph-blind soft-prompted LLM baseline
 performs on par with full-GNN GLMs on CLEGR-Reasoning, calling into question whether these
 architectures actually need the graph — is the direct motivation for this project's `soft_prompt`
-condition as a graph-blind floor in every eval (§7, §9, §10.2). **The gap this project fills**:
+condition as a graph-blind floor in every eval (§7, §9, §11.2), and was independently replicated
+on our own real-CLEGR pipeline rather than only cited (§11.4: soft-prompt statistically ties
+aspect-readout and beats TEA/GraphToken outright). **The gap this project fills**:
 CLEGR (and its own GLM baselines) is evaluated **statically** — one question against one fixed
 graph, asked once. It has no notion of a session, a graph update, or of testing whether a model's
 apparent graph-understanding survives being re-presented across turns in a different but
-information-equivalent form. §7.4, §8.5, and §10.4 show that architecture rankings that look
+information-equivalent form. §7.4, §8.5, and §11.5 show that architecture rankings that look
 stable in a static, single-shot eval can flip or compress once the same task is asked inside a
 multi-turn session — i.e., CLEGR's static parity finding is not the end of the story; the dynamic
 setting can make the picture *more* unstable, not less, which is the headline argument for why a

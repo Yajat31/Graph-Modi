@@ -150,6 +150,23 @@ class SoftPromptGLM(_Module):
             token_ids.append(int(self.tokenizer.eos_token_id))
         return token_ids
 
+    # See TEAGLM.graph_token_position: "before_answer" (original) or "prefix" (CLEGR Eq. 3).
+    graph_token_position: str = "before_answer"
+
+    def _assemble_prompt(self, prompt_ids: list[int], prefix: Any, embedding: Any) -> list[Any]:
+        prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
+        if self.graph_token_position == "prefix":
+            has_bos = bool(
+                prompt_ids
+                and self.config.add_bos_token
+                and prompt_ids[0] == self.tokenizer.bos_token_id
+            )
+            lead = 1 if has_bos else 0
+            parts = [embedding(prompt_tensor[:lead]), prefix, embedding(prompt_tensor[lead:])]
+        else:
+            parts = [embedding(prompt_tensor), prefix]
+        return [part for part in parts if part.shape[0] > 0]
+
     def _truncate(self, prompt_ids: list[int], answer_ids: list[int]) -> tuple[list[int], list[int]]:
         available = self.config.max_sequence_length - self.config.prefix_tokens
         if available <= 0:
@@ -174,12 +191,9 @@ class SoftPromptGLM(_Module):
             )
             if not answer_ids:
                 raise ValueError("An answer produced no tokens")
-            prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
             answer_tensor = torch.tensor(answer_ids, dtype=torch.long, device=self.device)
-            parts = []
-            if prompt_ids:
-                parts.append(embedding(prompt_tensor))
-            parts.extend([prefix, embedding(answer_tensor)])
+            parts = self._assemble_prompt(prompt_ids, prefix, embedding)
+            parts.append(embedding(answer_tensor))
             sequences.append(torch.cat(parts, dim=0))
             masked = len(prompt_ids) + self.config.prefix_tokens
             label_rows.append(
@@ -213,9 +227,10 @@ class SoftPromptGLM(_Module):
     @torch.no_grad() if torch is not None else (lambda function: function)
     def generate(self, prompt: str, *, max_new_tokens: int = 64, **generation_kwargs: Any) -> str:
         prompt_ids, _ = self._truncate(self._encode_text(prompt, answer=False), [])
-        prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
-        prompt_embeds = self.language_model.get_input_embeddings()(prompt_tensor)
-        inputs_embeds = torch.cat([prompt_embeds, self._prefix()], dim=0).unsqueeze(0)
+        embedding = self.language_model.get_input_embeddings()
+        inputs_embeds = torch.cat(
+            self._assemble_prompt(prompt_ids, self._prefix(), embedding), dim=0
+        ).unsqueeze(0)
         attention_mask = torch.ones(inputs_embeds.shape[:2], dtype=torch.long, device=self.device)
         with self._lm_autocast():
             generated = self.language_model.generate(
@@ -225,7 +240,7 @@ class SoftPromptGLM(_Module):
                 use_cache=True,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs,
+                **{"do_sample": False, **generation_kwargs},
             )
         return self.tokenizer.decode(generated[0], skip_special_tokens=True).strip()
 
@@ -252,8 +267,7 @@ class SoftPromptGLM(_Module):
         sequences = []
         for prompt in prompts:
             prompt_ids, _ = self._truncate(self._encode_text(prompt, answer=False), [])
-            prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
-            sequences.append(torch.cat([embedding(prompt_tensor), prefix], dim=0))
+            sequences.append(torch.cat(self._assemble_prompt(prompt_ids, prefix, embedding), dim=0))
         inputs_embeds, attention_mask = self._left_pad_embeds(sequences, self.device)
         with self._lm_autocast():
             generated = self.language_model.generate(
@@ -263,7 +277,7 @@ class SoftPromptGLM(_Module):
                 use_cache=True,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs,
+                **{"do_sample": False, **generation_kwargs},
             )
         return [self.tokenizer.decode(row, skip_special_tokens=True).strip() for row in generated]
 

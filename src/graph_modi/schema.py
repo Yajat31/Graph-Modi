@@ -145,10 +145,14 @@ class ReasoningType(str, Enum):
     WITHIN_HOPS_COUNT = "within_hops_count"
     WITHIN_HOPS_LIST = "within_hops_list"
     MOST_COMMON_ATTRIBUTE_WITHIN_HOPS = "most_common_attribute_within_hops"
+    # CLEGR-Facts-style retrieval: read one node attribute (categorical) or check it (yes/no).
+    ATTRIBUTE_LOOKUP = "attribute_lookup"
+    ATTRIBUTE_CHECK = "attribute_check"
 
 
 class TopologyFamily(str, Enum):
     WATTS_STROGATZ = "watts_strogatz"
+    METRO = "metro_lines"
     SBM = "sbm"
     ERDOS_RENYI = "erdos_renyi"
 

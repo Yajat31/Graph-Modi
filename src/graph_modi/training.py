@@ -194,10 +194,15 @@ def _batch_query_vectors(
     batch: Sequence[TrainingExample],
     device: Any,
 ) -> Any:
-    """Pooled graph vector concatenated with the query's source/target node
-    representations, so the classifier can see *which* nodes a question
-    refers to rather than only the graph as an undifferentiated whole.
-    Computed for the whole batch via one merged forward pass."""
+    """Query-conditioned graph vector concatenated with the query's
+    source/target node representations, so the classifier can see *which*
+    nodes a question refers to rather than only the graph as an
+    undifferentiated whole. Computed for the whole batch via one merged
+    forward pass. Pooling is task-conditional (zeroed whenever a source or
+    target node anchor is present) to match tea_glm.py::TEAGLM.encode_graphs,
+    which this classification head's representation is meant to mirror --
+    see that function's docstring for why (arXiv:2508.20583's node-level vs.
+    graph-level readout switch)."""
     import torch
 
     merged, node_batch, node_maps = _collate_batch(tensorizer, batch, device)
@@ -214,11 +219,15 @@ def _batch_query_vectors(
     zeros = torch.zeros(dim, dtype=node_repr.dtype, device=device)
     source_rows = []
     target_rows = []
+    has_anchor = []
     for example, node_map in zip(batch, node_maps, strict=True):
         source_id = example.metadata.get("source_id")
         target_id = example.metadata.get("target_id")
         source_rows.append(node_repr[node_map[source_id]] if source_id in node_map else zeros)
         target_rows.append(node_repr[node_map[target_id]] if target_id in node_map else zeros)
+        has_anchor.append(source_id in node_map or target_id in node_map)
+    anchor_mask = torch.tensor(has_anchor, dtype=torch.bool, device=device).unsqueeze(-1)
+    pooled = pooled.masked_fill(anchor_mask, 0.0)
     return torch.cat([pooled, torch.stack(source_rows), torch.stack(target_rows)], dim=-1)
 
 
@@ -331,6 +340,162 @@ def pretrain_graph_encoder(
         metadata=metadata_path,
         labels=labels,
         training_accuracy=correct / len(examples),
+    )
+
+
+def pretrain_graph_encoder_contrastive(
+    gnn: GraphSAGEEncoder,
+    tensorizer: DeterministicNodeTensorizer,
+    graphs: Sequence[AttributedGraph],
+    language_model: Any,
+    tokenizer: Any,
+    *,
+    output_dir: str | Path,
+    epochs: int,
+    graphs_per_batch: int,
+    learning_rate: float,
+    temperature: float = 0.07,
+    seed: int,
+) -> GNNPretrainingResult:
+    """TEA-GLM's own pretraining objective (arXiv:2408.14512, reused by the
+    CLEGR paper as its TEA-GLM baseline): align each node's GNN embedding
+    with that node's own textual description, embedded via the frozen LLM's
+    word-embedding matrix, via a symmetric InfoNCE contrastive loss --
+    instead of this project's earlier proxy of classifying the exact answer
+    string from pooled+source+target (a proxy the classification head could
+    never solve for most of the ~1800 real-CLEGR answer classes, and which
+    the CLEGR paper's own TEA-GLM baseline never uses).
+
+    Self-supervised: needs only the graphs themselves, no QA labels, so
+    every node in every training graph is a training signal (not just the
+    ones some QA example happens to name as source/target).
+
+    A throwaway linear "alignment head" (gnn.output_dim -> LLM hidden dim)
+    is trained jointly with the GNN to make the contrastive similarity
+    well-defined across the two different dimensionalities, then discarded:
+    only gnn.pt is saved, in the exact same format pretrain_graph_encoder
+    already produces, so nothing downstream needs to change to consume it.
+    """
+    require_tea_dependencies()
+    if not graphs:
+        raise ValueError("At least one graph is required for contrastive pretraining")
+    if min(epochs, graphs_per_batch) <= 0 or learning_rate <= 0:
+        raise ValueError("epochs, graphs_per_batch, and learning_rate must be positive")
+
+    import torch
+    from torch import nn
+
+    set_deterministic_seed(seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    gnn.to(device)
+
+    embedding_layer = language_model.get_input_embeddings()
+    for parameter in embedding_layer.parameters():
+        parameter.requires_grad_(False)
+    lm_hidden_dim = int(embedding_layer.embedding_dim)
+
+    def _node_text(node: Any) -> str:
+        attrs = ", ".join(f"{key}={value}" for key, value in sorted(node.attributes.items()))
+        return f"{node.label}: {attrs}" if attrs else node.label
+
+    text_cache: dict[str, Any] = {}
+
+    def _text_embedding(text: str) -> Any:
+        if text not in text_cache:
+            token_ids = tokenizer.encode(text, add_special_tokens=False)
+            if not token_ids:
+                token_ids = [tokenizer.unk_token_id or 0]
+            with torch.no_grad():
+                token_embeds = embedding_layer(torch.tensor(token_ids, device=device))
+                text_cache[text] = token_embeds.mean(dim=0).float()
+        return text_cache[text]
+
+    alignment_head = nn.Linear(gnn.config.output_dim, lm_hidden_dim).to(device)
+    optimizer = torch.optim.AdamW(
+        [*gnn.parameters(), *alignment_head.parameters()], lr=learning_rate
+    )
+
+    rng = random.Random(seed)
+    ordered_graphs = list(graphs)
+    batches_per_epoch = (len(ordered_graphs) + graphs_per_batch - 1) // graphs_per_batch
+    total_batches = batches_per_epoch * epochs
+    tracker = ProgressTracker("[pretrain-gnn-contrastive]", total_batches, phase="gnn_contrastive")
+    tracker.banner(
+        graphs=len(ordered_graphs), epochs=epochs, graphs_per_batch=graphs_per_batch, device=str(device)
+    )
+
+    class _GraphExample:
+        __slots__ = ("graph",)
+
+        def __init__(self, graph: AttributedGraph) -> None:
+            self.graph = graph
+
+    batch_counter = 0
+    final_loss = 0.0
+    for epoch in range(epochs):
+        rng.shuffle(ordered_graphs)
+        gnn.train()
+        alignment_head.train()
+        epoch_loss = 0.0
+        epoch_batches = 0
+        for start in range(0, len(ordered_graphs), graphs_per_batch):
+            batch_graphs = ordered_graphs[start : start + graphs_per_batch]
+            wrapped = [_GraphExample(graph) for graph in batch_graphs]
+            merged, node_batch, node_maps = _collate_batch(tensorizer, wrapped, device)
+            node_repr = gnn(merged)
+            projected = alignment_head(node_repr)
+            projected = nn.functional.normalize(projected, dim=-1)
+
+            texts = [
+                _node_text(node)
+                for graph in batch_graphs
+                for node in sorted(graph.nodes, key=lambda n: n.id)
+            ]
+            text_embeds = torch.stack([_text_embedding(text) for text in texts]).to(device)
+            text_embeds = nn.functional.normalize(text_embeds, dim=-1)
+
+            logits = projected @ text_embeds.T / temperature
+            labels = torch.arange(logits.shape[0], device=device)
+            loss = (
+                nn.functional.cross_entropy(logits, labels)
+                + nn.functional.cross_entropy(logits.T, labels)
+            ) / 2
+
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            nn.utils.clip_grad_norm_([*gnn.parameters(), *alignment_head.parameters()], max_norm=1.0)
+            optimizer.step()
+            epoch_loss += float(loss.item())
+            epoch_batches += 1
+            batch_counter += 1
+            tracker.tick(loss=f"{loss.item():.4f}", epoch=f"{epoch + 1}/{epochs}")
+        final_loss = epoch_loss / max(1, epoch_batches)
+        tracker.end(mean_loss=f"{final_loss:.4f}")
+
+    gnn.eval()
+    destination = Path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    checkpoint = destination / "gnn.pt"
+    torch.save({key: value.cpu() for key, value in gnn.state_dict().items()}, checkpoint)
+    metadata_path = destination / "metadata.json"
+    _write_json(
+        metadata_path,
+        {
+            "format": "graph-modi-gnn-v1",
+            "gnn_config": asdict(gnn.config),
+            "tensorizer_config": asdict(tensorizer.config),
+            "labels": (),
+            "data_sha256": data_records_sha256([{"graph_id": g.graph_id} for g in graphs]),
+            "seed": seed,
+            "epochs": epochs,
+            "training_accuracy": final_loss,
+        },
+    )
+    return GNNPretrainingResult(
+        checkpoint=checkpoint,
+        metadata=metadata_path,
+        labels=(),
+        training_accuracy=final_loss,
     )
 
 

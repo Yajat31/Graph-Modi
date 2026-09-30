@@ -1,0 +1,92 @@
+seed: 42
+output_dir: outputs/v2_clegr_extended_exact2x_graphtoken_fixed_final
+data_dir: datasets/metro_v2_clegr_extended_exact2x_fixed_final
+gpu_memory_fraction: 0.97
+
+data:
+  distribution: metro_v2_preliminary
+  dynamic_only: true
+  session_layout: exact_uniform
+  exact_uniform:
+    validation_replicates: 1
+    test_replicates: 1
+  static_layout: exact_uniform
+  static_exact_uniform:
+    validation_replicates: 1
+    test_replicates: 1
+  train_sessions: 0
+  ood_sessions: 0
+  static_tasks:
+    [
+      edge_exists,
+      node_degree,
+      reachability,
+      cycle_membership,
+      filtered_neighbor_count,
+      filtered_path_count,
+      shortest_path,
+      path_cost,
+      constrained_reachability,
+      within_hops_count,
+      within_hops_list,
+      most_common_attribute_within_hops,
+    ]
+  dynamic_tasks:
+    [
+      reachability,
+      edge_exists,
+      cycle_membership,
+      filtered_neighbor_count,
+      path_cost,
+      constrained_reachability,
+      within_hops_count,
+      most_common_attribute_within_hops,
+    ]
+
+model:
+  backend: tea
+  architecture: graph_token
+  lm_name: /data/lmw/models/Meta-Llama-3.1-8B-Instruct
+  tensorizer: bert
+  bert_model_name: bert-base-uncased
+  node_feature_size: 768
+  graph_hidden_size: 1024
+  graph_layers: 3
+  graph_dropout: 0.5
+  graph_aggregation: mean
+  prefix_tokens: 10
+  projector_num_layers: 1
+  trust_remote_code: false
+  torch_dtype: bfloat16
+  gradient_checkpointing: true
+  gnn_checkpoint: outputs/v2_clegr_extended_tea_fixed_final/gnn/gnn.pt
+  checkpoint: outputs/v2_clegr_extended_graphtoken_fixed_final/projector/checkpoint-final
+
+training:
+  seed: 42
+  epochs: 3
+  batch_size: 4
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  gradient_accumulation_steps: 6
+  mixed_precision: bf16
+
+evaluation:
+  splits: [validation, test]
+  batch_size: 128
+  max_new_tokens: 96
+  conditions:
+    - question_only
+    - frozen_graph_history
+    - graph_once_then_text
+    - shuffled_graph
+    - oracle_updated_graph
+    - cached_no_reencode
+    - predicted_updated_graph
+    - serialized_initial_history
+    - token_matched_history
+    - serialized_current_graph
+    - tool_solver
+    - structure_only
+    - modify_and_print
+    - majority_prior

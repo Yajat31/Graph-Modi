@@ -99,6 +99,35 @@ def _generate_graph(args: argparse.Namespace) -> GraphSpec:
     return GraphGenerator(gen_args).generate().graph_spec
 
 
+def _extract_node_ids(functional: object, found: list[str]) -> None:
+    """Recursively walk a FunctionalOperator.to_dict() tree (q_spec.functional)
+    collecting every referenced station id, in encounter order.
+
+    third_party/clegr/functional.py's FunctionalOperator._serialize_arg already
+    tags a NodeSpec argument as the leaf dict {"Node": <id>} (a plain string
+    value, never a list); every operator's own to_dict() instead produces
+    {OperatorName: [...]} (the value is always a list -- see to_dict()'s
+    definition: `serialized_args` is built via a list comprehension). That
+    shape difference is what distinguishes a leaf node reference from an
+    operator to recurse into, with no need to enumerate every operator type
+    or touch the vendored generator: the identity info CLEGR's own generator
+    already computes (it must, to build and answer each question) just was
+    not being extracted into this project's TrainingExample metadata before,
+    leaving TEA/GraphToken's source_row/target_row node-addressing (see
+    graph_modi.models.tea_glm.TEAGLM.encode_graphs) permanently zero-filled
+    for every real-CLEGR example.
+    """
+    if isinstance(functional, dict):
+        if set(functional) == {"Node"} and isinstance(functional["Node"], str):
+            found.append(functional["Node"])
+            return
+        for value in functional.values():
+            _extract_node_ids(value, found)
+    elif isinstance(functional, (list, tuple)):
+        for item in functional:
+            _extract_node_ids(item, found)
+
+
 def _format_answer(answer: object) -> str:
     """Render the solver's raw answer the way the question's own suffix asks
     for it (LIST_SUFFIX says "comma-separated list", BOOL_SUFFIX says "True"
@@ -129,6 +158,10 @@ def _generate_examples_for_graph(
             if q_spec.english in seen_english:
                 continue  # avoid duplicate (station-pair reuse) within the same graph
             seen_english.add(q_spec.english)
+            node_ids: list[str] = []
+            _extract_node_ids(q_spec.functional, node_ids)
+            source_id = node_ids[0] if len(node_ids) >= 1 else None
+            target_id = node_ids[1] if len(node_ids) >= 2 else None
             examples.append(
                 TrainingExample(
                     graph=graph,
@@ -140,8 +173,8 @@ def _generate_examples_for_graph(
                         "clegr_type": q_spec.type_string,
                         "clegr_group": q_spec.group,
                         "clegr_subgroup": q_spec.subgroup,
-                        "source_id": None,
-                        "target_id": None,
+                        "source_id": source_id,
+                        "target_id": target_id,
                         "hops": None,
                         "reasoning_type": None,
                     },

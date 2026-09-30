@@ -1,0 +1,73 @@
+seed: 42
+output_dir: outputs/v2_clegr_extended_soft_prompt_fixed_final
+data_dir: datasets/metro_v2_clegr_extended_fixed_final
+gpu_memory_fraction: 0.97
+
+# Soft-prompt baseline trained against the SAME fixed-final data_dir as
+# configs/v2_clegr_extended_tea_fixed_final.yaml, so it picks up the same
+# W(f_i)-enabled prompts (baked into render_question at the data-gen source,
+# shared across architectures) for a fair comparison. No GNN/BERT changes
+# needed since soft_prompt has no graph-token channel.
+
+data:
+  distribution: metro_v2_preliminary
+  train_sessions: 0
+  validation_sessions: 150
+  test_sessions: 350
+  ood_sessions: 250
+  static_train_graphs: 2000
+  static_validation_graphs: 250
+  static_test_graphs: 500
+  static_tuples_per_graph: 9
+  static_tasks:
+    [
+      edge_exists,
+      node_degree,
+      reachability,
+      cycle_membership,
+      filtered_neighbor_count,
+      filtered_path_count,
+      shortest_path,
+      path_cost,
+      constrained_reachability,
+      within_hops_count,
+      within_hops_list,
+      most_common_attribute_within_hops,
+    ]
+  dynamic_tasks:
+    [
+      reachability,
+      edge_exists,
+      cycle_membership,
+      filtered_neighbor_count,
+      path_cost,
+      constrained_reachability,
+      within_hops_count,
+      most_common_attribute_within_hops,
+    ]
+  counterfactual_static_train: true
+
+model:
+  backend: soft_prompt
+  lm_name: /data/lmw/models/Meta-Llama-3.1-8B-Instruct
+  prefix_tokens: 10
+  trust_remote_code: false
+  torch_dtype: bfloat16
+
+training:
+  seed: 42
+  epochs: 10
+  batch_size: 24
+  learning_rate: 0.001
+  weight_decay: 0.0
+  gradient_accumulation_steps: 1
+  mixed_precision: bf16
+  save_every_steps: 500
+  resume_from: null
+
+evaluation:
+  splits: [validation, test, ood]
+  batch_size: 96
+  max_new_tokens: 96
+  conditions:
+    - soft_prompt

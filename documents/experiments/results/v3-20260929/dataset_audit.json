@@ -1,0 +1,1626 @@
+{
+  "distribution": "metro_v3",
+  "static_test": {
+    "graphs": {
+      "diameter_by_density": {
+        "dense": {
+          "max": 5,
+          "mean": 3.9242424242424243
+        },
+        "medium": {
+          "max": 6,
+          "mean": 4.401515151515151
+        },
+        "sparse": {
+          "max": 7,
+          "mean": 5.303030303030303
+        }
+      },
+      "graphs": 396,
+      "node_count_histogram": {
+        "12": 36,
+        "13": 36,
+        "14": 36,
+        "15": 36,
+        "16": 36,
+        "17": 36,
+        "18": 36,
+        "19": 36,
+        "20": 36,
+        "21": 36,
+        "22": 36
+      }
+    },
+    "labels": {
+      "_overall_majority_accuracy": 0.28902662993572087,
+      "attribute_check": {
+        "majority_accuracy": 0.5025252525252525,
+        "n": 396,
+        "top_answers": [
+          [
+            "yes",
+            199
+          ],
+          [
+            "no",
+            197
+          ]
+        ]
+      },
+      "attribute_lookup": {
+        "majority_accuracy": 0.06060606060606061,
+        "n": 396,
+        "top_answers": [
+          [
+            "victorian",
+            24
+          ],
+          [
+            "green",
+            23
+          ],
+          [
+            "clean",
+            23
+          ],
+          [
+            "medium",
+            23
+          ],
+          [
+            "yellow",
+            23
+          ],
+          [
+            "dirty",
+            22
+          ]
+        ]
+      },
+      "constrained_reachability": {
+        "majority_accuracy": 0.5,
+        "n": 396,
+        "top_answers": [
+          [
+            "yes",
+            198
+          ],
+          [
+            "no",
+            198
+          ]
+        ]
+      },
+      "cycle_membership": {
+        "majority_accuracy": 0.5,
+        "n": 396,
+        "top_answers": [
+          [
+            "no",
+            198
+          ],
+          [
+            "yes",
+            198
+          ]
+        ]
+      },
+      "edge_exists": {
+        "majority_accuracy": 0.5,
+        "n": 396,
+        "top_answers": [
+          [
+            "yes",
+            198
+          ],
+          [
+            "no",
+            198
+          ]
+        ]
+      },
+      "filtered_neighbor_count": {
+        "majority_accuracy": 0.16666666666666666,
+        "n": 396,
+        "top_answers": [
+          [
+            "1",
+            66
+          ],
+          [
+            "2",
+            62
+          ],
+          [
+            "3",
+            62
+          ],
+          [
+            "0",
+            61
+          ],
+          [
+            "4",
+            61
+          ],
+          [
+            "5",
+            43
+          ]
+        ]
+      },
+      "most_common_attribute_within_hops": {
+        "majority_accuracy": 0.05808080808080808,
+        "n": 396,
+        "top_answers": [
+          [
+            "jazz",
+            23
+          ],
+          [
+            "red",
+            23
+          ],
+          [
+            "clean",
+            23
+          ],
+          [
+            "pop",
+            23
+          ],
+          [
+            "victorian",
+            23
+          ],
+          [
+            "small",
+            22
+          ]
+        ]
+      },
+      "node_degree": {
+        "majority_accuracy": 0.12373737373737374,
+        "n": 396,
+        "top_answers": [
+          [
+            "1",
+            49
+          ],
+          [
+            "2",
+            49
+          ],
+          [
+            "5",
+            48
+          ],
+          [
+            "4",
+            48
+          ],
+          [
+            "6",
+            48
+          ],
+          [
+            "3",
+            47
+          ]
+        ]
+      },
+      "reachability": {
+        "majority_accuracy": 0.5,
+        "n": 396,
+        "top_answers": [
+          [
+            "no",
+            198
+          ],
+          [
+            "yes",
+            198
+          ]
+        ]
+      },
+      "shortest_path": {
+        "majority_accuracy": 0.1691919191919192,
+        "n": 396,
+        "top_answers": [
+          [
+            "2",
+            67
+          ],
+          [
+            "unreachable",
+            67
+          ],
+          [
+            "3",
+            66
+          ],
+          [
+            "4",
+            66
+          ],
+          [
+            "5",
+            64
+          ],
+          [
+            "6",
+            40
+          ]
+        ]
+      },
+      "within_hops_count": {
+        "majority_accuracy": 0.09848484848484848,
+        "n": 396,
+        "top_answers": [
+          [
+            "3",
+            39
+          ],
+          [
+            "4",
+            39
+          ],
+          [
+            "1",
+            37
+          ],
+          [
+            "2",
+            36
+          ],
+          [
+            "5",
+            35
+          ],
+          [
+            "6",
+            35
+          ]
+        ]
+      }
+    },
+    "text_leak_audit": {
+      "attribute_check": {
+        "leak_flag": false,
+        "majority_accuracy": 0.5025252525252525,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.disabled_access",
+        "question_only_rule_accuracy": 0.5025252525252525,
+        "with_node_text_rule_accuracy": 0.48484848484848486
+      },
+      "attribute_lookup": {
+        "leak_flag": false,
+        "majority_accuracy": 0.06060606060606061,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.cleanliness+src.music",
+        "question_only_rule_accuracy": 0.2727272727272727,
+        "with_node_text_rule_accuracy": 0.2777777777777778
+      },
+      "constrained_reachability": {
+        "leak_flag": false,
+        "majority_accuracy": 0.5,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.size+tgt.has_rail",
+        "question_only_rule_accuracy": 0.5,
+        "with_node_text_rule_accuracy": 0.48737373737373735
+      },
+      "cycle_membership": {
+        "leak_flag": false,
+        "majority_accuracy": 0.5,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.music+src.size",
+        "question_only_rule_accuracy": 0.5,
+        "with_node_text_rule_accuracy": 0.5025252525252525
+      },
+      "edge_exists": {
+        "leak_flag": false,
+        "majority_accuracy": 0.5,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+tgt.disabled_access+tgt.music",
+        "question_only_rule_accuracy": 0.5,
+        "with_node_text_rule_accuracy": 0.49747474747474746
+      },
+      "filtered_neighbor_count": {
+        "leak_flag": false,
+        "majority_accuracy": 0.16666666666666666,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.disabled_access+src.has_rail",
+        "question_only_rule_accuracy": 0.16666666666666666,
+        "with_node_text_rule_accuracy": 0.14646464646464646
+      },
+      "most_common_attribute_within_hops": {
+        "leak_flag": false,
+        "majority_accuracy": 0.05808080808080808,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.disabled_access+src.size",
+        "question_only_rule_accuracy": 0.2702020202020202,
+        "with_node_text_rule_accuracy": 0.26515151515151514
+      },
+      "node_degree": {
+        "leak_flag": false,
+        "majority_accuracy": 0.12373737373737374,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.architecture+src.music",
+        "question_only_rule_accuracy": 0.12121212121212122,
+        "with_node_text_rule_accuracy": 0.11616161616161616
+      },
+      "reachability": {
+        "leak_flag": false,
+        "majority_accuracy": 0.5,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+same_line+src.music",
+        "question_only_rule_accuracy": 0.5,
+        "with_node_text_rule_accuracy": 0.5075757575757576
+      },
+      "shortest_path": {
+        "leak_flag": false,
+        "majority_accuracy": 0.1691919191919192,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.architecture",
+        "question_only_rule_accuracy": 0.16666666666666666,
+        "with_node_text_rule_accuracy": 0.12373737373737374
+      },
+      "within_hops_count": {
+        "leak_flag": false,
+        "majority_accuracy": 0.09848484848484848,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.has_rail",
+        "question_only_rule_accuracy": 0.10353535353535354,
+        "with_node_text_rule_accuracy": 0.10353535353535354
+      }
+    },
+    "tuples": 4356
+  },
+  "static_train": {
+    "graphs": {
+      "diameter_by_density": {
+        "dense": {
+          "max": 5,
+          "mean": 3.908726178535607
+        },
+        "medium": {
+          "max": 6,
+          "mean": 4.3721860930465235
+        },
+        "sparse": {
+          "max": 7,
+          "mean": 5.304543185222167
+        }
+      },
+      "graphs": 5996,
+      "node_count_histogram": {
+        "12": 554,
+        "13": 555,
+        "14": 555,
+        "15": 545,
+        "16": 543,
+        "17": 542,
+        "18": 542,
+        "19": 540,
+        "20": 540,
+        "21": 540,
+        "22": 540
+      }
+    },
+    "labels": {
+      "_overall_majority_accuracy": 0.285511837279093,
+      "attribute_check": {
+        "majority_accuracy": 0.5006112469437652,
+        "n": 1636,
+        "top_answers": [
+          [
+            "yes",
+            819
+          ],
+          [
+            "no",
+            817
+          ]
+        ]
+      },
+      "attribute_lookup": {
+        "majority_accuracy": 0.056200366524129505,
+        "n": 1637,
+        "top_answers": [
+          [
+            "green",
+            92
+          ],
+          [
+            "brutalist",
+            92
+          ],
+          [
+            "small",
+            92
+          ],
+          [
+            "medium",
+            92
+          ],
+          [
+            "blue",
+            91
+          ],
+          [
+            "art_deco",
+            91
+          ]
+        ]
+      },
+      "constrained_reachability": {
+        "majority_accuracy": 0.5009389671361503,
+        "n": 2130,
+        "top_answers": [
+          [
+            "yes",
+            1067
+          ],
+          [
+            "no",
+            1063
+          ]
+        ]
+      },
+      "cycle_membership": {
+        "majority_accuracy": 0.5,
+        "n": 2000,
+        "top_answers": [
+          [
+            "yes",
+            1000
+          ],
+          [
+            "no",
+            1000
+          ]
+        ]
+      },
+      "edge_exists": {
+        "majority_accuracy": 0.5,
+        "n": 2242,
+        "top_answers": [
+          [
+            "yes",
+            1121
+          ],
+          [
+            "no",
+            1121
+          ]
+        ]
+      },
+      "filtered_neighbor_count": {
+        "majority_accuracy": 0.17474048442906576,
+        "n": 2312,
+        "top_answers": [
+          [
+            "1",
+            404
+          ],
+          [
+            "2",
+            391
+          ],
+          [
+            "3",
+            360
+          ],
+          [
+            "4",
+            330
+          ],
+          [
+            "0",
+            326
+          ],
+          [
+            "5",
+            264
+          ]
+        ]
+      },
+      "most_common_attribute_within_hops": {
+        "majority_accuracy": 0.060277536860364266,
+        "n": 2306,
+        "top_answers": [
+          [
+            "large",
+            139
+          ],
+          [
+            "brutalist",
+            138
+          ],
+          [
+            "average",
+            138
+          ],
+          [
+            "classical",
+            137
+          ],
+          [
+            "clean",
+            133
+          ],
+          [
+            "blue",
+            132
+          ]
+        ]
+      },
+      "node_degree": {
+        "majority_accuracy": 0.1334841628959276,
+        "n": 2652,
+        "top_answers": [
+          [
+            "5",
+            354
+          ],
+          [
+            "4",
+            354
+          ],
+          [
+            "6",
+            336
+          ],
+          [
+            "3",
+            332
+          ],
+          [
+            "2",
+            321
+          ],
+          [
+            "1",
+            312
+          ]
+        ]
+      },
+      "reachability": {
+        "majority_accuracy": 0.5004480286738351,
+        "n": 2232,
+        "top_answers": [
+          [
+            "yes",
+            1117
+          ],
+          [
+            "no",
+            1115
+          ]
+        ]
+      },
+      "shortest_path": {
+        "majority_accuracy": 0.19620743034055727,
+        "n": 2584,
+        "top_answers": [
+          [
+            "3",
+            507
+          ],
+          [
+            "4",
+            483
+          ],
+          [
+            "unreachable",
+            408
+          ],
+          [
+            "2",
+            402
+          ],
+          [
+            "5",
+            400
+          ],
+          [
+            "6",
+            229
+          ]
+        ]
+      },
+      "within_hops_count": {
+        "majority_accuracy": 0.1017249004865104,
+        "n": 2261,
+        "top_answers": [
+          [
+            "4",
+            230
+          ],
+          [
+            "5",
+            218
+          ],
+          [
+            "3",
+            214
+          ],
+          [
+            "2",
+            213
+          ],
+          [
+            "6",
+            200
+          ],
+          [
+            "1",
+            197
+          ]
+        ]
+      }
+    },
+    "tuples": 23992
+  },
+  "static_validation": {
+    "graphs": {
+      "diameter_by_density": {
+        "dense": {
+          "max": 5,
+          "mean": 3.8181818181818183
+        },
+        "medium": {
+          "max": 6,
+          "mean": 4.287878787878788
+        },
+        "sparse": {
+          "max": 7,
+          "mean": 5.454545454545454
+        }
+      },
+      "graphs": 198,
+      "node_count_histogram": {
+        "12": 18,
+        "13": 18,
+        "14": 18,
+        "15": 18,
+        "16": 18,
+        "17": 18,
+        "18": 18,
+        "19": 18,
+        "20": 18,
+        "21": 18,
+        "22": 18
+      }
+    },
+    "labels": {
+      "_overall_majority_accuracy": 0.2924701561065197,
+      "attribute_check": {
+        "majority_accuracy": 0.5050505050505051,
+        "n": 198,
+        "top_answers": [
+          [
+            "yes",
+            100
+          ],
+          [
+            "no",
+            98
+          ]
+        ]
+      },
+      "attribute_lookup": {
+        "majority_accuracy": 0.06060606060606061,
+        "n": 198,
+        "top_answers": [
+          [
+            "pop",
+            12
+          ],
+          [
+            "average",
+            12
+          ],
+          [
+            "blue",
+            12
+          ],
+          [
+            "brutalist",
+            12
+          ],
+          [
+            "classical",
+            12
+          ],
+          [
+            "none",
+            12
+          ]
+        ]
+      },
+      "constrained_reachability": {
+        "majority_accuracy": 0.5,
+        "n": 198,
+        "top_answers": [
+          [
+            "yes",
+            99
+          ],
+          [
+            "no",
+            99
+          ]
+        ]
+      },
+      "cycle_membership": {
+        "majority_accuracy": 0.5,
+        "n": 198,
+        "top_answers": [
+          [
+            "no",
+            99
+          ],
+          [
+            "yes",
+            99
+          ]
+        ]
+      },
+      "edge_exists": {
+        "majority_accuracy": 0.5,
+        "n": 198,
+        "top_answers": [
+          [
+            "no",
+            99
+          ],
+          [
+            "yes",
+            99
+          ]
+        ]
+      },
+      "filtered_neighbor_count": {
+        "majority_accuracy": 0.1717171717171717,
+        "n": 198,
+        "top_answers": [
+          [
+            "2",
+            34
+          ],
+          [
+            "3",
+            33
+          ],
+          [
+            "1",
+            33
+          ],
+          [
+            "0",
+            31
+          ],
+          [
+            "4",
+            29
+          ],
+          [
+            "5",
+            21
+          ]
+        ]
+      },
+      "most_common_attribute_within_hops": {
+        "majority_accuracy": 0.06060606060606061,
+        "n": 198,
+        "top_answers": [
+          [
+            "red",
+            12
+          ],
+          [
+            "clean",
+            12
+          ],
+          [
+            "yellow",
+            12
+          ],
+          [
+            "none",
+            11
+          ],
+          [
+            "small",
+            11
+          ],
+          [
+            "dirty",
+            11
+          ]
+        ]
+      },
+      "node_degree": {
+        "majority_accuracy": 0.12626262626262627,
+        "n": 198,
+        "top_answers": [
+          [
+            "1",
+            25
+          ],
+          [
+            "4",
+            25
+          ],
+          [
+            "6",
+            25
+          ],
+          [
+            "2",
+            25
+          ],
+          [
+            "3",
+            24
+          ],
+          [
+            "5",
+            24
+          ]
+        ]
+      },
+      "reachability": {
+        "majority_accuracy": 0.5050505050505051,
+        "n": 198,
+        "top_answers": [
+          [
+            "yes",
+            100
+          ],
+          [
+            "no",
+            98
+          ]
+        ]
+      },
+      "shortest_path": {
+        "majority_accuracy": 0.1717171717171717,
+        "n": 198,
+        "top_answers": [
+          [
+            "3",
+            34
+          ],
+          [
+            "2",
+            33
+          ],
+          [
+            "unreachable",
+            32
+          ],
+          [
+            "4",
+            31
+          ],
+          [
+            "5",
+            29
+          ],
+          [
+            "6",
+            23
+          ]
+        ]
+      },
+      "within_hops_count": {
+        "majority_accuracy": 0.11616161616161616,
+        "n": 198,
+        "top_answers": [
+          [
+            "2",
+            23
+          ],
+          [
+            "4",
+            22
+          ],
+          [
+            "5",
+            21
+          ],
+          [
+            "3",
+            20
+          ],
+          [
+            "0",
+            19
+          ],
+          [
+            "6",
+            18
+          ]
+        ]
+      }
+    },
+    "text_leak_audit": {
+      "attribute_check": {
+        "leak_flag": false,
+        "majority_accuracy": 0.5050505050505051,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.disabled_access",
+        "question_only_rule_accuracy": 0.5,
+        "with_node_text_rule_accuracy": 0.5454545454545454
+      },
+      "attribute_lookup": {
+        "leak_flag": false,
+        "majority_accuracy": 0.06060606060606061,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.cleanliness+src.music",
+        "question_only_rule_accuracy": 0.2878787878787879,
+        "with_node_text_rule_accuracy": 0.2474747474747475
+      },
+      "constrained_reachability": {
+        "leak_flag": false,
+        "majority_accuracy": 0.5,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.size+tgt.has_rail",
+        "question_only_rule_accuracy": 0.5,
+        "with_node_text_rule_accuracy": 0.5303030303030303
+      },
+      "cycle_membership": {
+        "leak_flag": false,
+        "majority_accuracy": 0.5,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.music+src.size",
+        "question_only_rule_accuracy": 0.5,
+        "with_node_text_rule_accuracy": 0.5252525252525253
+      },
+      "edge_exists": {
+        "leak_flag": false,
+        "majority_accuracy": 0.5,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+tgt.disabled_access+tgt.music",
+        "question_only_rule_accuracy": 0.5,
+        "with_node_text_rule_accuracy": 0.4393939393939394
+      },
+      "filtered_neighbor_count": {
+        "leak_flag": false,
+        "majority_accuracy": 0.1717171717171717,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.disabled_access+src.has_rail",
+        "question_only_rule_accuracy": 0.16666666666666666,
+        "with_node_text_rule_accuracy": 0.1717171717171717
+      },
+      "most_common_attribute_within_hops": {
+        "leak_flag": false,
+        "majority_accuracy": 0.06060606060606061,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.disabled_access+src.size",
+        "question_only_rule_accuracy": 0.2676767676767677,
+        "with_node_text_rule_accuracy": 0.2474747474747475
+      },
+      "node_degree": {
+        "leak_flag": false,
+        "majority_accuracy": 0.12626262626262627,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.architecture+src.music",
+        "question_only_rule_accuracy": 0.12121212121212122,
+        "with_node_text_rule_accuracy": 0.1111111111111111
+      },
+      "reachability": {
+        "leak_flag": false,
+        "majority_accuracy": 0.5050505050505051,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+same_line+src.music",
+        "question_only_rule_accuracy": 0.5050505050505051,
+        "with_node_text_rule_accuracy": 0.4797979797979798
+      },
+      "shortest_path": {
+        "leak_flag": false,
+        "majority_accuracy": 0.1717171717171717,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.architecture",
+        "question_only_rule_accuracy": 0.1717171717171717,
+        "with_node_text_rule_accuracy": 0.17676767676767677
+      },
+      "within_hops_count": {
+        "leak_flag": false,
+        "majority_accuracy": 0.11616161616161616,
+        "node_text_rule_features": "q.attribute+q.hops+q.value+src.has_rail",
+        "question_only_rule_accuracy": 0.11616161616161616,
+        "with_node_text_rule_accuracy": 0.10606060606060606
+      }
+    },
+    "tuples": 2178
+  },
+  "test": {
+    "answer_distribution": {
+      "0": 141,
+      "1": 193,
+      "10": 37,
+      "11": 24,
+      "12": 10,
+      "13": 1,
+      "2": 276,
+      "3": 278,
+      "4": 270,
+      "5": 230,
+      "6": 178,
+      "7": 124,
+      "8": 72,
+      "9": 61,
+      "art_deco": 26,
+      "average": 28,
+      "blue": 26,
+      "brutalist": 26,
+      "classical": 26,
+      "clean": 28,
+      "dirty": 31,
+      "green": 25,
+      "jazz": 27,
+      "large": 26,
+      "medium": 27,
+      "modern": 30,
+      "no": 989,
+      "none": 27,
+      "pop": 29,
+      "red": 28,
+      "small": 30,
+      "unreachable": 85,
+      "victorian": 29,
+      "yellow": 26,
+      "yes": 991
+    },
+    "counterfactual_pairs": 2787,
+    "failures": [],
+    "graphs": {
+      "diameter_by_density": {
+        "dense": {
+          "max": 5,
+          "mean": 3.8434343434343434
+        },
+        "medium": {
+          "max": 6,
+          "mean": 4.383838383838384
+        },
+        "sparse": {
+          "max": 7,
+          "mean": 5.3232323232323235
+        }
+      },
+      "graphs": 1188,
+      "node_count_histogram": {
+        "12": 108,
+        "13": 108,
+        "14": 108,
+        "15": 108,
+        "16": 108,
+        "17": 108,
+        "18": 108,
+        "19": 108,
+        "20": 108,
+        "21": 108,
+        "22": 108
+      }
+    },
+    "labels": {
+      "_answer_changing_fraction": 0.4065095398428732,
+      "_overall_majority_accuracy": 0.2940516273849607,
+      "constrained_reachability": {
+        "majority_accuracy": 0.501010101010101,
+        "n": 495,
+        "top_answers": [
+          [
+            "yes",
+            248
+          ],
+          [
+            "no",
+            247
+          ]
+        ]
+      },
+      "cycle_membership": {
+        "majority_accuracy": 0.503030303030303,
+        "n": 495,
+        "top_answers": [
+          [
+            "yes",
+            249
+          ],
+          [
+            "no",
+            246
+          ]
+        ]
+      },
+      "edge_exists": {
+        "majority_accuracy": 0.501010101010101,
+        "n": 495,
+        "top_answers": [
+          [
+            "yes",
+            248
+          ],
+          [
+            "no",
+            247
+          ]
+        ]
+      },
+      "filtered_neighbor_count": {
+        "majority_accuracy": 0.1717171717171717,
+        "n": 495,
+        "top_answers": [
+          [
+            "1",
+            85
+          ],
+          [
+            "2",
+            83
+          ],
+          [
+            "0",
+            83
+          ],
+          [
+            "3",
+            80
+          ],
+          [
+            "4",
+            76
+          ],
+          [
+            "5",
+            45
+          ]
+        ]
+      },
+      "most_common_attribute_within_hops": {
+        "majority_accuracy": 0.06262626262626263,
+        "n": 495,
+        "top_answers": [
+          [
+            "dirty",
+            31
+          ],
+          [
+            "modern",
+            30
+          ],
+          [
+            "small",
+            30
+          ],
+          [
+            "pop",
+            29
+          ],
+          [
+            "victorian",
+            29
+          ],
+          [
+            "red",
+            28
+          ]
+        ]
+      },
+      "node_degree": {
+        "majority_accuracy": 0.1292929292929293,
+        "n": 495,
+        "top_answers": [
+          [
+            "4",
+            64
+          ],
+          [
+            "3",
+            63
+          ],
+          [
+            "2",
+            63
+          ],
+          [
+            "5",
+            63
+          ],
+          [
+            "1",
+            63
+          ],
+          [
+            "6",
+            62
+          ]
+        ]
+      },
+      "reachability": {
+        "majority_accuracy": 0.503030303030303,
+        "n": 495,
+        "top_answers": [
+          [
+            "no",
+            249
+          ],
+          [
+            "yes",
+            246
+          ]
+        ]
+      },
+      "shortest_path": {
+        "majority_accuracy": 0.17575757575757575,
+        "n": 495,
+        "top_answers": [
+          [
+            "3",
+            87
+          ],
+          [
+            "unreachable",
+            85
+          ],
+          [
+            "2",
+            84
+          ],
+          [
+            "4",
+            82
+          ],
+          [
+            "5",
+            73
+          ],
+          [
+            "6",
+            39
+          ]
+        ]
+      },
+      "within_hops_count": {
+        "majority_accuracy": 0.09898989898989899,
+        "n": 495,
+        "top_answers": [
+          [
+            "5",
+            49
+          ],
+          [
+            "4",
+            48
+          ],
+          [
+            "3",
+            48
+          ],
+          [
+            "6",
+            47
+          ],
+          [
+            "2",
+            46
+          ],
+          [
+            "1",
+            45
+          ]
+        ]
+      }
+    },
+    "majority_answer_accuracy": 0.22244668911335577,
+    "noop_turns": 1668,
+    "operation_distribution": {
+      "ADD": 1845,
+      "DEL": 1812,
+      "NOOP": 1668,
+      "SET": 1937
+    },
+    "reasoning_distribution": {
+      "constrained_reachability": 495,
+      "cycle_membership": 495,
+      "edge_exists": 495,
+      "filtered_neighbor_count": 495,
+      "most_common_attribute_within_hops": 495,
+      "node_degree": 495,
+      "reachability": 495,
+      "shortest_path": 495,
+      "within_hops_count": 495
+    },
+    "sessions": 1188,
+    "turns": 4455,
+    "valid": true
+  },
+  "validation": {
+    "answer_distribution": {
+      "0": 139,
+      "1": 189,
+      "10": 36,
+      "11": 22,
+      "12": 12,
+      "13": 6,
+      "14": 1,
+      "2": 283,
+      "3": 280,
+      "4": 260,
+      "5": 231,
+      "6": 187,
+      "7": 109,
+      "8": 76,
+      "9": 58,
+      "art_deco": 27,
+      "average": 27,
+      "blue": 25,
+      "brutalist": 27,
+      "classical": 23,
+      "clean": 31,
+      "dirty": 28,
+      "green": 26,
+      "jazz": 27,
+      "large": 27,
+      "medium": 27,
+      "modern": 27,
+      "no": 989,
+      "none": 29,
+      "pop": 31,
+      "red": 29,
+      "small": 30,
+      "unreachable": 91,
+      "victorian": 28,
+      "yellow": 26,
+      "yes": 991
+    },
+    "counterfactual_pairs": 2754,
+    "failures": [],
+    "graphs": {
+      "diameter_by_density": {
+        "dense": {
+          "max": 5,
+          "mean": 3.8914141414141414
+        },
+        "medium": {
+          "max": 6,
+          "mean": 4.421717171717172
+        },
+        "sparse": {
+          "max": 7,
+          "mean": 5.358585858585859
+        }
+      },
+      "graphs": 1188,
+      "node_count_histogram": {
+        "12": 108,
+        "13": 108,
+        "14": 108,
+        "15": 108,
+        "16": 108,
+        "17": 108,
+        "18": 108,
+        "19": 108,
+        "20": 108,
+        "21": 108,
+        "22": 108
+      }
+    },
+    "labels": {
+      "_answer_changing_fraction": 0.40179573512906847,
+      "_overall_majority_accuracy": 0.2962962962962963,
+      "constrained_reachability": {
+        "majority_accuracy": 0.5050505050505051,
+        "n": 495,
+        "top_answers": [
+          [
+            "yes",
+            250
+          ],
+          [
+            "no",
+            245
+          ]
+        ]
+      },
+      "cycle_membership": {
+        "majority_accuracy": 0.501010101010101,
+        "n": 495,
+        "top_answers": [
+          [
+            "no",
+            248
+          ],
+          [
+            "yes",
+            247
+          ]
+        ]
+      },
+      "edge_exists": {
+        "majority_accuracy": 0.503030303030303,
+        "n": 495,
+        "top_answers": [
+          [
+            "yes",
+            249
+          ],
+          [
+            "no",
+            246
+          ]
+        ]
+      },
+      "filtered_neighbor_count": {
+        "majority_accuracy": 0.18383838383838383,
+        "n": 495,
+        "top_answers": [
+          [
+            "2",
+            91
+          ],
+          [
+            "1",
+            85
+          ],
+          [
+            "0",
+            82
+          ],
+          [
+            "3",
+            82
+          ],
+          [
+            "4",
+            69
+          ],
+          [
+            "5",
+            47
+          ]
+        ]
+      },
+      "most_common_attribute_within_hops": {
+        "majority_accuracy": 0.06262626262626263,
+        "n": 495,
+        "top_answers": [
+          [
+            "clean",
+            31
+          ],
+          [
+            "pop",
+            31
+          ],
+          [
+            "small",
+            30
+          ],
+          [
+            "none",
+            29
+          ],
+          [
+            "red",
+            29
+          ],
+          [
+            "dirty",
+            28
+          ]
+        ]
+      },
+      "node_degree": {
+        "majority_accuracy": 0.12525252525252525,
+        "n": 495,
+        "top_answers": [
+          [
+            "3",
+            62
+          ],
+          [
+            "5",
+            62
+          ],
+          [
+            "4",
+            62
+          ],
+          [
+            "1",
+            61
+          ],
+          [
+            "2",
+            60
+          ],
+          [
+            "6",
+            59
+          ]
+        ]
+      },
+      "reachability": {
+        "majority_accuracy": 0.5050505050505051,
+        "n": 495,
+        "top_answers": [
+          [
+            "no",
+            250
+          ],
+          [
+            "yes",
+            245
+          ]
+        ]
+      },
+      "shortest_path": {
+        "majority_accuracy": 0.18383838383838383,
+        "n": 495,
+        "top_answers": [
+          [
+            "unreachable",
+            91
+          ],
+          [
+            "3",
+            88
+          ],
+          [
+            "4",
+            86
+          ],
+          [
+            "2",
+            85
+          ],
+          [
+            "5",
+            74
+          ],
+          [
+            "6",
+            47
+          ]
+        ]
+      },
+      "within_hops_count": {
+        "majority_accuracy": 0.09696969696969697,
+        "n": 495,
+        "top_answers": [
+          [
+            "3",
+            48
+          ],
+          [
+            "5",
+            48
+          ],
+          [
+            "6",
+            48
+          ],
+          [
+            "2",
+            47
+          ],
+          [
+            "1",
+            43
+          ],
+          [
+            "4",
+            43
+          ]
+        ]
+      }
+    },
+    "majority_answer_accuracy": 0.22244668911335577,
+    "noop_turns": 1701,
+    "operation_distribution": {
+      "ADD": 1844,
+      "DEL": 1800,
+      "NOOP": 1701,
+      "SET": 1908
+    },
+    "reasoning_distribution": {
+      "constrained_reachability": 495,
+      "cycle_membership": 495,
+      "edge_exists": 495,
+      "filtered_neighbor_count": 495,
+      "most_common_attribute_within_hops": 495,
+      "node_degree": 495,
+      "reachability": 495,
+      "shortest_path": 495,
+      "within_hops_count": 495
+    },
+    "sessions": 1188,
+    "turns": 4455,
+    "valid": true
+  }
+}

@@ -32,9 +32,11 @@ from graph_modi.data.v2 import (
     load_static_tuples,
     save_static_tuples,
 )
+from graph_modi.data import v3 as data_v3
 from graph_modi.data.validation import audit_sessions
 from graph_modi.evaluation.runner import CONDITIONS, evaluate_sessions
 from graph_modi.evaluation.static_eval import evaluate_static_oracle
+from graph_modi.graph.serialization import csv_graph_prompt
 from graph_modi.graph.solvers import render_question
 from graph_modi.models.base import GraphBackend, SymbolicMockBackend
 from graph_modi.pipeline.multiturn import materialize_states, run_session
@@ -43,6 +45,7 @@ from graph_modi.training import (
     ProjectorTrainingConfig,
     TrainingExample,
     pretrain_graph_encoder,
+    pretrain_graph_encoder_contrastive,
     run_mock_training,
     train_projector,
     train_soft_prompt,
@@ -96,6 +99,8 @@ def _generate(config: ExperimentConfig, *, progress: bool = True) -> dict[str, A
     distribution = str(data.get("distribution", DISTRIBUTION))
     if distribution == DISTRIBUTION_V2:
         return _generate_v2(config, progress=progress)
+    if distribution == data_v3.DISTRIBUTION_V3:
+        return _generate_v3(config, progress=progress)
     counts = {
         "train": int(data.get("train_sessions", 0)),
         "validation": int(data.get("validation_sessions", 0)),
@@ -310,17 +315,105 @@ def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str
     )
     return report
 
+def _generate_v3(config: ExperimentConfig, *, progress: bool = True) -> dict[str, Any]:
+    """Compact CLEGR-style subway graphs, label-balanced (see data/v3.py)."""
+    data = config.section("data")
+    static_tasks = _reasoning_types(data, "static_tasks") or list(data_v3.STATIC_TASKS)
+    dynamic_tasks = _reasoning_types(data, "dynamic_tasks") or list(data_v3.DYNAMIC_TASKS)
+    cell_count = len(data_v3.NODE_COUNTS) * len(data_v3.DENSITIES)
+    seed = config.seed
+
+    static: dict[str, list[StaticQATuple]] = {}
+    static["train"] = data_v3.generate_static_v3(
+        split="train",
+        graph_count=int(data.get("static_train_graphs", 2000)),
+        tasks_per_graph=int(data.get("static_tuples_per_graph", 9)),
+        seed=seed,
+        sampler=data_v3.BalancedSampler(),
+        tasks=static_tasks,
+        progress=progress,
+    )
+    counterfactual_graphs = int(data.get("counterfactual_graphs", 0))
+    if counterfactual_graphs:
+        static["train"] += data_v3.generate_counterfactual_pairs_v3(
+            graph_count=counterfactual_graphs,
+            pairs_per_graph=int(data.get("counterfactual_pairs_per_graph", 3)),
+            seed=seed,
+            sampler=data_v3.BalancedSampler(),
+            tasks=[task for task in dynamic_tasks if task in data_v3.DYNAMIC_TASKS],
+            progress=progress,
+        )
+    for split in ("validation", "test"):
+        replicates = int(data.get(f"static_{split}_replicates", 0))
+        if replicates:
+            static[split] = data_v3.generate_static_v3(
+                split=split,
+                graph_count=cell_count * replicates,
+                tasks_per_graph=None,
+                seed=seed,
+                sampler=data_v3.BalancedSampler(),
+                tasks=static_tasks,
+                progress=progress,
+            )
+
+    session_cfg = data.get("sessions", {})
+    replicates = {
+        "validation": int(session_cfg.get("validation_replicates", 0)),
+        "test": int(session_cfg.get("test_replicates", 0)),
+    }
+    replicates = {key: value for key, value in replicates.items() if value > 0}
+    sessions = data_v3.generate_sessions_v3(
+        replicates_per_split=replicates, seed=seed, tasks=dynamic_tasks, progress=progress
+    )
+
+    report: dict[str, Any] = {"distribution": data_v3.DISTRIBUTION_V3}
+    for split, split_sessions in sessions.items():
+        save_sessions(_data_path(config, split), split_sessions)
+        report[split] = audit_sessions(split_sessions, allow_noop=True)
+        if not report[split]["valid"]:
+            raise RuntimeError(f"Generated invalid {split} data: {report[split]['failures'][:5]}")
+        report[split]["labels"] = data_v3.session_label_audit(split_sessions)
+        report[split]["graphs"] = data_v3.graph_audit(s.initial_graph for s in split_sessions)
+    for split, tuples in static.items():
+        save_static_tuples(_static_path(config, split), tuples)
+        report[f"static_{split}"] = {
+            "tuples": len(tuples),
+            "labels": data_v3.label_audit(tuples),
+            "graphs": data_v3.graph_audit(item.graph for item in tuples),
+        }
+    for split in ("validation", "test"):
+        if split in static and "train" in static:
+            report[f"static_{split}"]["text_leak_audit"] = data_v3.text_leak_audit(
+                static["train"], static[split]
+            )
+    _write_json(_audit_path(config), report)
+    _experiment_log(config, {"phase": "generate-v3", "distribution": data_v3.DISTRIBUTION_V3})
+    return report
+
+
 def _ensure_data(config: ExperimentConfig) -> None:
     if not _data_path(config, "test").exists():
         _generate(config)
 
 
-def _static_examples(tuples: list[StaticQATuple]) -> list[TrainingExample]:
+def _static_examples(
+    tuples: list[StaticQATuple], prompt_format: str = "wfi"
+) -> list[TrainingExample]:
+    def prompt_for(item: StaticQATuple) -> str:
+        question = render_question(item.query, item.graph)
+        return csv_graph_prompt(item.graph, question) if prompt_format == "csv" else question
+
+    def answer_for(item: StaticQATuple) -> str:
+        # CLEGR asks boolean questions with 'True'/'False'; scoring maps them back to yes/no.
+        if prompt_format == "csv" and item.answer in ("yes", "no"):
+            return "True" if item.answer == "yes" else "False"
+        return item.answer
+
     return [
         TrainingExample(
             graph=item.graph,
-            prompt=render_question(item.query, item.graph),
-            answer=item.answer,
+            prompt=prompt_for(item),
+            answer=answer_for(item),
             example_id=item.tuple_id,
             split=item.split,
             metadata={
@@ -367,10 +460,12 @@ def _examples(sessions: list[Session]) -> list[TrainingExample]:
 
 def _training_examples(config: ExperimentConfig) -> list[TrainingExample]:
     data = config.section("data")
-    if str(data.get("distribution", DISTRIBUTION)) == DISTRIBUTION_V2:
+    if str(data.get("distribution", DISTRIBUTION)) in (DISTRIBUTION_V2, data_v3.DISTRIBUTION_V3):
         static_path = _static_path(config, "train")
         if static_path.exists():
-            return _static_examples(load_static_tuples(static_path))
+            return _static_examples(
+                load_static_tuples(static_path), str(data.get("prompt_format", "wfi"))
+            )
     return _examples(load_sessions(_data_path(config, "train")))
 
 
@@ -385,14 +480,26 @@ def _neural_components(config: ExperimentConfig) -> tuple[Any, Any, Any]:
     except ImportError as error:  # pragma: no cover - optional dependency
         raise RuntimeError("Install graph-modi[tea] for neural commands") from error
     model = config.section("model")
-    tensor_config = NodeTensorizerConfig(feature_dim=int(model.get("node_feature_size", 256)))
+    tensorizer_kind = str(model.get("tensorizer", "hash"))
     graph_config = GraphSAGEConfig(
-        input_dim=tensor_config.feature_dim,
+        input_dim=int(model.get("node_feature_size", 256)),
         hidden_dim=int(model.get("graph_hidden_size", 256)),
         output_dim=int(model.get("graph_hidden_size", 256)),
         num_layers=int(model.get("graph_layers", 4)),
+        dropout=float(model.get("graph_dropout", 0.0)),
         aggregation=str(model.get("graph_aggregation", "mean")),
     )
+    if tensorizer_kind == "bert":
+        from graph_modi.models.bert_tensorizer import BertNodeTensorizer, BertNodeTensorizerConfig
+
+        tensorizer = BertNodeTensorizer(
+            BertNodeTensorizerConfig(
+                bert_model_name=str(model.get("bert_model_name", "bert-base-uncased")),
+                feature_dim=graph_config.input_dim,
+            )
+        )
+        return graph_config, GraphSAGEEncoder(graph_config), tensorizer
+    tensor_config = NodeTensorizerConfig(feature_dim=graph_config.input_dim)
     return graph_config, GraphSAGEEncoder(graph_config), DeterministicNodeTensorizer(tensor_config)
 
 
@@ -430,12 +537,14 @@ def _tea_model(config: ExperimentConfig) -> Any:
     )
 
     model = config.section("model")
+    tensorizer_kind = str(model.get("tensorizer", "hash"))
     tensor_config = NodeTensorizerConfig(feature_dim=int(model.get("node_feature_size", 256)))
     graph_config = GraphSAGEConfig(
         input_dim=tensor_config.feature_dim,
         hidden_dim=int(model.get("graph_hidden_size", 256)),
         output_dim=int(model.get("graph_hidden_size", 256)),
         num_layers=int(model.get("graph_layers", 4)),
+        dropout=float(model.get("graph_dropout", 0.0)),
         aggregation=str(model.get("graph_aggregation", "mean")),
     )
     dtype_name = str(model.get("torch_dtype", "float32"))
@@ -446,23 +555,41 @@ def _tea_model(config: ExperimentConfig) -> Any:
         str(model["lm_name"]),
         gnn_config=graph_config,
         tensorizer_config=tensor_config,
-        config=TEAGLMConfig(freeze_gnn=True),
+        config=TEAGLMConfig(
+            freeze_gnn=True,
+            max_sequence_length=int(model.get("max_sequence_length", 512)),
+            prompt_template=str(model.get("prompt_template", "Question: {question}\nAnswer:")),
+        ),
         trust_remote_code=bool(model.get("trust_remote_code", False)),
         torch_dtype=dtype,
         prefix_tokens=int(model.get("prefix_tokens", 8)),
         projector_hidden_dim=int(model.get("projector_hidden_size", 512)),
         projector_num_layers=int(model.get("projector_num_layers", 1)),
     )
-    if not isinstance(tea_model.tensorizer, DeterministicNodeTensorizer):
+    if tensorizer_kind == "bert":
+        from graph_modi.models.bert_tensorizer import BertNodeTensorizer, BertNodeTensorizerConfig
+
+        tea_model.tensorizer = BertNodeTensorizer(
+            BertNodeTensorizerConfig(
+                bert_model_name=str(model.get("bert_model_name", "bert-base-uncased")),
+                feature_dim=graph_config.input_dim,
+            )
+        )
+    elif not isinstance(tea_model.tensorizer, DeterministicNodeTensorizer):
         raise TypeError("Unexpected graph tensorizer")
+    tea_model.graph_token_position = str(model.get("graph_token_position", "before_answer"))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    return tea_model.to(device)
+    tea_model = tea_model.to(device)
+    if bool(model.get("gradient_checkpointing", False)):
+        tea_model.language_model.gradient_checkpointing_enable()
+        tea_model.language_model.enable_input_require_grads()
+    return tea_model
 
 
 def _soft_prompt_model(config: ExperimentConfig) -> Any:
     import torch
 
-    from graph_modi.models.soft_prompt import SoftPromptGLM
+    from graph_modi.models.soft_prompt import SoftPromptConfig, SoftPromptGLM
 
     model = config.section("model")
     dtype_name = str(model.get("torch_dtype", "float32"))
@@ -474,7 +601,15 @@ def _soft_prompt_model(config: ExperimentConfig) -> Any:
         prefix_tokens=int(model.get("prefix_tokens", 10)),
         trust_remote_code=bool(model.get("trust_remote_code", False)),
         torch_dtype=dtype,
+        config=SoftPromptConfig(
+            prefix_tokens=int(model.get("prefix_tokens", 10)),
+            max_sequence_length=int(model.get("max_sequence_length", 512)),
+            prompt_template=str(model.get("prompt_template", "Question: {question}\nAnswer:")),
+        ),
     )
+    soft_model.graph_token_position = str(model.get("graph_token_position", "before_answer"))
+    if bool(model.get("gradient_checkpointing", False)):
+        soft_model.language_model.gradient_checkpointing_enable()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     return soft_model.to(device)
 
@@ -494,19 +629,42 @@ def command_pretrain(config: ExperimentConfig, _args: argparse.Namespace) -> Non
     if model_config.get("backend") == "soft_prompt":
         print(json.dumps({"skipped": "soft_prompt has no GNN to pretrain"}, indent=2))
         return
-    _, gnn, tensorizer = _neural_components(config)
     examples = _training_examples(config)
     training = config.section("training")
-    result = pretrain_graph_encoder(
-        gnn,
-        tensorizer,
-        examples,
-        output_dir=config.output_dir / "gnn",
-        epochs=int(training.get("gnn_epochs", training.get("epochs", 5))),
-        batch_size=int(training.get("gnn_batch_size", training.get("batch_size", 4))),
-        learning_rate=float(training.get("gnn_learning_rate", 0.002)),
-        seed=int(training.get("seed", config.seed)),
-    )
+    objective = str(training.get("pretrain_objective", "classification"))
+    if objective == "contrastive":
+        # TEA-GLM's own pretraining objective (arXiv:2408.14512), reused by the
+        # CLEGR paper -- needs the LM+tokenizer to embed node text, so build
+        # the full TEAGLM (which already respects model.tensorizer=bert) and
+        # reuse its gnn/tensorizer/language_model/tokenizer rather than
+        # duplicating LM-loading logic here.
+        tea_model = _tea_model(config)
+        graphs = list({example.graph.graph_id: example.graph for example in examples}.values())
+        result = pretrain_graph_encoder_contrastive(
+            tea_model.gnn,
+            tea_model.tensorizer,
+            graphs,
+            tea_model.language_model,
+            tea_model.tokenizer,
+            output_dir=config.output_dir / "gnn",
+            epochs=int(training.get("gnn_epochs", training.get("epochs", 5))),
+            graphs_per_batch=int(training.get("gnn_graphs_per_batch", 8)),
+            learning_rate=float(training.get("gnn_learning_rate", 0.002)),
+            temperature=float(training.get("contrastive_temperature", 0.07)),
+            seed=int(training.get("seed", config.seed)),
+        )
+    else:
+        _, gnn, tensorizer = _neural_components(config)
+        result = pretrain_graph_encoder(
+            gnn,
+            tensorizer,
+            examples,
+            output_dir=config.output_dir / "gnn",
+            epochs=int(training.get("gnn_epochs", training.get("epochs", 5))),
+            batch_size=int(training.get("gnn_batch_size", training.get("batch_size", 4))),
+            learning_rate=float(training.get("gnn_learning_rate", 0.002)),
+            seed=int(training.get("seed", config.seed)),
+        )
     print(json.dumps(asdict(result), indent=2, default=str))
 
 
@@ -612,6 +770,7 @@ def command_static_eval(config: ExperimentConfig, args: argparse.Namespace) -> N
         _backend(config),
         batch_size=int(evaluation.get("batch_size", 16)),
         progress=not getattr(args, "no_progress", False),
+        prompt_format=str(config.section("data").get("prompt_format", "wfi")),
     )
     path = config.output_dir / f"static_eval_{split}.json"
     _write_json(path, result)
@@ -756,10 +915,23 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _apply_gpu_memory_cap(fraction: float | None) -> None:
+    if fraction is None or fraction >= 1.0:
+        return
+    import torch
+
+    if not torch.cuda.is_available():
+        return
+    torch.cuda.set_per_process_memory_fraction(fraction, device=0)
+    print(f"[cli] capped this process to {fraction:.0%} of GPU memory", flush=True)
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     config = load_config(args.config)
+    fraction = config.values.get("gpu_memory_fraction")
+    _apply_gpu_memory_cap(float(fraction) if fraction is not None else None)
     args.handler(config, args)
 
 

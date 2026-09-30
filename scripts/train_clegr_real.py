@@ -133,7 +133,7 @@ def _build_model(args, freeze_gnn: bool):
         args.lm_name,
         gnn_config=graph_config,
         tensorizer_config=tensor_config,
-        config=TEAGLMConfig(freeze_gnn=freeze_gnn),
+        config=TEAGLMConfig(freeze_gnn=freeze_gnn, max_sequence_length=args.max_sequence_length),
         torch_dtype=torch.bfloat16,
         prefix_tokens=args.prefix_tokens,
         projector_hidden_dim=args.projector_hidden_size,
@@ -201,6 +201,8 @@ def _evaluate(model, test_examples, batch_size: int, max_new_tokens: int) -> dic
         predictions = model.generate_batch(
             graphs=[example.graph for example in batch],
             prompts=[example.prompt for example in batch],
+            source_ids=[example.metadata.get("source_id") for example in batch],
+            target_ids=[example.metadata.get("target_id") for example in batch],
             max_new_tokens=max_new_tokens,
         )
         for example, predicted in zip(batch, predictions, strict=True):
@@ -252,6 +254,12 @@ def main() -> None:
     parser.add_argument("--graph-layers", type=int, default=8)
     parser.add_argument("--graph-aggregation", default="sum")
     parser.add_argument("--prefix-tokens", type=int, default=10)
+    parser.add_argument(
+        "--max-sequence-length",
+        type=int,
+        default=512,
+        help="raise for CSV-textualized-graph prompts (clegr.md 8.2), which run ~1400+ tokens",
+    )
     parser.add_argument("--projector-hidden-size", type=int, default=512)
     parser.add_argument("--projector-num-layers", type=int, default=1)
     parser.add_argument("--gnn-epochs", type=int, default=30)

@@ -1,0 +1,98 @@
+seed: 42
+gpu_memory_fraction: 0.4
+output_dir: outputs/v2_clegr_extended_tea_poolfix
+data_dir: datasets/metro_v2_clegr_extended
+
+data:
+  distribution: metro_v2_preliminary
+  train_sessions: 0
+  validation_sessions: 150
+  test_sessions: 350
+  ood_sessions: 250
+  static_train_graphs: 2000
+  static_validation_graphs: 250
+  static_test_graphs: 500
+  static_tuples_per_graph: 9
+  # CLEGR-style task-family expansion on top of the original 3-task yes/no
+  # gate (edge_exists/reachability/cycle_membership): filtered aggregation
+  # (filtered_neighbor_count, filtered_path_count, within_hops_count),
+  # weighted path cost (path_cost, shortest_path), constrained reachability
+  # (constrained_reachability), and topology-with-filter
+  # (within_hops_list, most_common_attribute_within_hops). See README.md
+  # section 2/5 and documents/experiments/STATUS_REPORT.md limitation #1.
+  static_tasks:
+    [
+      edge_exists,
+      node_degree,
+      reachability,
+      cycle_membership,
+      filtered_neighbor_count,
+      filtered_path_count,
+      shortest_path,
+      path_cost,
+      constrained_reachability,
+      within_hops_count,
+      within_hops_list,
+      most_common_attribute_within_hops,
+    ]
+  dynamic_tasks:
+    [
+      reachability,
+      edge_exists,
+      cycle_membership,
+      filtered_neighbor_count,
+      path_cost,
+      constrained_reachability,
+      within_hops_count,
+      most_common_attribute_within_hops,
+    ]
+  counterfactual_static_train: true
+
+model:
+  gradient_checkpointing: true
+  backend: tea
+  architecture: tea
+  lm_name: /data/lmw/models/Meta-Llama-3.1-8B-Instruct
+  graph_hidden_size: 4096
+  graph_layers: 8
+  graph_aggregation: sum
+  prefix_tokens: 10
+  projector_num_layers: 1
+  node_feature_size: 64
+  trust_remote_code: false
+  torch_dtype: bfloat16
+  gnn_checkpoint: outputs/v2_clegr_extended_tea_poolfix/gnn/gnn.pt
+
+training:
+  seed: 42
+  gnn_epochs: 30
+  gnn_learning_rate: 0.002
+  gnn_batch_size: 64
+  epochs: 10
+  batch_size: 8
+  learning_rate: 0.0005
+  weight_decay: 0.0001
+  gradient_accumulation_steps: 3
+  mixed_precision: bf16
+  save_every_steps: 500
+  resume_from: null
+
+evaluation:
+  splits: [validation, test, ood]
+  batch_size: 96
+  max_new_tokens: 96
+  conditions:
+    - question_only
+    - frozen_graph_history
+    - graph_once_then_text
+    - shuffled_graph
+    - oracle_updated_graph
+    - cached_no_reencode
+    - predicted_updated_graph
+    - serialized_initial_history
+    - token_matched_history
+    - serialized_current_graph
+    - tool_solver
+    - structure_only
+    - modify_and_print
+    - majority_prior

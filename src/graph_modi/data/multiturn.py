@@ -218,6 +218,7 @@ def _queries(graph: AttributedGraph, reasoning_type: ReasoningType) -> Iterable[
     nodes = [node.id for node in graph.nodes]
     if reasoning_type in {
         ReasoningType.SHORTEST_PATH,
+        ReasoningType.PATH_COST,
         ReasoningType.REACHABILITY,
         ReasoningType.FILTERED_PATH_COUNT,
         ReasoningType.EDGE_EXISTS,

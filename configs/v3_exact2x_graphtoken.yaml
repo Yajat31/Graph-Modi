@@ -1,0 +1,87 @@
+seed: 42
+output_dir: outputs/v3_exact2x_graphtoken
+data_dir: datasets/metro_v3
+gpu_memory_fraction: 0.97
+
+data:
+  distribution: metro_v3
+  # 12-22 stations, CLEGR-style node semantics, label-balanced (data/v3.py)
+  static_train_graphs: 2000
+  static_tuples_per_graph: 9
+  counterfactual_graphs: 1000
+  counterfactual_pairs_per_graph: 3
+  static_validation_replicates: 6
+  static_test_replicates: 12
+  sessions:
+    validation_replicates: 1
+    test_replicates: 1
+  static_tasks:
+    [
+      edge_exists,
+      reachability,
+      constrained_reachability,
+      cycle_membership,
+      node_degree,
+      filtered_neighbor_count,
+      shortest_path,
+      within_hops_count,
+      most_common_attribute_within_hops,
+      attribute_lookup,
+      attribute_check,
+    ]
+  dynamic_tasks:
+    [
+      edge_exists,
+      reachability,
+      constrained_reachability,
+      cycle_membership,
+      node_degree,
+      filtered_neighbor_count,
+      shortest_path,
+      within_hops_count,
+      most_common_attribute_within_hops,
+    ]
+
+model:
+  backend: tea
+  architecture: graph_token
+  lm_name: /data/lmw/models/Meta-Llama-3.1-8B-Instruct
+  tensorizer: bert
+  bert_model_name: bert-base-uncased
+  node_feature_size: 768
+  graph_hidden_size: 1024
+  graph_layers: 3
+  graph_dropout: 0.5
+  graph_aggregation: mean
+  prefix_tokens: 10
+  projector_num_layers: 1
+  trust_remote_code: false
+  torch_dtype: bfloat16
+  gradient_checkpointing: true
+  gnn_checkpoint: outputs/v3_tea/gnn/gnn.pt
+  checkpoint: outputs/v3_graphtoken/projector/checkpoint-final
+
+training:
+  seed: 42
+  epochs: 5
+  batch_size: 8
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  gradient_accumulation_steps: 3
+  mixed_precision: bf16
+
+evaluation:
+  splits: [validation, test]
+  batch_size: 128
+  max_new_tokens: 32
+  conditions:
+    - question_only
+    - structure_only
+    - frozen_graph_history
+    - oracle_updated_graph
+    - shuffled_graph
+    - cached_no_reencode
+    - graph_once_then_text
+    - token_matched_history
+    - tool_solver
+    - majority_prior

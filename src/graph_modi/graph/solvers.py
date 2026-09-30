@@ -269,12 +269,94 @@ def answer_query(graph: AttributedGraph, query: GraphQuery) -> str:
         best_count = max(counts.values())
         winners = sorted(key for key, count in counts.items() if count == best_count)
         return winners[0]
+    if query.reasoning_type is ReasoningType.ATTRIBUTE_LOOKUP:
+        if query.attribute is None:
+            return "invalid"
+        value = nodes[query.source].attributes.get(query.attribute)
+        return "none" if value is None else str(value)
+    if query.reasoning_type is ReasoningType.ATTRIBUTE_CHECK:
+        if query.attribute is None:
+            return "invalid"
+        return "yes" if nodes[query.source].attributes.get(query.attribute) == query.value else "no"
     raise ValueError(f"Unsupported reasoning type: {query.reasoning_type}")
+
+
+def _node_wfi_text(
+    graph: AttributedGraph,
+    node_id: str | None,
+    exclude: frozenset[str] = frozenset(),
+) -> str | None:
+    """W(f_i): the node's own textual attributes, as the CLEGR paper's Eq. 1
+    concatenates alongside the graph-encoded prefix
+    (clegr.md section 0: "M_l(M_P(M_g(G,n_i)) || W(f_i) || W(q))").
+    None when node_id is absent, so graph-level questions get no W(f_i) text.
+    ``exclude`` lists attribute names withheld from the text (they stay in the
+    graph itself): dynamic state such as ``status`` and, for Facts questions,
+    the attribute being asked about."""
+    if not node_id:
+        return None
+    node = next((n for n in graph.nodes if n.id == node_id), None)
+    if node is None:
+        return None
+    attrs = ", ".join(
+        f"{key}={value}" for key, value in sorted(node.attributes.items()) if key not in exclude
+    )
+    return f"{node.label}: {attrs}." if attrs else f"{node.label}."
+
+
+def _prepend_wfi(
+    question: str,
+    graph: AttributedGraph,
+    source_id: str | None,
+    target_id: str | None,
+    exclude: frozenset[str] = frozenset(),
+) -> str:
+    texts = [
+        t
+        for t in (
+            _node_wfi_text(graph, source_id, exclude),
+            _node_wfi_text(graph, target_id, exclude),
+        )
+        if t
+    ]
+    if not texts:
+        return question
+    return " ".join(dict.fromkeys(texts)) + "\n" + question
+
+
+# Tasks whose answer is (or, for the mode, is largely decided by) the source's own value of the
+# queried attribute: that attribute is withheld from the W(f_i) text so the text cannot give it away.
+_FACTS_TYPES = frozenset(
+    {
+        ReasoningType.ATTRIBUTE_LOOKUP,
+        ReasoningType.ATTRIBUTE_CHECK,
+        ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS,
+    }
+)
+
+
+def wfi_excluded_attributes(query: GraphQuery, graph: AttributedGraph) -> frozenset[str]:
+    """Attributes withheld from the W(f_i) text: the graph's ``wfi_exclude`` list
+    (comma-separated in metadata) plus the queried attribute on Facts questions."""
+    excluded = {name for name in str(graph.metadata.get("wfi_exclude", "")).split(",") if name}
+    if query.reasoning_type in _FACTS_TYPES and query.attribute:
+        excluded.add(query.attribute)
+    return frozenset(excluded)
 
 
 def render_question(query: GraphQuery, graph: AttributedGraph) -> str:
     if query.question:
         return query.question
+    return _prepend_wfi(
+        _render_question_text(query, graph),
+        graph,
+        query.source,
+        query.target,
+        wfi_excluded_attributes(query, graph),
+    )
+
+
+def _render_question_text(query: GraphQuery, graph: AttributedGraph) -> str:
     labels = {node.id: node.label for node in graph.nodes}
     source = labels.get(query.source, query.source)
     target = labels.get(query.target or "", query.target or "")
@@ -336,4 +418,8 @@ def render_question(query: GraphQuery, graph: AttributedGraph) -> str:
             f"What is the most common {query.attribute} among stations within {hops} "
             f"hops of {source}, including {source} itself?"
         )
+    if query.reasoning_type is ReasoningType.ATTRIBUTE_LOOKUP:
+        return f"What is the {query.attribute} of {source}? Answer directly."
+    if query.reasoning_type is ReasoningType.ATTRIBUTE_CHECK:
+        return f"Does {source} have {query.attribute} equal to {query.value}? Answer yes or no."
     return f"Is there a direct edge between {source} and {target}? Answer yes or no."

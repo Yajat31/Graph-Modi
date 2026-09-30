@@ -509,14 +509,22 @@ class TEAGLM(_Module):
         hops: Sequence[int | None] | None = None,
         reasoning_types: Sequence[str | None] | None = None,
     ) -> Any:
-        """Pooled graph vector concatenated with the query's source/target node
-        embeddings, its hop radius, and its task identity.
+        """Query-conditioned graph vector: a specific node's own embedding for
+        node/edge-level queries, or a whole-graph mean pool only when there is
+        no node to point at -- plus the query's hop radius and task identity.
 
         Mean pooling alone collapses every node into one vector, discarding
         which node(s) a query is about -- fatal for path/reachability/
         neighbor-count tasks that name specific nodes (README section 5:
         "task-appropriate readouts ... do not represent every problem with
-        one repeated mean-pooled vector"). This mirrors the pooled+source+
+        one repeated mean-pooled vector"). Matches the source CLEGR paper's
+        own GLM baseline (arXiv:2508.20583), which switches between
+        M_g(graph, n_i) (a specific node's representation, no pooling) for
+        node-level questions and Pool(M_g(graph)) only for graph-level
+        questions with no single relevant node -- rather than unconditionally
+        concatenating both, which dilutes the node-specific signal with an
+        undifferentiated average over every other node for exactly the
+        questions that least need it. This mirrors the pooled+source+
         target representation pretrain_graph_encoder's classification head
         already uses (training.py::_batch_query_vectors); zero-filled when a
         task has no source/target (e.g. pure graph-level tasks). ``hops`` is
@@ -549,11 +557,20 @@ class TEAGLM(_Module):
                     node_repr = self.gnn(tensor_graph)
             else:
                 node_repr = self.gnn(tensor_graph)
-            pooled = node_repr.mean(dim=0)
             zeros = torch.zeros(node_repr.shape[-1], dtype=node_repr.dtype, device=node_repr.device)
             node_index = {node_id: position for position, node_id in enumerate(tensor_graph.node_ids)}
             source_row = node_repr[node_index[source_id]] if source_id in node_index else zeros
             target_row = node_repr[node_index[target_id]] if target_id in node_index else zeros
+            # Task-conditional pooling: the real CLEGR paper's own GLM baseline switches
+            # between M_g(graph, n_i) (a specific node's own representation, no pooling) for
+            # node/edge-level questions and Pool(M_g(graph)) only for graph-level questions
+            # that have no single node to point at (arXiv:2508.20583). Unconditionally
+            # concatenating a whole-graph mean pool alongside source/target rows -- as this
+            # function did previously -- dilutes the node-specific signal with an
+            # undifferentiated average over every other node in the graph, for exactly the
+            # questions that least need it. Pool only when there is no node anchor at all.
+            has_node_anchor = source_id in node_index or target_id in node_index
+            pooled = zeros if has_node_anchor else node_repr.mean(dim=0)
             hop_feature = torch.tensor(
                 [float(hop_count) if hop_count is not None else 0.0],
                 dtype=node_repr.dtype,
@@ -604,6 +621,25 @@ class TEAGLM(_Module):
             token_ids.append(int(self.tokenizer.eos_token_id))
         return token_ids
 
+    # "before_answer": [prompt][graph tokens][answer] (this repo's original layout);
+    # "prefix": [BOS][graph tokens][prompt][answer], as in CLEGR Eq. 2. Kept as a plain attribute
+    # (set by the CLI), not a config field, so existing checkpoint metadata stays comparable.
+    graph_token_position: str = "before_answer"
+
+    def _assemble_prompt(self, prompt_ids: list[int], prefix: Any, embedding: Any) -> list[Any]:
+        prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
+        if self.graph_token_position == "prefix":
+            has_bos = bool(
+                prompt_ids
+                and self.config.add_bos_token
+                and prompt_ids[0] == self.tokenizer.bos_token_id
+            )
+            lead = 1 if has_bos else 0
+            parts = [embedding(prompt_tensor[:lead]), prefix, embedding(prompt_tensor[lead:])]
+        else:
+            parts = [embedding(prompt_tensor), prefix]
+        return [part for part in parts if part.shape[0] > 0]
+
     def _truncate(
         self, prompt_ids: list[int], answer_ids: list[int]
     ) -> tuple[list[int], list[int]]:
@@ -646,12 +682,9 @@ class TEAGLM(_Module):
             )
             if not answer_ids:
                 raise ValueError("An answer produced no tokens")
-            prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
             answer_tensor = torch.tensor(answer_ids, dtype=torch.long, device=self.device)
-            text_parts = []
-            if prompt_ids:
-                text_parts.append(embedding(prompt_tensor))
-            text_parts.extend([prefixes[index], embedding(answer_tensor)])
+            text_parts = self._assemble_prompt(prompt_ids, prefixes[index], embedding)
+            text_parts.append(embedding(answer_tensor))
             sequences.append(torch.cat(text_parts, dim=0))
             masked = len(prompt_ids) + self.projector.config.prefix_tokens
             label_rows.append(
@@ -703,8 +736,6 @@ class TEAGLM(_Module):
     ) -> str:
         prompt_ids = self._encode_text(prompt, answer=False)
         prompt_ids, _ = self._truncate(prompt_ids, [])
-        prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
-        prompt_embeds = self.language_model.get_input_embeddings()(prompt_tensor)
         prefix = self.graph_prefix(
             [graph],
             source_ids=[source_id],
@@ -712,7 +743,10 @@ class TEAGLM(_Module):
             hops=[hops],
             reasoning_types=[reasoning_type],
         )[0]
-        inputs_embeds = torch.cat([prompt_embeds, prefix], dim=0).unsqueeze(0)
+        embedding = self.language_model.get_input_embeddings()
+        inputs_embeds = torch.cat(
+            self._assemble_prompt(prompt_ids, prefix, embedding), dim=0
+        ).unsqueeze(0)
         attention_mask = torch.ones(inputs_embeds.shape[:2], dtype=torch.long, device=self.device)
         with self._lm_autocast():
             generated = self.language_model.generate(
@@ -722,7 +756,7 @@ class TEAGLM(_Module):
                 use_cache=True,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs,
+                **{"do_sample": False, **generation_kwargs},
             )
         return self.tokenizer.decode(generated[0], skip_special_tokens=True).strip()
 
@@ -746,7 +780,7 @@ class TEAGLM(_Module):
                 use_cache=True,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs,
+                **{"do_sample": False, **generation_kwargs},
             )
         completion = generated[0, input_ids.shape[1] :]
         return self.tokenizer.decode(completion, skip_special_tokens=True).strip()
@@ -800,8 +834,9 @@ class TEAGLM(_Module):
         sequences = []
         for index, prompt in enumerate(prompts):
             prompt_ids, _ = self._truncate(self._encode_text(prompt, answer=False), [])
-            prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
-            sequences.append(torch.cat([embedding(prompt_tensor), prefixes[index]], dim=0))
+            sequences.append(
+                torch.cat(self._assemble_prompt(prompt_ids, prefixes[index], embedding), dim=0)
+            )
         inputs_embeds, attention_mask = self._left_pad_embeds(sequences, self.device)
         with self._lm_autocast():
             generated = self.language_model.generate(
@@ -811,7 +846,7 @@ class TEAGLM(_Module):
                 use_cache=True,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs,
+                **{"do_sample": False, **generation_kwargs},
             )
         return [self.tokenizer.decode(row, skip_special_tokens=True).strip() for row in generated]
 
@@ -853,7 +888,7 @@ class TEAGLM(_Module):
                 use_cache=True,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs,
+                **{"do_sample": False, **generation_kwargs},
             )
         completions = generated[:, max_length:]
         return [self.tokenizer.decode(row, skip_special_tokens=True).strip() for row in completions]

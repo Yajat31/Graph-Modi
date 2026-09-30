@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from graph_modi.evaluation.metrics import answers_match, normalize_answer
+from graph_modi.graph.serialization import csv_graph_prompt
 from graph_modi.graph.solvers import render_question
 from graph_modi.models.base import GraphBackend, ModelInput, SymbolicMockBackend
 from graph_modi.schema import StaticQATuple
@@ -28,8 +29,11 @@ def evaluate_static_oracle(
     *,
     batch_size: int = 16,
     progress: bool = True,
+    prompt_format: str = "wfi",
 ) -> dict[str, Any]:
-    """Batched static QA evaluation with per-task/complexity breakdown."""
+    """Batched static QA evaluation with per-task/complexity breakdown.
+
+    ``prompt_format="csv"`` gives every model the CLEGR-style node/edge CSV of the graph."""
     solver = backend or _oracle_backend()
     total = len(tuples)
     tracker = ProgressTracker("[static-eval]", total, phase="oracle-qa", enabled=progress)
@@ -43,7 +47,11 @@ def evaluate_static_oracle(
                 initial_graph=item.graph,
                 current_graph=item.graph,
                 query=item.query,
-                question=render_question(item.query, item.graph),
+                question=(
+                    csv_graph_prompt(item.graph, render_question(item.query, item.graph))
+                    if prompt_format == "csv"
+                    else render_question(item.query, item.graph)
+                ),
                 history=(),
                 condition="oracle_updated_graph",
             )

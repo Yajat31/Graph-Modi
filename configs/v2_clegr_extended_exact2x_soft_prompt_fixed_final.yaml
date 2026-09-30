@@ -1,0 +1,68 @@
+seed: 42
+output_dir: outputs/v2_clegr_extended_exact2x_soft_prompt_fixed_final
+data_dir: datasets/metro_v2_clegr_extended_exact2x_fixed_final
+gpu_memory_fraction: 0.97
+
+data:
+  distribution: metro_v2_preliminary
+  dynamic_only: true
+  session_layout: exact_uniform
+  exact_uniform:
+    validation_replicates: 1
+    test_replicates: 1
+  static_layout: exact_uniform
+  static_exact_uniform:
+    validation_replicates: 1
+    test_replicates: 1
+  train_sessions: 0
+  ood_sessions: 0
+  static_tasks:
+    [
+      edge_exists,
+      node_degree,
+      reachability,
+      cycle_membership,
+      filtered_neighbor_count,
+      filtered_path_count,
+      shortest_path,
+      path_cost,
+      constrained_reachability,
+      within_hops_count,
+      within_hops_list,
+      most_common_attribute_within_hops,
+    ]
+  dynamic_tasks:
+    [
+      reachability,
+      edge_exists,
+      cycle_membership,
+      filtered_neighbor_count,
+      path_cost,
+      constrained_reachability,
+      within_hops_count,
+      most_common_attribute_within_hops,
+    ]
+
+model:
+  backend: soft_prompt
+  lm_name: /data/lmw/models/Meta-Llama-3.1-8B-Instruct
+  prefix_tokens: 10
+  trust_remote_code: false
+  torch_dtype: bfloat16
+  checkpoint: outputs/v2_clegr_extended_soft_prompt_fixed_final/soft_prompt/checkpoint-final
+
+training:
+  seed: 42
+  epochs: 5
+  batch_size: 24
+  learning_rate: 0.001
+  weight_decay: 0.0
+  gradient_accumulation_steps: 1
+  mixed_precision: bf16
+
+evaluation:
+  splits: [validation, test]
+  batch_size: 128
+  max_new_tokens: 96
+  conditions:
+    - soft_prompt
