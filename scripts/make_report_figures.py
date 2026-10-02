@@ -4,7 +4,7 @@ Two sets, each as PNG (for review) and PDF (vector, for LaTeX):
 
   <model>/main/      Figures 1-3 of the report for one model (tea/ or graphtoken/), including
                      the re-encoded graph from model-written (predicted) edits.
-  <model>/appendix/  The same three views with every condition of Table 1: the graph-token
+  <model>/appendix/  figA4: static accuracy on all eleven task families. figA1-A3: the same three views with every condition of Table 1: the graph-token
              conditions on one row, the text-only conditions and the two reference points
              (stale answer, per-task majority) on the other.
 
@@ -132,6 +132,7 @@ def load_all(rebuild_majority: bool) -> dict:
     files = {key: RES / f"exact2x_{key}_analysis.json"
              for key in ("tea", "tea_predfix", "graphtoken", "graphtoken_predfix", "soft_prompt")}
     data = {key: json.loads(path.read_text()) for key, path in files.items()}
+    data["static"] = load_static()
     data["majority"] = build_majority_cache() if rebuild_majority or not MAJORITY_CACHE.exists() else json.loads(MAJORITY_CACHE.read_text())
     return data
 
@@ -326,6 +327,61 @@ def main() -> None:
     print("figures written to", OUT)
 
 
+# The v3 task families in the order of data/v3.py: the first nine are in the multi-turn grid,
+# the two Facts tasks are static only (edits never change node attributes).
+TASKS = ("edge_exists", "reachability", "constrained_reachability", "cycle_membership", "node_degree",
+         "filtered_neighbor_count", "shortest_path", "within_hops_count",
+         "most_common_attribute_within_hops", "attribute_lookup", "attribute_check")
+STATIC_ONLY = ("attribute_lookup", "attribute_check")
+
+
+def load_static() -> dict:
+    files = {(key, split): RES / f"static_{key}_{split}.json" for key in ("tea", "graphtoken", "soft_prompt") for split in SPLITS}
+    static = {k: json.loads(path.read_text()) for k, path in files.items()}
+    static["audit"] = json.loads((RES / "dataset_audit.json").read_text())
+    return static
+
+
+def fig_static_by_task(static: dict, stem: str) -> None:
+    """Static QA accuracy for all eleven task families, one model against the graph-blind soft prompt."""
+    model = CURRENT["model"]
+    bars = ((SERIES["oracle"][3], f"{MODELS[model]} (graph tokens)", model),
+            (SERIES["soft"][3], "soft prompt (no graph)", "soft_prompt"))
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6.2), facecolor=SURFACE, sharey=True)
+    height = 0.36
+    for ax, split in zip(axes, SPLITS):
+        style(ax, "x")
+        audit = static["audit"][f"static_{split}"]
+        for j, (color, label, key) in enumerate(bars):
+            result = static[(key, split)]
+            for i, task in enumerate(TASKS):
+                n = sum(1 for row in result["rows"] if row["reasoning_type"] == task)
+                p = result["task_accuracy"][task]
+                y = i + (j - 0.5) * height
+                ax.barh(y, 100 * p, height=height - 0.04, color=color, xerr=1.96 * se(p, n),
+                        error_kw={"ecolor": INK2, "elinewidth": 0.7, "capsize": 1.5}, label=label if i == 0 else None)
+        for i, task in enumerate(TASKS):
+            ax.plot([100 * audit["text_leak_audit"][task]["question_only_rule_accuracy"]] * 2, [i - 0.42, i + 0.42],
+                    color=INK, linewidth=1.6, label="question-only prior" if i == 0 else None)
+            ax.plot([100 * audit["labels"][task]["majority_accuracy"]] * 2, [i - 0.42, i + 0.42], color=INK2,
+                    linewidth=1.2, linestyle=(0, (2, 1.5)), label="per-task majority" if i == 0 else None)
+        ax.axhline(len(TASKS) - len(STATIC_ONLY) - 0.5, color=MUTED, linewidth=0.8, linestyle=(0, (4, 3)))
+        ax.set_yticks(range(len(TASKS)))
+        ax.set_yticklabels([t.replace("_", " ") + ("  (static only)" if t in STATIC_ONLY else "") for t in TASKS],
+                           fontsize=8, color=INK)
+        ax.set_xlim(0, 85)
+        ax.set_xlabel(f"accuracy (%), static {split} split, 95% CI", color=INK2, fontsize=9)
+        per_task = sum(1 for row in static[(model, split)]["rows"] if row["reasoning_type"] == TASKS[0])
+        ax.set_title(f"{split} (n = {per_task} per task)", color=INK, fontsize=10, loc="left")
+    axes[0].invert_yaxis()
+    fig.suptitle(f"{prefix()}Static QA: accuracy on all 11 task families (below the dashed line: Facts tasks, "
+                 "not in the multi-turn grid)", color=INK, fontsize=11, x=0.01, ha="left")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=4, frameon=False, fontsize=8)
+    fig.tight_layout(rect=(0, 0.06, 1, 0.95))
+    save(fig, "appendix", stem)
+
+
 def draw_set(data: dict) -> None:
     fig_main_lines(data, "session_length", "fig1_accuracy_by_session_length")
     fig_main_lines(data, "turn_index", "fig2_accuracy_by_turn_index")
@@ -333,6 +389,7 @@ def draw_set(data: dict) -> None:
     fig_appendix_lines(data, "session_length", "figA1_all_conditions_by_session_length")
     fig_appendix_lines(data, "turn_index", "figA2_all_conditions_by_turn_index")
     fig_appendix_bars(data, "figA3_all_conditions_edit_tracking")
+    fig_static_by_task(data["static"], "figA4_static_accuracy_by_task")
 
 
 if __name__ == "__main__":

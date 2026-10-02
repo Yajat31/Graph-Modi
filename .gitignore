@@ -17,6 +17,7 @@ outputs/
 *.pt
 *.pth
 *.safetensors
+temp.tex
 
 # Shared session JSONL lives under datasets/ and is tracked in git.
 # Do not add a blanket ignore for datasets/.
