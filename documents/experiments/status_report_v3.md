@@ -25,7 +25,7 @@ stations, label skew and a text shortcut).
    +2.6 for TEA on exact2x test, and a different session's graph is worse than the correct initial graph.
 5. **Model-written edits cost nothing for TEA.** A frozen Llama with a few-shot prompt reproduces 95.2%
    of edits exactly, and accuracy with them is 34.9% against 35.0% with
-   oracle edits (test). The GraphToken predicted-edit run was still in progress when this report was generated.
+   oracle edits (test). GraphToken with model-written edits scores 37.6% on test against 37.9% with oracle edits.
 6. **A deeper GNN, a larger projector and 3x more data did not help TEA** (Section 6).
 7. **Caveats that matter** are in Section 8: one seed, unequal epochs, a graph-token position that differs from CLEGR, and
    a soft prompt that is weaker than CLEGR's.
@@ -190,8 +190,8 @@ resulting graph is re-encoded. Each run also evaluates the oracle-edit condition
 | TEA (5 epochs) | test | 34.9 | 35.0 | +0.1 | 95.2 | 88.6 |
 | TEA (3 epochs) | validation | pending | pending | | | |
 | TEA (3 epochs) | test | pending | pending | | | |
-| GraphToken (5 epochs) | validation | pending | pending | | | |
-| GraphToken (5 epochs) | test | pending | pending | | | |
+| GraphToken (5 epochs) | validation | 38.1 | 38.2 | +0.1 | 95.0 | 89.9 |
+| GraphToken (5 epochs) | test | 37.6 | 37.9 | +0.3 | 95.2 | 88.6 |
 
 Edit accuracy by kind (TEA, test):
 

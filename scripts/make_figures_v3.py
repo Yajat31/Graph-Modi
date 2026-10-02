@@ -350,21 +350,22 @@ def fig_predicted_edits() -> None:
                        error_kw={"ecolor": INK2, "elinewidth": 0.7, "capsize": 1.5}, label=f"{label}, {name}" if i == 0 else None)
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["validation", "test"], fontsize=9, color=INK)
-    ax.set_ylim(25, 43)
+    ax.set_ylim(25, 47)
     ax.set_ylabel("answer accuracy (%)", color=INK2, fontsize=9)
     ax.set_title("Model-written vs oracle edits", color=INK, fontsize=10, loc="left")
     ax.legend(frameon=False, fontsize=7.5, loc="upper left", ncol=1)
     ax = axes[1]
     style(ax, "both")
-    tea = runs[0][1]
-    for cond, color, dash, name in (("oracle_updated_graph", "#104281", "-", "oracle edits"), ("predicted_updated_graph", "#eb6834", "--", "model-written edits")):
-        cut = tea["test"]["cuts"][f"{cond}::session_length"]
-        ax.plot([1, 2, 4, 8], [100 * cut[str(k)]["acc"] for k in (1, 2, 4, 8)], color=color, linestyle=dash, marker="o", linewidth=1.8, label=f"TEA {name}")
+    for label, data in runs:
+        for cond, dash, name in (("oracle_updated_graph", "-", "oracle edits"), ("predicted_updated_graph", "--", "model-written edits")):
+            cut = data["test"]["cuts"][f"{cond}::session_length"]
+            ax.plot([1, 2, 4, 8], [100 * cut[str(k)]["acc"] for k in (1, 2, 4, 8)], color=COLORS[label], linestyle=dash, marker="o",
+                    markersize=4, linewidth=1.8, label=f"{label} {name}")
     ax.set_xticks([1, 2, 4, 8])
-    ax.set_ylim(25, 40)
+    ax.set_ylim(25, 44)
     ax.set_xlabel("session length (turns)", color=INK2, fontsize=9)
-    ax.set_title("Errors would accumulate in long sessions - they do not", color=INK, fontsize=9, loc="left")
-    ax.legend(frameon=False, fontsize=8, loc="lower left")
+    ax.set_title("Test accuracy by session length", color=INK, fontsize=9, loc="left")
+    ax.legend(frameon=False, fontsize=7.5, loc="upper left", ncol=2)
     ax = axes[2]
     style(ax)
     if kinds:
@@ -378,7 +379,7 @@ def fig_predicted_edits() -> None:
         ax.invert_yaxis()
         ax.set_xlim(0, 120)
     ax.set_xlabel("edit reproduced exactly (%) - TEA, test", color=INK2, fontsize=9)
-    ax.set_title("Edit accuracy by edit kind (frozen Llama, few-shot)", color=INK, fontsize=10, loc="left")
+    ax.set_title("Edit accuracy by kind (TEA run)", color=INK, fontsize=10, loc="left")
     fig.tight_layout()
     save(fig, "v3_predicted_edits.png")
 
