@@ -17,9 +17,14 @@ datasets/
 
 ## Current datasets
 
+No dataset files are committed. The v3 benchmark is generated deterministically (seed 42) into
+`datasets/metro_v3/` by its training config; the audit of the committed runs is in
+[`documents/experiments/results/v3-20260929/dataset_audit.json`](../documents/experiments/results/v3-20260929/dataset_audit.json).
+
 | Dataset ID | Config | Status |
 |---|---|---|
-| [`watts_strogatz_metro_v1`](watts_strogatz_metro_v1/) | [`configs/qwen8b_projector.yaml`](../configs/qwen8b_projector.yaml) | experiment-1 sessions |
+| `metro_v3` | [`configs/v3_tea.yaml`](../configs/v3_tea.yaml) | v3 static + multi-turn benchmark (`graph-modi generate --config configs/v3_tea.yaml`) |
+| `metro_v3_big` | [`configs/v3x_data.yaml`](../configs/v3x_data.yaml) | 3x training data for the `v3x_data` variant |
 
 ## Layout rules
 

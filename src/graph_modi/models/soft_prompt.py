@@ -150,21 +150,10 @@ class SoftPromptGLM(_Module):
             token_ids.append(int(self.tokenizer.eos_token_id))
         return token_ids
 
-    # See TEAGLM.graph_token_position: "before_answer" (original) or "prefix" (CLEGR Eq. 3).
-    graph_token_position: str = "before_answer"
-
     def _assemble_prompt(self, prompt_ids: list[int], prefix: Any, embedding: Any) -> list[Any]:
+        """[prompt][graph tokens], ready to be followed by the answer or generation."""
         prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
-        if self.graph_token_position == "prefix":
-            has_bos = bool(
-                prompt_ids
-                and self.config.add_bos_token
-                and prompt_ids[0] == self.tokenizer.bos_token_id
-            )
-            lead = 1 if has_bos else 0
-            parts = [embedding(prompt_tensor[:lead]), prefix, embedding(prompt_tensor[lead:])]
-        else:
-            parts = [embedding(prompt_tensor), prefix]
+        parts = [embedding(prompt_tensor), prefix]
         return [part for part in parts if part.shape[0] > 0]
 
     def _truncate(self, prompt_ids: list[int], answer_ids: list[int]) -> tuple[list[int], list[int]]:

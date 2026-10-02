@@ -36,7 +36,6 @@ from graph_modi.data import v3 as data_v3
 from graph_modi.data.validation import audit_sessions
 from graph_modi.evaluation.runner import CONDITIONS, evaluate_sessions
 from graph_modi.evaluation.static_eval import evaluate_static_oracle
-from graph_modi.graph.serialization import csv_graph_prompt
 from graph_modi.graph.solvers import render_question
 from graph_modi.models.base import GraphBackend, SymbolicMockBackend
 from graph_modi.pipeline.multiturn import materialize_states, run_session
@@ -396,24 +395,12 @@ def _ensure_data(config: ExperimentConfig) -> None:
         _generate(config)
 
 
-def _static_examples(
-    tuples: list[StaticQATuple], prompt_format: str = "wfi"
-) -> list[TrainingExample]:
-    def prompt_for(item: StaticQATuple) -> str:
-        question = render_question(item.query, item.graph)
-        return csv_graph_prompt(item.graph, question) if prompt_format == "csv" else question
-
-    def answer_for(item: StaticQATuple) -> str:
-        # CLEGR asks boolean questions with 'True'/'False'; scoring maps them back to yes/no.
-        if prompt_format == "csv" and item.answer in ("yes", "no"):
-            return "True" if item.answer == "yes" else "False"
-        return item.answer
-
+def _static_examples(tuples: list[StaticQATuple]) -> list[TrainingExample]:
     return [
         TrainingExample(
             graph=item.graph,
-            prompt=prompt_for(item),
-            answer=answer_for(item),
+            prompt=render_question(item.query, item.graph),
+            answer=item.answer,
             example_id=item.tuple_id,
             split=item.split,
             metadata={
@@ -463,9 +450,7 @@ def _training_examples(config: ExperimentConfig) -> list[TrainingExample]:
     if str(data.get("distribution", DISTRIBUTION)) in (DISTRIBUTION_V2, data_v3.DISTRIBUTION_V3):
         static_path = _static_path(config, "train")
         if static_path.exists():
-            return _static_examples(
-                load_static_tuples(static_path), str(data.get("prompt_format", "wfi"))
-            )
+            return _static_examples(load_static_tuples(static_path))
     return _examples(load_sessions(_data_path(config, "train")))
 
 
@@ -577,7 +562,6 @@ def _tea_model(config: ExperimentConfig) -> Any:
         )
     elif not isinstance(tea_model.tensorizer, DeterministicNodeTensorizer):
         raise TypeError("Unexpected graph tensorizer")
-    tea_model.graph_token_position = str(model.get("graph_token_position", "before_answer"))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tea_model = tea_model.to(device)
     if bool(model.get("gradient_checkpointing", False)):
@@ -607,7 +591,6 @@ def _soft_prompt_model(config: ExperimentConfig) -> Any:
             prompt_template=str(model.get("prompt_template", "Question: {question}\nAnswer:")),
         ),
     )
-    soft_model.graph_token_position = str(model.get("graph_token_position", "before_answer"))
     if bool(model.get("gradient_checkpointing", False)):
         soft_model.language_model.gradient_checkpointing_enable()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -770,7 +753,6 @@ def command_static_eval(config: ExperimentConfig, args: argparse.Namespace) -> N
         _backend(config),
         batch_size=int(evaluation.get("batch_size", 16)),
         progress=not getattr(args, "no_progress", False),
-        prompt_format=str(config.section("data").get("prompt_format", "wfi")),
     )
     path = config.output_dir / f"static_eval_{split}.json"
     _write_json(path, result)

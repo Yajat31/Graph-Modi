@@ -112,65 +112,7 @@ def test_no_text_leak_beyond_question_prior() -> None:
         assert report[task.value]["with_node_text_rule_accuracy"] <= 0.60
 
 
-def test_csv_prompt_is_clegr_format_and_includes_state() -> None:
-    from graph_modi.graph.serialization import csv_graph_prompt, plain_question
-
-    graph = _graph(DensityBin.MEDIUM, 14)
-    query = GraphQuery(ReasoningType.REACHABILITY, graph.nodes[0].id, graph.nodes[1].id)
-    question = render_question(query, graph)
-    prompt = csv_graph_prompt(graph, question, updates=["X is closed now."])
-    assert prompt.startswith("--- Nodes ---")
-    assert '"id","name","disabled_access"' in prompt and '"source_id","target_id"' in prompt
-    assert prompt.count("\n") > len(graph.nodes) + len(graph.edges)
-    assert '"open"' in prompt or '"closed"' in prompt  # state stays visible in the text track
-    assert "Update 1: X is closed now." in prompt
-    assert plain_question(question).split(" Answer")[0] in prompt  # question sentence, instruction stripped
-    assert "status=" not in prompt  # W(f_i) node text is not repeated in the CSV track
-
-
-def test_csv_prompt_uses_clegr_answer_suffixes() -> None:
-    from graph_modi.graph.serialization import csv_graph_prompt
-
-    graph = _graph(DensityBin.MEDIUM, 14)
-    a, b = graph.nodes[0].id, graph.nodes[1].id
-    cases = {
-        ReasoningType.REACHABILITY: GraphQuery(ReasoningType.REACHABILITY, a, b),
-        ReasoningType.CYCLE_MEMBERSHIP: GraphQuery(ReasoningType.CYCLE_MEMBERSHIP, a),
-        ReasoningType.NODE_DEGREE: GraphQuery(ReasoningType.NODE_DEGREE, a),
-        ReasoningType.ATTRIBUTE_LOOKUP: GraphQuery(ReasoningType.ATTRIBUTE_LOOKUP, a, attribute="size"),
-    }
-    expected = {
-        ReasoningType.REACHABILITY: "Answer with 'True' or 'False':\n\nAnswer:",
-        ReasoningType.CYCLE_MEMBERSHIP: "Answer with 'True' if it is in a cycle, otherwise 'False':\n\nAnswer:",
-        ReasoningType.NODE_DEGREE: "Answer with a number:\n\nAnswer:",
-        ReasoningType.ATTRIBUTE_LOOKUP: "Answer directly:",
-    }
-    for task, query in cases.items():
-        prompt = csv_graph_prompt(graph, render_question(query, graph))
-        assert prompt.endswith(expected[task]), task
-        assert "The question is:\n" in prompt
-        assert "Answer yes or no" not in prompt and "Answer with a number." not in prompt
-
-
-def test_csv_track_targets_are_true_false_but_still_score_as_yes_no() -> None:
-    from graph_modi.cli import _static_examples
-    from graph_modi.evaluation.metrics import answers_match
-
-    static = v3.generate_static_v3(
-        split="validation", graph_count=33, tasks_per_graph=None, seed=2,
-        sampler=v3.BalancedSampler(), progress=False,
-    )
-    plain = _static_examples(static, "wfi")
-    csv = _static_examples(static, "csv")
-    for before, after in zip(plain, csv, strict=True):
-        if before.answer in ("yes", "no"):
-            assert after.answer == ("True" if before.answer == "yes" else "False")
-            assert answers_match(before.answer, after.answer, reasoning_type=before.metadata["reasoning_type"])
-        else:
-            assert after.answer == before.answer
-
-
-def test_graph_token_position_prefix_places_tokens_after_bos() -> None:
+def test_graph_tokens_follow_the_prompt() -> None:
     torch = pytest.importorskip("torch")
     from types import SimpleNamespace
 
@@ -179,16 +121,8 @@ def test_graph_token_position_prefix_places_tokens_after_bos() -> None:
 
     embedding = torch.nn.Embedding(20, 4)
     prefix = torch.full((3, 4), 7.0)
-    for cls, config in (
-        (SoftPromptGLM, SimpleNamespace(add_bos_token=True)),
-        (TEAGLM, SimpleNamespace(add_bos_token=True)),
-    ):
-        stub = SimpleNamespace(
-            device="cpu", config=config, tokenizer=SimpleNamespace(bos_token_id=1), graph_token_position="prefix"
-        )
-        parts = cls._assemble_prompt(stub, [1, 5, 6], prefix, embedding)
-        assert [p.shape[0] for p in parts] == [1, 3, 2]  # BOS, graph tokens, rest of prompt
-        stub.graph_token_position = "before_answer"
+    for cls in (SoftPromptGLM, TEAGLM):
+        stub = SimpleNamespace(device="cpu")
         parts = cls._assemble_prompt(stub, [1, 5, 6], prefix, embedding)
         assert [p.shape[0] for p in parts] == [3, 3]  # prompt, graph tokens
 

@@ -11,7 +11,6 @@ from graph_modi.evaluation.metrics import aggregate_rows, answers_match, normali
 from graph_modi.graph.edits import execution_equivalent_program
 from graph_modi.graph.executor import apply_edit, apply_edit_program, graph_fingerprint
 from graph_modi.graph.serialization import (
-    csv_graph_prompt,
     serialize_graph,
     serialize_history,
     token_budget_match,
@@ -38,11 +37,9 @@ CONDITIONS = (
     "structure_only",
     "modify_and_print",
     "majority_prior",
-    "csv_current",
-    "csv_initial_history",
 )
 
-_REENCODE_CONDITIONS = {"oracle_updated_graph", "predicted_updated_graph", "csv_current"}
+_REENCODE_CONDITIONS = {"oracle_updated_graph", "predicted_updated_graph"}
 
 
 def _prompt(
@@ -53,10 +50,6 @@ def _prompt(
     question: str,
 ) -> str:
     history_text = serialize_history(history)
-    if condition == "csv_current":
-        return csv_graph_prompt(current, question)
-    if condition == "csv_initial_history":
-        return csv_graph_prompt(initial, question, updates=history)
     if condition == "serialized_initial_history":
         return f"Initial graph: {serialize_graph(initial)}\n{history_text}\n{question}"
     if condition == "serialized_current_graph":
