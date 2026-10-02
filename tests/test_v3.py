@@ -191,3 +191,24 @@ def test_graph_token_position_prefix_places_tokens_after_bos() -> None:
         stub.graph_token_position = "before_answer"
         parts = cls._assemble_prompt(stub, [1, 5, 6], prefix, embedding)
         assert [p.shape[0] for p in parts] == [3, 3]  # prompt, graph tokens
+
+
+def test_edit_parser_resolves_multi_word_station_names() -> None:
+    from graph_modi.graph.edits import parse_edit_program
+    from graph_modi.schema import EditOperation, EditTarget
+
+    names = {"vale hill": "n3", "quill cross": "n7", "elm": "n1"}
+    program = parse_edit_program(
+        "SET NODE Vale Hill status closed ; DEL EDGE Quill Cross Vale Hill transfer ; ADD EDGE Elm Vale Hill transfer ; END",
+        names,
+    )
+    node_edit, delete, add = program.edits
+    assert (node_edit.node_id, node_edit.attribute, node_edit.value) == ("n3", "status", "closed")
+    assert (delete.operation, delete.source, delete.destination, delete.relation) == (
+        EditOperation.DEL, "n7", "n3", "transfer",
+    )
+    assert (add.source, add.destination) == ("n1", "n3")
+    # plain single-token IDs and unknown names keep the old one-word behaviour
+    plain = parse_edit_program("SET NODE n3 status closed ; DEL EDGE n7 n3 track ; END", None).edits
+    assert plain[0].node_id == "n3" and plain[1].source == "n7" and plain[1].destination == "n3"
+    assert parse_edit_program("SET NODE Nowhere status open ; END", names).edits[0].node_id == "Nowhere"
