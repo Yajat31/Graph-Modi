@@ -361,6 +361,12 @@ class SoftPromptBackend:
     ) -> list[GraphEdit | None]:
         return [self.predict_edit(utterance, graph) for utterance, graph in items]
 
+    def prefix_token_count(self, model_input: ModelInput) -> int:
+        """Learned prefix tokens the model sees (the soft prompt is not a graph channel)."""
+        if model_input.condition in {"structure_only", "question_only"}:
+            return 0
+        return int(self.model.config.prefix_tokens)
+
     def answer(self, model_input: ModelInput) -> str | None:
         if model_input.condition in {"structure_only", "question_only"}:
             return None

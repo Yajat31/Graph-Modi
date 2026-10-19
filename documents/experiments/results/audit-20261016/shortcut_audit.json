@@ -1,0 +1,529 @@
+{
+  "multi": {
+    "gt_sum": {
+      "frozen_graph_history": {
+        "all": [
+          0.4638888888888889,
+          3960
+        ],
+        "easy": [
+          0.6076592418913638,
+          2559
+        ],
+        "hard": [
+          0.2012847965738758,
+          1401
+        ]
+      },
+      "oracle_updated_graph": {
+        "all": [
+          0.6047979797979798,
+          3960
+        ],
+        "easy": [
+          0.804611176240719,
+          2559
+        ],
+        "hard": [
+          0.2398286937901499,
+          1401
+        ]
+      },
+      "shuffled_graph": {
+        "all": [
+          0.3154040404040404,
+          3960
+        ],
+        "easy": [
+          0.3712387651426338,
+          2559
+        ],
+        "hard": [
+          0.21341898643825838,
+          1401
+        ]
+      },
+      "structure_only": {
+        "all": [
+          0.4621212121212121,
+          3960
+        ],
+        "easy": [
+          0.6025791324736225,
+          2559
+        ],
+        "hard": [
+          0.20556745182012848,
+          1401
+        ]
+      }
+    },
+    "gt_warm": {
+      "frozen_graph_history": {
+        "all": [
+          0.4616161616161616,
+          3960
+        ],
+        "easy": [
+          0.6158655724892537,
+          2559
+        ],
+        "hard": [
+          0.17987152034261242,
+          1401
+        ]
+      },
+      "oracle_updated_graph": {
+        "all": [
+          0.6593434343434343,
+          3960
+        ],
+        "easy": [
+          0.8976162563501368,
+          2559
+        ],
+        "hard": [
+          0.22412562455389007,
+          1401
+        ]
+      },
+      "shuffled_graph": {
+        "all": [
+          0.3138888888888889,
+          3960
+        ],
+        "easy": [
+          0.37084798749511527,
+          2559
+        ],
+        "hard": [
+          0.20985010706638116,
+          1401
+        ]
+      },
+      "structure_only": {
+        "all": [
+          0.4590909090909091,
+          3960
+        ],
+        "easy": [
+          0.6103946854239938,
+          2559
+        ],
+        "hard": [
+          0.1827266238401142,
+          1401
+        ]
+      }
+    },
+    "shortcut": {
+      "stale_graph": 0.45505050505050504,
+      "turns": 3960,
+      "updated_graph": 0.6462121212121212
+    },
+    "soft_prompt": {
+      "soft_prompt": {
+        "all": [
+          0.3515151515151515,
+          3960
+        ],
+        "easy": [
+          0.42555685814771393,
+          2559
+        ],
+        "hard": [
+          0.21627408993576017,
+          1401
+        ]
+      },
+      "soft_prompt_no_history": {
+        "all": [
+          0.3244949494949495,
+          3960
+        ],
+        "easy": [
+          0.3903868698710434,
+          2559
+        ],
+        "hard": [
+          0.20413990007137758,
+          1401
+        ]
+      }
+    },
+    "tea_sum_random": {
+      "frozen_graph_history": {
+        "all": [
+          0.4575757575757576,
+          3960
+        ],
+        "easy": [
+          0.5978898007033998,
+          2559
+        ],
+        "hard": [
+          0.2012847965738758,
+          1401
+        ]
+      },
+      "oracle_updated_graph": {
+        "all": [
+          0.5931818181818181,
+          3960
+        ],
+        "easy": [
+          0.7893708479874951,
+          2559
+        ],
+        "hard": [
+          0.23483226266952176,
+          1401
+        ]
+      },
+      "shuffled_graph": {
+        "all": [
+          0.31287878787878787,
+          3960
+        ],
+        "easy": [
+          0.3712387651426338,
+          2559
+        ],
+        "hard": [
+          0.20628122769450394,
+          1401
+        ]
+      },
+      "structure_only": {
+        "all": [
+          0.4505050505050505,
+          3960
+        ],
+        "easy": [
+          0.5900742477530285,
+          2559
+        ],
+        "hard": [
+          0.19557458957887222,
+          1401
+        ]
+      }
+    }
+  },
+  "static": {
+    "gt_sum": {
+      "hard_per_task": {
+        "constrained_reachability": [
+          0.18181818181818182,
+          121
+        ],
+        "cycle_membership": [
+          0.5,
+          34
+        ],
+        "edge_exists": [
+          0.23728813559322035,
+          118
+        ],
+        "filtered_neighbor_count": [
+          0.2867383512544803,
+          279
+        ],
+        "reachability": [
+          0.6956521739130435,
+          23
+        ],
+        "shortest_path": [
+          0.2629310344827586,
+          232
+        ],
+        "within_hops_count": [
+          0.18208955223880596,
+          335
+        ]
+      },
+      "n_hard": 1142,
+      "on_shortcut_right_items": 0.7917077986179665,
+      "on_shortcut_wrong_items": 0.24956217162872155,
+      "overall": 0.5962752525252525,
+      "slices": {
+        "cycle_deg>=2": [
+          0.8658008658008658,
+          231
+        ],
+        "reach_both_open": [
+          0.6818181818181818,
+          220
+        ],
+        "reach_endpoint_closed": [
+          0.3125,
+          176
+        ]
+      }
+    },
+    "gt_sum_s43": {
+      "hard_per_task": {
+        "constrained_reachability": [
+          0.11570247933884298,
+          121
+        ],
+        "cycle_membership": [
+          0.2647058823529412,
+          34
+        ],
+        "edge_exists": [
+          0.2542372881355932,
+          118
+        ],
+        "filtered_neighbor_count": [
+          0.2831541218637993,
+          279
+        ],
+        "reachability": [
+          0.8260869565217391,
+          23
+        ],
+        "shortest_path": [
+          0.31896551724137934,
+          232
+        ],
+        "within_hops_count": [
+          0.16119402985074627,
+          335
+        ]
+      },
+      "n_hard": 1142,
+      "on_shortcut_right_items": 0.7956564659427443,
+      "on_shortcut_wrong_items": 0.24430823117338005,
+      "overall": 0.5969065656565656,
+      "slices": {
+        "cycle_deg>=2": [
+          0.8701298701298701,
+          231
+        ],
+        "reach_both_open": [
+          0.39090909090909093,
+          220
+        ],
+        "reach_endpoint_closed": [
+          0.6988636363636364,
+          176
+        ]
+      }
+    },
+    "gt_warm": {
+      "hard_per_task": {
+        "constrained_reachability": [
+          0.1652892561983471,
+          121
+        ],
+        "cycle_membership": [
+          0.11764705882352941,
+          34
+        ],
+        "edge_exists": [
+          0.17796610169491525,
+          118
+        ],
+        "filtered_neighbor_count": [
+          0.3225806451612903,
+          279
+        ],
+        "reachability": [
+          0.2608695652173913,
+          23
+        ],
+        "shortest_path": [
+          0.2629310344827586,
+          232
+        ],
+        "within_hops_count": [
+          0.14626865671641792,
+          335
+        ]
+      },
+      "n_hard": 1142,
+      "on_shortcut_right_items": 0.9160908193484699,
+      "on_shortcut_wrong_items": 0.21978984238178634,
+      "overall": 0.6650883838383839,
+      "slices": {
+        "cycle_deg>=2": [
+          0.8528138528138528,
+          231
+        ],
+        "reach_both_open": [
+          0.9045454545454545,
+          220
+        ],
+        "reach_endpoint_closed": [
+          1.0,
+          176
+        ]
+      }
+    },
+    "old_tea": {
+      "hard_per_task": {
+        "constrained_reachability": [
+          0.4628099173553719,
+          121
+        ],
+        "cycle_membership": [
+          0.058823529411764705,
+          34
+        ],
+        "edge_exists": [
+          0.5847457627118644,
+          118
+        ],
+        "filtered_neighbor_count": [
+          0.15053763440860216,
+          279
+        ],
+        "reachability": [
+          0.8260869565217391,
+          23
+        ],
+        "shortest_path": [
+          0.1810344827586207,
+          232
+        ],
+        "within_hops_count": [
+          0.11343283582089553,
+          335
+        ]
+      },
+      "n_hard": 1142,
+      "on_shortcut_right_items": 0.40572556762092793,
+      "on_shortcut_wrong_items": 0.23467600700525393,
+      "overall": 0.3440656565656566,
+      "slices": {
+        "cycle_deg>=2": [
+          0.8614718614718615,
+          231
+        ],
+        "reach_both_open": [
+          0.25,
+          220
+        ],
+        "reach_endpoint_closed": [
+          0.9886363636363636,
+          176
+        ]
+      }
+    },
+    "shortcut": {
+      "overall": 0.639520202020202,
+      "per_task": {
+        "constrained_reachability": 0.6944444444444444,
+        "cycle_membership": 0.9141414141414141,
+        "edge_exists": 0.702020202020202,
+        "filtered_neighbor_count": 0.29545454545454547,
+        "node_degree": 1.0,
+        "reachability": 0.9419191919191919,
+        "shortest_path": 0.41414141414141414,
+        "within_hops_count": 0.15404040404040403
+      },
+      "task_mean": 0.639520202020202
+    },
+    "tea_sum": {
+      "hard_per_task": {
+        "constrained_reachability": [
+          0.36363636363636365,
+          121
+        ],
+        "cycle_membership": [
+          0.5294117647058824,
+          34
+        ],
+        "edge_exists": [
+          0.4491525423728814,
+          118
+        ],
+        "filtered_neighbor_count": [
+          0.1827956989247312,
+          279
+        ],
+        "reachability": [
+          0.34782608695652173,
+          23
+        ],
+        "shortest_path": [
+          0.16379310344827586,
+          232
+        ],
+        "within_hops_count": [
+          0.13134328358208955,
+          335
+        ]
+      },
+      "n_hard": 1142,
+      "on_shortcut_right_items": 0.554294175715696,
+      "on_shortcut_wrong_items": 0.22416812609457093,
+      "overall": 0.43529040404040403,
+      "slices": {
+        "cycle_deg>=2": [
+          0.7012987012987013,
+          231
+        ],
+        "reach_both_open": [
+          0.7954545454545454,
+          220
+        ],
+        "reach_endpoint_closed": [
+          0.8977272727272727,
+          176
+        ]
+      }
+    },
+    "tea_sum_random": {
+      "hard_per_task": {
+        "constrained_reachability": [
+          0.30578512396694213,
+          121
+        ],
+        "cycle_membership": [
+          0.29411764705882354,
+          34
+        ],
+        "edge_exists": [
+          0.2627118644067797,
+          118
+        ],
+        "filtered_neighbor_count": [
+          0.27956989247311825,
+          279
+        ],
+        "reachability": [
+          0.391304347826087,
+          23
+        ],
+        "shortest_path": [
+          0.2974137931034483,
+          232
+        ],
+        "within_hops_count": [
+          0.1791044776119403,
+          335
+        ]
+      },
+      "n_hard": 1142,
+      "on_shortcut_right_items": 0.7808489634748272,
+      "on_shortcut_wrong_items": 0.2574430823117338,
+      "overall": 0.5921717171717171,
+      "slices": {
+        "cycle_deg>=2": [
+          0.8787878787878788,
+          231
+        ],
+        "reach_both_open": [
+          0.9,
+          220
+        ],
+        "reach_endpoint_closed": [
+          0.08522727272727272,
+          176
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+ "overall_accuracy": 0.3627180899908173,
+ "task_accuracy": {
+  "attribute_check": 0.4823232323232323,
+  "attribute_lookup": 0.4318181818181818,
+  "constrained_reachability": 0.5378787878787878,
+  "cycle_membership": 0.5353535353535354,
+  "edge_exists": 0.5252525252525253,
+  "filtered_neighbor_count": 0.17676767676767677,
+  "most_common_attribute_within_hops": 0.32323232323232326,
+  "node_degree": 0.12121212121212122,
+  "reachability": 0.5782828282828283,
+  "shortest_path": 0.1691919191919192,
+  "within_hops_count": 0.10858585858585859
+ },
+ "scale_accuracy": {
+  "scale_large": 0.3552188552188552,
+  "scale_medium": 0.3680555555555556,
+  "scale_small": 0.3630050505050505
+ }
+}

@@ -62,7 +62,7 @@ SERIES_TEMPLATE = {
     "once": ("{M} graph once, then text", "model", "graph_once_then_text", RED, (0, (1, 1.5)), "<"),
     "token_matched": ("{M} token-matched history (no graph)", "model", "token_matched_history", MAGENTA, (0, (5, 1, 1, 1)), ">"),
     "oracle_context": ("{M} updated graph (for reference)", "model", "oracle_updated_graph", BLUE, "-", None),
-    "stale": ("stale answer (majority_prior, no model)", "model", "majority_prior", INK, (0, (1, 1)), None),
+    "stale": ("stale answer (no model; named majority_prior in old result files)", "model", "majority_prior", INK, (0, (1, 1)), None),
     "majority": ("per-task majority (no model)", "majority", None, INK2, (0, (6, 3)), None),
 }
 SERIES: dict = {}
@@ -128,10 +128,32 @@ def build_majority_cache() -> dict:
     return result
 
 
+def _rename_condition(node, new: str, old: str) -> None:
+    """Rename keys/values ``new`` -> ``old`` anywhere in a nested analysis blob (in place)."""
+    if isinstance(node, dict):
+        for key in list(node):
+            value = node.pop(key)
+            if key == new:
+                key = old
+            elif isinstance(key, str) and key.startswith(new + "::"):
+                key = old + key[len(new):]
+            if value == new:
+                value = old
+            node[key] = value
+            _rename_condition(value, new, old)
+    elif isinstance(node, list):
+        for item in node:
+            _rename_condition(item, new, old)
+
+
 def load_all(rebuild_majority: bool) -> dict:
     files = {key: RES / f"exact2x_{key}_analysis.json"
              for key in ("tea", "tea_predfix", "graphtoken", "graphtoken_predfix", "soft_prompt")}
     data = {key: json.loads(path.read_text()) for key, path in files.items()}
+    # Result files written after 2026-10-14 call this baseline "stale_answer"; older ones
+    # "majority_prior". The series below use the old name, so map the new one onto it.
+    for blob in data.values():
+        _rename_condition(blob, "stale_answer", "majority_prior")
     data["majority"] = build_majority_cache() if rebuild_majority or not MAJORITY_CACHE.exists() else json.loads(MAJORITY_CACHE.read_text())
     return data
 

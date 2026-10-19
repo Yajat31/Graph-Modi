@@ -46,6 +46,7 @@ from graph_modi.training import (
     pretrain_graph_encoder,
     pretrain_graph_encoder_contrastive,
     run_mock_training,
+    set_deterministic_seed,
     train_projector,
     train_soft_prompt,
 )
@@ -317,6 +318,7 @@ def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str
 def _generate_v3(config: ExperimentConfig, *, progress: bool = True) -> dict[str, Any]:
     """Compact CLEGR-style subway graphs, label-balanced (see data/v3.py)."""
     data = config.section("data")
+    data_v3.set_degree_balance(bool(data.get("degree_balance", False)))
     static_tasks = _reasoning_types(data, "static_tasks") or list(data_v3.STATIC_TASKS)
     dynamic_tasks = _reasoning_types(data, "dynamic_tasks") or list(data_v3.DYNAMIC_TASKS)
     cell_count = len(data_v3.NODE_COUNTS) * len(data_v3.DENSITIES)
@@ -445,6 +447,24 @@ def _examples(sessions: list[Session]) -> list[TrainingExample]:
     return examples
 
 
+def _optional_float(value: Any) -> float | None:
+    return None if value is None else float(value)
+
+
+def _validation_examples(config: ExperimentConfig) -> list[TrainingExample]:
+    """Held-out examples (same construction as training) for the validation-loss curve."""
+    data = config.section("data")
+    if str(data.get("distribution", DISTRIBUTION)) in (DISTRIBUTION_V2, data_v3.DISTRIBUTION_V3):
+        static_path = _static_path(config, "validation")
+        if static_path.exists():
+            examples = _static_examples(load_static_tuples(static_path))
+            limit = int(config.section("training").get("val_max_examples", 1000))
+            # Fixed stride subsample: deterministic and spread over every task/graph.
+            stride = max(1, len(examples) // max(1, limit))
+            return examples[::stride][:limit]
+    return _examples(load_sessions(_data_path(config, "validation")))[:1000]
+
+
 def _training_examples(config: ExperimentConfig) -> list[TrainingExample]:
     data = config.section("data")
     if str(data.get("distribution", DISTRIBUTION)) in (DISTRIBUTION_V2, data_v3.DISTRIBUTION_V3):
@@ -452,6 +472,36 @@ def _training_examples(config: ExperimentConfig) -> list[TrainingExample]:
         if static_path.exists():
             return _static_examples(load_static_tuples(static_path))
     return _examples(load_sessions(_data_path(config, "train")))
+
+
+def _validation_graphs(config: ExperimentConfig, limit: int = 300) -> list[Any]:
+    """Distinct held-out graphs for scoring pretraining (never used to train it)."""
+    path = _static_path(config, "validation")
+    if not path.exists():
+        return []
+    graphs = {item.graph.graph_id: item.graph for item in load_static_tuples(path)}
+    return list(graphs.values())[:limit]
+
+
+def _embedding_only_lm(lm_name: str) -> tuple[Any, Any]:
+    """The LLM's input-embedding table (read from its safetensors shards) and its tokenizer."""
+    import torch
+    from safetensors import safe_open
+    from transformers import AutoTokenizer
+
+    root = Path(lm_name)
+    index = json.loads((root / "model.safetensors.index.json").read_text(encoding="utf-8"))
+    key = "model.embed_tokens.weight"
+    with safe_open(str(root / index["weight_map"][key]), framework="pt", device="cpu") as handle:
+        weight = handle.get_tensor(key)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    embedding = torch.nn.Embedding.from_pretrained(weight.to(device), freeze=True)
+
+    class _EmbeddingOnlyLM:
+        def get_input_embeddings(self) -> Any:
+            return embedding
+
+    return _EmbeddingOnlyLM(), AutoTokenizer.from_pretrained(lm_name)
 
 
 def _neural_components(config: ExperimentConfig) -> tuple[Any, Any, Any]:
@@ -497,7 +547,10 @@ def _load_local_gnn(model: Any, config: ExperimentConfig) -> None:
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     if metadata.get("format") != "graph-modi-gnn-v1":
         raise ValueError(f"Unsupported GNN checkpoint metadata: {metadata_path}")
-    if metadata.get("gnn_config") != asdict(model.gnn.config):
+    # Dropout does not change the weights' shapes, so a checkpoint pretrained with one dropout can
+    # be fine-tuned with another.
+    saved_config = {k: v for k, v in (metadata.get("gnn_config") or {}).items() if k != "dropout"}
+    if saved_config != {k: v for k, v in asdict(model.gnn.config).items() if k != "dropout"}:
         raise ValueError("GNN checkpoint dimensions do not match this model")
     if metadata.get("tensorizer_config") != asdict(model.tensorizer.config):
         raise ValueError("GNN checkpoint tensorizer does not match this model")
@@ -562,6 +615,14 @@ def _tea_model(config: ExperimentConfig) -> Any:
         )
     elif not isinstance(tea_model.tensorizer, DeterministicNodeTensorizer):
         raise TypeError("Unexpected graph tensorizer")
+    ablation = str(model.get("graph_ablation", "none"))
+    if ablation not in {"none", "zero_gnn"}:
+        raise ValueError("model.graph_ablation must be one of: none, zero_gnn")
+    tea_model.graph_ablation = ablation
+    vector_norm = str(model.get("graph_vector_norm", "none"))
+    if vector_norm not in {"none", "standardize"}:
+        raise ValueError("model.graph_vector_norm must be one of: none, standardize")
+    tea_model.graph_vector_norm = vector_norm
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tea_model = tea_model.to(device)
     if bool(model.get("gradient_checkpointing", False)):
@@ -612,6 +673,9 @@ def command_pretrain(config: ExperimentConfig, _args: argparse.Namespace) -> Non
     if model_config.get("backend") == "soft_prompt":
         print(json.dumps({"skipped": "soft_prompt has no GNN to pretrain"}, indent=2))
         return
+    if model_config.get("architecture") == "graph_token":
+        print(json.dumps({"skipped": "graph_token trains its GNN end-to-end"}, indent=2))
+        return
     examples = _training_examples(config)
     training = config.section("training")
     objective = str(training.get("pretrain_objective", "classification"))
@@ -621,20 +685,28 @@ def command_pretrain(config: ExperimentConfig, _args: argparse.Namespace) -> Non
         # the full TEAGLM (which already respects model.tensorizer=bert) and
         # reuse its gnn/tensorizer/language_model/tokenizer rather than
         # duplicating LM-loading logic here.
-        tea_model = _tea_model(config)
+        # Only the LLM's input-embedding table and tokenizer are needed, so the 8B model is
+        # not loaded. The GNN is built after seeding, so a given seed gives one initialisation.
+        set_deterministic_seed(int(training.get("seed", config.seed)))
+        _, gnn, tensorizer = _neural_components(config)
+        embedding_lm, tokenizer = _embedding_only_lm(str(model_config["lm_name"]))
         graphs = list({example.graph.graph_id: example.graph for example in examples}.values())
         result = pretrain_graph_encoder_contrastive(
-            tea_model.gnn,
-            tea_model.tensorizer,
+            gnn,
+            tensorizer,
             graphs,
-            tea_model.language_model,
-            tea_model.tokenizer,
+            embedding_lm,
+            tokenizer,
             output_dir=config.output_dir / "gnn",
             epochs=int(training.get("gnn_epochs", training.get("epochs", 5))),
             graphs_per_batch=int(training.get("gnn_graphs_per_batch", 8)),
             learning_rate=float(training.get("gnn_learning_rate", 0.002)),
             temperature=float(training.get("contrastive_temperature", 0.07)),
             seed=int(training.get("seed", config.seed)),
+            target=str(training.get("contrastive_target", "mean")),
+            status_weight=float(training.get("contrastive_status_weight", 4.0)),
+            dropout=_optional_float(training.get("pretrain_dropout")),
+            eval_graphs=_validation_graphs(config),
         )
     else:
         _, gnn, tensorizer = _neural_components(config)
@@ -670,23 +742,100 @@ def command_train(config: ExperimentConfig, _args: argparse.Namespace) -> None:
         save_every_steps=int(training.get("save_every_steps", 500)),
         seed=int(training.get("seed", config.seed)),
         resume_from=training.get("resume_from"),
+        gnn_learning_rate=_optional_float(training.get("gnn_learning_rate_joint")),
+        gnn_weight_decay=_optional_float(training.get("gnn_weight_decay_joint")),
+        lr_schedule=str(training.get("lr_schedule", "constant")),
+        warmup_steps=int(training.get("warmup_steps", 0)),
+        min_lr_ratio=float(training.get("min_lr_ratio", 0.0)),
+        eval_every_steps=int(training.get("eval_every_steps", 0)),
+        val_max_examples=int(training.get("val_max_examples", 1000)),
+        init_checkpoint=training.get("init_checkpoint"),
     )
     examples = _training_examples(config)
+    # Every model is built after seeding, so the projector (and a GraphToken GNN) start from a
+    # seeded initialisation rather than whatever the global RNG held.
+    set_deterministic_seed(train_config.seed)
     if model_config.get("backend") == "soft_prompt":
         soft_model = _soft_prompt_model(config)
         result = train_soft_prompt(soft_model, examples, train_config)
         print(json.dumps(asdict(result), indent=2, default=str))
         return
-    model = _tea_model(config)
-    _load_local_gnn(model, config)
     architecture = str(model_config.get("architecture", "tea"))
+    val_examples = _validation_examples(config) if train_config.eval_every_steps else None
     if architecture == "graph_token":
         from graph_modi.models.graph_token import train_graph_token
 
-        result = train_graph_token(model, examples, train_config)
+        model = _tea_model(config)
+        if model_config.get("gnn_checkpoint"):
+            # Warm start: pretrained (TEA contrastive) GNN, then trained jointly.
+            _load_local_gnn(model, config)
+        result = train_graph_token(model, examples, train_config, val_examples=val_examples)
     else:
-        result = train_projector(model, examples, train_config)
+        model = _tea_model(config)
+        if str(model_config.get("gnn_init", "pretrained")) == "random":
+            # No-pretraining control: the seeded random GNN stays frozen and is saved with the
+            # projector, so evaluation loads exactly these weights.
+            model.set_gnn_frozen(True)
+        else:
+            _load_local_gnn(model, config)
+        result = train_projector(model, examples, train_config, val_examples=val_examples)
     print(json.dumps(asdict(result), indent=2, default=str))
+
+
+def _load_tea_checkpoint(model: Any, checkpoint: Path) -> None:
+    from graph_modi.models.tea_glm import load_external_component
+
+    metadata = checkpoint / "metadata.json"
+    # GNN first: the projector's metadata binds to this exact GNN state.
+    for component in ("gnn", "projector"):
+        load_external_component(
+            model,
+            component=component,
+            weights_path=checkpoint / f"{component}.pt",
+            metadata_path=metadata,
+        )
+
+
+def _encoder_autocast_dtype(config: ExperimentConfig, checkpoint: Path) -> Any:
+    """Autocast dtype for the GNN + projector at evaluation time.
+
+    ``evaluation.encoder_autocast``: ``fp32`` (default, the historical behaviour: only the LM runs
+    in bf16), ``match_training`` (the dtype recorded in the checkpoint's training config, which is
+    what the weights were optimised under), or ``bf16``.
+    """
+    import torch
+
+    from graph_modi.models.tea_glm import load_checkpoint_metadata
+
+    mode = str(config.section("evaluation").get("encoder_autocast", "fp32"))
+    if mode == "fp32":
+        return None
+    if mode == "bf16":
+        return torch.bfloat16
+    if mode != "match_training":
+        raise ValueError("evaluation.encoder_autocast must be one of: fp32, match_training, bf16")
+    recorded = load_checkpoint_metadata(checkpoint / "metadata.json").get("training_config", {})
+    return {"bf16": torch.bfloat16, "fp16": torch.float16}.get(
+        str(recorded.get("mixed_precision", "no"))
+    )
+
+
+def _answer_prior(config: ExperimentConfig, conditions: list[str]) -> dict[str, str] | None:
+    """Most common training gold answer per reasoning type, for the ``majority_answer`` baseline."""
+    if "majority_answer" not in conditions:
+        return None
+    from collections import Counter, defaultdict
+
+    counts: dict[str, Counter[str]] = defaultdict(Counter)
+    static_path = _static_path(config, "train")
+    if static_path.exists():
+        for item in load_static_tuples(static_path):
+            counts[item.query.reasoning_type.value][item.answer] += 1
+    else:
+        for session in load_sessions(_data_path(config, "train")):
+            for turn in session.turns:
+                counts[turn.query.reasoning_type.value][turn.gold_answer] += 1
+    return {task: counter.most_common(1)[0][0] for task, counter in counts.items()}
 
 
 def _backend(config: ExperimentConfig) -> GraphBackend:
@@ -706,7 +855,7 @@ def _backend(config: ExperimentConfig) -> GraphBackend:
             soft_model,
             max_new_tokens=int(config.section("evaluation").get("max_new_tokens", 32)),
         )
-    from graph_modi.models.tea_glm import TEAGLMBackend, load_external_component
+    from graph_modi.models.tea_glm import TEAGLMBackend, load_checkpoint_metadata
 
     model = _tea_model(config)
     checkpoint = Path(
@@ -715,19 +864,8 @@ def _backend(config: ExperimentConfig) -> GraphBackend:
             config.output_dir / "projector" / "checkpoint-final",
         )
     )
-    metadata = checkpoint / "metadata.json"
-    load_external_component(
-        model,
-        component="gnn",
-        weights_path=checkpoint / "gnn.pt",
-        metadata_path=metadata,
-    )
-    load_external_component(
-        model,
-        component="projector",
-        weights_path=checkpoint / "projector.pt",
-        metadata_path=metadata,
-    )
+    _load_tea_checkpoint(model, checkpoint)
+    model.encoder_autocast_dtype = _encoder_autocast_dtype(config, checkpoint)
     backend_cls = TEAGLMBackend
     if str(model_config.get("architecture", "tea")) == "graph_token":
         from graph_modi.models.graph_token import GraphTokenBackend
@@ -761,6 +899,55 @@ def command_static_eval(config: ExperimentConfig, args: argparse.Namespace) -> N
     print(json.dumps(summary, indent=2))
 
 
+def command_sweep_checkpoints(config: ExperimentConfig, args: argparse.Namespace) -> None:
+    """Static-eval every saved checkpoint of a run (one model load) to see when, if ever, the
+    graph signal appears: per-task accuracy plus how constant the predictions are."""
+    from collections import Counter, defaultdict
+
+    evaluation = config.section("evaluation")
+    split = str(args.split)
+    tuples = load_static_tuples(_static_path(config, split))
+    if args.limit:
+        stride = max(1, len(tuples) // args.limit)
+        tuples = tuples[::stride][: args.limit]
+    backend = _backend(config)
+    root = Path(args.checkpoints) if args.checkpoints else config.output_dir / "projector"
+    checkpoints = sorted(path for path in root.glob("checkpoint-*") if (path / "gnn.pt").exists())
+    results = []
+    for checkpoint in checkpoints:
+        _load_tea_checkpoint(backend.model, checkpoint)
+        outcome = evaluate_static_oracle(
+            tuples,
+            backend,
+            batch_size=int(evaluation.get("batch_size", 16)),
+            progress=False,
+        )
+        by_task: dict[str, Counter[str]] = defaultdict(Counter)
+        for row in outcome["rows"]:
+            by_task[row["reasoning_type"]][str(row["predicted_answer"])] += 1
+        # Share of the modal answer per task: 1.0 means the model ignores its input.
+        modal_share = {
+            task: counter.most_common(1)[0][1] / sum(counter.values())
+            for task, counter in sorted(by_task.items())
+        }
+        results.append(
+            {
+                "checkpoint": checkpoint.name,
+                "overall_accuracy": outcome["overall_accuracy"],
+                "task_accuracy": outcome["task_accuracy"],
+                "modal_answer_share": modal_share,
+            }
+        )
+        print(
+            f"[sweep] {checkpoint.name} overall={outcome['overall_accuracy']:.3f} "
+            f"mean_modal_share={sum(modal_share.values()) / len(modal_share):.2f}",
+            flush=True,
+        )
+    path = config.output_dir / f"checkpoint_sweep_{split}.json"
+    _write_json(path, {"split": split, "tuples": len(tuples), "checkpoints": results})
+    print(f"wrote {path}")
+
+
 def command_pilot(config: ExperimentConfig, args: argparse.Namespace) -> None:
     _ensure_data(config)
     evaluation = config.section("evaluation")
@@ -785,6 +972,9 @@ def command_pilot(config: ExperimentConfig, args: argparse.Namespace) -> None:
         conditions=[str(value) for value in evaluation.get("conditions", CONDITIONS)],
         batch_size=int(evaluation.get("batch_size", 16)),
         progress=not getattr(args, "no_progress", False),
+        answer_prior=_answer_prior(
+            config, [str(value) for value in evaluation.get("conditions", CONDITIONS)]
+        ),
     )
     report = {
         "git_sha": _git_sha(),
@@ -820,6 +1010,7 @@ def command_final_study(config: ExperimentConfig, args: argparse.Namespace) -> N
                 conditions=conditions,
                 batch_size=batch_size,
                 progress=not getattr(args, "no_progress", False),
+                answer_prior=_answer_prior(config, conditions),
             )["summary"]
     out = config.output_dir / "final_study.json"
     _write_json(out, matrix)
@@ -842,6 +1033,7 @@ def command_evaluate(config: ExperimentConfig, args: argparse.Namespace) -> None
             conditions=conditions,
             batch_size=batch_size,
             progress=not getattr(args, "no_progress", False),
+            answer_prior=_answer_prior(config, conditions),
         )
     path = config.output_dir / "evaluation.json"
     _write_json(path, result)
@@ -884,6 +1076,13 @@ def build_parser() -> argparse.ArgumentParser:
     static.add_argument("--split", default="test")
     static.add_argument("--no-progress", action="store_true")
     static.set_defaults(handler=command_static_eval)
+    sweep = subparsers.add_parser("sweep-checkpoints")
+    sweep.add_argument("--config", required=True, type=Path)
+    sweep.add_argument("--split", default="validation")
+    sweep.add_argument("--checkpoints", default=None, help="directory holding checkpoint-*")
+    sweep.add_argument("--limit", type=int, default=0, help="strided subsample size (0 = all)")
+    sweep.add_argument("--no-progress", action="store_true")
+    sweep.set_defaults(handler=command_sweep_checkpoints)
     freeze = subparsers.add_parser("freeze-v1")
     freeze.add_argument("--config", required=True, type=Path)
     freeze.set_defaults(handler=command_freeze_v1)

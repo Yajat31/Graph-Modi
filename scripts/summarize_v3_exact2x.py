@@ -25,7 +25,7 @@ def main() -> None:
             print(f"   {condition:28s} {100 * values['answer_accuracy']:5.1f}% "
                   f"[{100 * low:.1f}-{100 * high:.1f}]  stale-rate {100 * values['stale_rate']:.1f}%")
         for condition in summary:
-            if condition in ("tool_solver", "majority_prior"):
+            if condition in ("tool_solver", "majority_prior", "stale_answer", "majority_answer"):
                 continue
             tasks = {k: round(100 * v["acc"], 1) for k, v in sorted(cuts[f"{condition}::task"].items())}
             print(f"   [{condition}] per task: {tasks}")

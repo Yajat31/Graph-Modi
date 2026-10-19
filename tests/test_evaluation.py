@@ -49,7 +49,7 @@ def test_paired_conditions_expose_stale_graph_control() -> None:
 def test_new_baseline_conditions_exist() -> None:
     from graph_modi.evaluation.runner import CONDITIONS
 
-    for name in ("soft_prompt", "structure_only", "modify_and_print", "majority_prior"):
+    for name in ("soft_prompt", "structure_only", "modify_and_print", "stale_answer", "majority_answer"):
         assert name in CONDITIONS
 
 

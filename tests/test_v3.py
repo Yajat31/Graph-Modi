@@ -127,6 +127,52 @@ def test_graph_tokens_follow_the_prompt() -> None:
         assert [p.shape[0] for p in parts] == [3, 3]  # prompt, graph tokens
 
 
+def test_unfrozen_gnn_receives_gradients_through_graph_encoding() -> None:
+    torch = pytest.importorskip("torch")
+    from graph_modi.models.tea_glm import (
+        HOPS_FEATURE_DIM,
+        REASONING_TYPE_FEATURE_DIM,
+        TEAGLM,
+        DeterministicNodeTensorizer,
+        GraphPrefixProjector,
+        GraphSAGEConfig,
+        GraphSAGEEncoder,
+        NodeTensorizerConfig,
+        PrefixProjectorConfig,
+    )
+    from graph_modi.training import ProjectorTrainingConfig
+
+    class StubLM(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.embed = torch.nn.Embedding(10, 8)
+
+        def get_input_embeddings(self):
+            return self.embed
+
+    gnn_config = GraphSAGEConfig(input_dim=16, hidden_dim=8, output_dim=8)
+    model = TEAGLM(
+        gnn=GraphSAGEEncoder(gnn_config),
+        projector=GraphPrefixProjector(
+            PrefixProjectorConfig(
+                graph_dim=3 * 8 + HOPS_FEATURE_DIM + REASONING_TYPE_FEATURE_DIM,
+                lm_hidden_dim=8,
+                prefix_tokens=2,
+            )
+        ),
+        language_model=StubLM(),
+        tokenizer=None,
+        tensorizer=DeterministicNodeTensorizer(NodeTensorizerConfig(feature_dim=16)),
+    )
+    graph = _graph()
+    assert not ProjectorTrainingConfig(output_dir="unused").train_gnn
+    assert not model.encode_graphs([graph]).requires_grad  # TEA default: frozen GNN
+
+    model.set_gnn_frozen(False)  # what train_projector does when train_gnn=True
+    model.encode_graphs([graph]).sum().backward()
+    assert all(p.grad is not None for p in model.gnn.parameters())
+
+
 def test_edit_parser_resolves_multi_word_station_names() -> None:
     from graph_modi.graph.edits import parse_edit_program
     from graph_modi.schema import EditOperation, EditTarget

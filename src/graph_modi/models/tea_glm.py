@@ -10,6 +10,7 @@ import contextlib
 import hashlib
 import json
 import math
+import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -20,7 +21,8 @@ from graph_modi.models.base import ModelInput
 from graph_modi.schema import AttributedGraph, ReasoningType
 
 # WITHIN_HOPS_COUNT/WITHIN_HOPS_LIST/MOST_COMMON_ATTRIBUTE_WITHIN_HOPS queries
-# name a hop radius (2 or 3) that the GraphSAGE readout otherwise has no way
+# name a hop radius (v3 uses only 2, so this is redundant with the task one-hot; kept for
+# checkpoint compatibility) that the GraphSAGE readout otherwise has no way
 # to see: node_repr is the *final*, num_layers-mixed embedding, which
 # conflates every radius up to num_layers into one vector per node. Appending
 # the raw hop count lets the projector at least condition on which radius a
@@ -221,8 +223,8 @@ class GraphSAGEConfig:
             raise ValueError("GraphSAGE dimensions and num_layers must be positive")
         if not 0.0 <= self.dropout < 1.0:
             raise ValueError("dropout must be in [0, 1)")
-        if self.aggregation not in {"mean", "sum", "max"}:
-            raise ValueError("aggregation must be one of: mean, sum, max")
+        if self.aggregation not in {"mean", "sum", "max", "sum_mlp"}:
+            raise ValueError("aggregation must be one of: mean, sum, max, sum_mlp")
 
 
 class GraphSAGEEncoder(_Module):
@@ -252,11 +254,30 @@ class GraphSAGEEncoder(_Module):
             nn.LayerNorm(dimensions[i + 1]) for i in range(config.num_layers)
         )
         self.dropout = nn.Dropout(config.dropout)
+        # "sum_mlp" (GIN-style): each neighbour's features go through a small MLP before the sum, so
+        # the sum can count nonlinear properties (e.g. closed neighbours). Only created for that
+        # mode, so state dicts of the other modes are unchanged.
+        if config.aggregation == "sum_mlp":
+            self.message_mlps = nn.ModuleList(
+                nn.Sequential(
+                    nn.Linear(dimensions[i], dimensions[i]),
+                    nn.ReLU(),
+                    nn.Linear(dimensions[i], dimensions[i]),
+                )
+                for i in range(config.num_layers)
+            )
 
-    def _aggregate(self, x: Any, sources: Any, destinations: Any, edge_weight: Any) -> Any:
+    def _aggregate(
+        self, x: Any, sources: Any, destinations: Any, edge_weight: Any, layer_index: int = 0
+    ) -> Any:
         if not sources.numel():
             return torch.zeros_like(x)
         weights = edge_weight.to(dtype=x.dtype).unsqueeze(-1)
+        if self.config.aggregation == "sum_mlp":
+            messages = self.message_mlps[layer_index](x[sources]) * weights
+            aggregate = torch.zeros_like(x)
+            aggregate.index_add_(0, destinations, messages)
+            return aggregate
         messages = x[sources] * weights
         if self.config.aggregation == "max":
             index = destinations.unsqueeze(-1).expand_as(messages)
@@ -281,7 +302,7 @@ class GraphSAGEEncoder(_Module):
         for layer_index, (self_layer, neighbor_layer) in enumerate(
             zip(self.self_layers, self.neighbor_layers, strict=True)
         ):
-            aggregate = self._aggregate(x, sources, destinations, graph.edge_weight)
+            aggregate = self._aggregate(x, sources, destinations, graph.edge_weight, layer_index)
             x = self_layer(x) + neighbor_layer(aggregate)
             x = self.norms[layer_index](x)
             if layer_index + 1 < self.config.num_layers:
@@ -485,6 +506,24 @@ class TEAGLM(_Module):
     def device(self) -> Any:
         return next(self.projector.parameters()).device
 
+    # Plain attributes (set by the CLI), not config fields, so checkpoint metadata stays comparable.
+    # "none": normal model. "zero_gnn": node embeddings are zeroed, so the projector only sees the
+    # query's hop radius and task one-hot -- a task-conditioned, graph-free control.
+    graph_ablation: str = "none"
+    # "none" or "standardize": non-parametric layer-norm of the pooled/source/target/hops/task vector
+    # before the projector (one-factor pilot for the collapsed end-to-end GraphToken).
+    graph_vector_norm: str = "none"
+    # Autocast dtype for the GNN + projector outside Accelerate. Training runs them under the
+    # Accelerate mixed-precision autocast (bf16); inference otherwise runs them in fp32. Set this
+    # to the training dtype to evaluate under matched numerics (None = historical fp32).
+    encoder_autocast_dtype: Any = None
+
+    def _encoder_autocast(self) -> Any:
+        dtype = self.encoder_autocast_dtype
+        if dtype is None or self.device.type != "cuda":
+            return contextlib.nullcontext()
+        return torch.autocast(device_type="cuda", dtype=dtype)
+
     def _lm_autocast(self) -> Any:
         """Autocast to the language model's dtype outside of Accelerate.
 
@@ -552,7 +591,13 @@ class TEAGLM(_Module):
         ):
             tensor_graph = self.tensorizer(graph) if isinstance(graph, AttributedGraph) else graph
             tensor_graph = tensor_graph.to(self.device)
-            if self.config.freeze_gnn:
+            if self.graph_ablation == "zero_gnn":
+                node_repr = torch.zeros(
+                    (len(tensor_graph.node_ids), self.gnn.config.output_dim),
+                    dtype=torch.float32,
+                    device=self.device,
+                )
+            elif self._gnn_frozen:
                 with torch.no_grad():
                     node_repr = self.gnn(tensor_graph)
             else:
@@ -604,14 +649,18 @@ class TEAGLM(_Module):
         projections, which run at the LM's native (bf16) parameter dtype.
         """
         embedding_dtype = self.language_model.get_input_embeddings().weight.dtype
-        vectors = self.encode_graphs(
-            graphs,
-            source_ids=source_ids,
-            target_ids=target_ids,
-            hops=hops,
-            reasoning_types=reasoning_types,
-        )
-        return self.projector(vectors).to(dtype=embedding_dtype)
+        with self._encoder_autocast():
+            vectors = self.encode_graphs(
+                graphs,
+                source_ids=source_ids,
+                target_ids=target_ids,
+                hops=hops,
+                reasoning_types=reasoning_types,
+            )
+            if self.graph_vector_norm == "standardize":
+                vectors = torch.nn.functional.layer_norm(vectors, vectors.shape[-1:])
+            prefix = self.projector(vectors)
+        return prefix.to(dtype=embedding_dtype)
 
     def _encode_text(self, text: str, *, answer: bool) -> list[int]:
         token_ids = list(self.tokenizer.encode(text, add_special_tokens=False))
@@ -1080,10 +1129,10 @@ class TEAGLMBackend:
         Falls back to the first line if the model never emits END (matches
         the old single-edit behavior for malformed output).
         """
-        upper = generated.upper()
-        end_index = upper.find("END")
-        if end_index != -1:
-            return generated[:end_index]
+        # Whole word only, so a station name containing "end" cannot truncate the program.
+        match = re.search(r"\bEND\b", generated, flags=re.IGNORECASE)
+        if match is not None:
+            return generated[: match.start()]
         return generated.split("\n", 1)[0]
 
     def predict_edit(self, utterance: str, graph: AttributedGraph) -> Any:
@@ -1110,13 +1159,25 @@ class TEAGLMBackend:
             return None
         return program.edits or None
 
-    def answer(self, model_input: ModelInput) -> str | None:
-        text_only_conditions = {
+    _TEXT_ONLY_CONDITIONS = frozenset(
+        {
             "question_only",
             "serialized_initial_history",
             "token_matched_history",
             "serialized_current_graph",
         }
+    )
+
+    def prefix_token_count(self, model_input: ModelInput) -> int:
+        """Graph prefix tokens the model sees for this input (0 on the text-only paths)."""
+        if model_input.condition in self._TEXT_ONLY_CONDITIONS or (
+            model_input.condition == "graph_once_then_text" and model_input.turn_index > 0
+        ):
+            return 0
+        return int(self.model.projector.config.prefix_tokens)
+
+    def answer(self, model_input: ModelInput) -> str | None:
+        text_only_conditions = self._TEXT_ONLY_CONDITIONS
         prompt = self.model.config.prompt_template.format(question=model_input.question)
         graph_once_after_first_turn = (
             model_input.condition == "graph_once_then_text" and model_input.turn_index > 0
@@ -1160,12 +1221,7 @@ class TEAGLMBackend:
         return results
 
     def answer_batch(self, model_inputs: Sequence[ModelInput]) -> list[str | None]:
-        text_only_conditions = {
-            "question_only",
-            "serialized_initial_history",
-            "token_matched_history",
-            "serialized_current_graph",
-        }
+        text_only_conditions = self._TEXT_ONLY_CONDITIONS
         results: list[str | None] = [None] * len(model_inputs)
         text_indices: list[int] = []
         text_prompts: list[str] = []

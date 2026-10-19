@@ -245,6 +245,36 @@ def make_metro_graph(
 
 
 # --------------------------------------------------------------------------- queries
+# --------------------------------------------------------------------------- degree balancing
+# Off by default (the original benchmark). When on, yes/no tasks are sampled so that the named
+# stations' degrees carry no information about the answer: the answer quota is applied inside each
+# (source degree, target degree) stratum, and `cycle_membership` only asks about stations with
+# degree >= 2 (a degree-1 station can never be on a cycle, so those queries are answered by
+# degree alone). Set from the config key data.degree_balance by the generator command.
+DEGREE_BALANCE = False
+DEGREE_BALANCED_TASKS = frozenset(
+    {
+        ReasoningType.EDGE_EXISTS,
+        ReasoningType.REACHABILITY,
+        ReasoningType.CONSTRAINED_REACHABILITY,
+        ReasoningType.CYCLE_MEMBERSHIP,
+    }
+)
+
+
+def set_degree_balance(enabled: bool) -> None:
+    global DEGREE_BALANCE
+    DEGREE_BALANCE = bool(enabled)
+
+
+def _degrees(graph: AttributedGraph) -> dict[str, int]:
+    degree = {node.id: 0 for node in graph.nodes}
+    for edge in graph.edges:
+        degree[edge.source] += 1
+        degree[edge.target] += 1
+    return degree
+
+
 def _pairs(graph: AttributedGraph) -> list[tuple[str, str]]:
     ids = [node.id for node in graph.nodes]
     return [(a, b) for i, a in enumerate(ids) for b in ids[i + 1 :]]
@@ -309,6 +339,9 @@ def candidate_queries(
                 for attr, value in avoid
             ],
         )
+    if task is ReasoningType.CYCLE_MEMBERSHIP and DEGREE_BALANCE:
+        degree = _degrees(graph)
+        return _cap(rng, [GraphQuery(task, source) for source in ids if degree[source] >= 2])
     if task in (ReasoningType.CYCLE_MEMBERSHIP, ReasoningType.NODE_DEGREE):
         return _cap(rng, [GraphQuery(task, source) for source in ids])
     filters: list[tuple[str, Any]] = [(attr, True) for attr in _BOOL_ATTRS]
@@ -354,6 +387,12 @@ def stratum(graph: AttributedGraph, query: GraphQuery) -> str:
         parts.append("same_line" if same else "diff_line")
     if query.attribute:
         parts.append(str(query.attribute))
+    if DEGREE_BALANCE and query.reasoning_type in DEGREE_BALANCED_TASKS:
+        degree = _degrees(graph)
+        bins = [f"deg{min(degree[query.source], 3 if query.target else 4)}"]
+        if query.target is not None and query.target in degree:
+            bins.append(f"deg{min(degree[query.target], 3)}")
+        parts.append("-".join(bins))
     return "|".join(parts)
 
 
@@ -379,6 +418,20 @@ class BalancedSampler:
         cell = rng.choice(pool)
         seen[cell] += 1
         return rng.choice(by_cell[cell])
+
+
+def _two_sided(task: ReasoningType, answered: Sequence[tuple[Any, Any, str]]) -> list[tuple[Any, Any, str]]:
+    """With degree balancing, keep only strata that offer *both* answers in this graph.
+
+    A degree cell that can only ever hold one answer (e.g. two terminal stations are never
+    adjacent) would itself predict the label, and one-sided graphs would push the quota sampler
+    towards the other answer elsewhere."""
+    if not (DEGREE_BALANCE and task in DEGREE_BALANCED_TASKS):
+        return list(answered)
+    answers_by_stratum: dict[str, set[Any]] = defaultdict(set)
+    for _, answer, cell_stratum in answered:
+        answers_by_stratum[cell_stratum].add(answer)
+    return [item for item in answered if len(answers_by_stratum[item[2]]) >= 2]
 
 
 def _hop(query: GraphQuery, graph: AttributedGraph) -> HopDepth:
@@ -452,6 +505,9 @@ def generate_static_v3(
             ]
             if not answered:
                 continue
+            answered = _two_sided(task, answered)
+            if not answered:
+                continue
             query, answer = sampler.choose((split, task.value, density.value), answered, rng)
             result.append(
                 _static_tuple(split, graph, query, answer, f"{split}-static-{index:06d}-{j:02d}", density, task)
@@ -501,9 +557,8 @@ def generate_counterfactual_pairs_v3(
             if not changed:
                 continue
             key = (split, task.value, density.value, "cf")
-            query, after_answer = sampler.choose(
-                key, [(q, a, stratum(after, q)) for q, a, _ in changed], rng
-            )
+            scored = [(q, a, stratum(after, q)) for q, a, _ in changed]
+            query, after_answer = sampler.choose(key, _two_sided(task, scored) or scored, rng)
             before_answer = next(b for q, a, b in changed if q == query and a == after_answer)
             edited = replace(after, graph_id=f"{graph.graph_id}-cf{made}")
             for label, item_graph, answer in (
@@ -550,7 +605,8 @@ def generate_session_v3(
         changing = [c for c in candidates if c[1] != c[2]]
         pool = changing or candidates
         key = (split, task.value, density.value, "dyn")
-        query, answer = sampler.choose(key, [(q, a, stratum(updated, q)) for q, a, _ in pool], rng)
+        scored = [(q, a, stratum(updated, q)) for q, a, _ in pool]
+        query, answer = sampler.choose(key, _two_sided(task, scored) or scored, rng)
         query = replace(query, question=render_question(query, updated))
         stale_answer = answer_query(before, query)
         is_noop = program.edits[0].operation is EditOperation.NOOP

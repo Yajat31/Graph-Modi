@@ -1,5 +1,5 @@
 seed: 42
-output_dir: outputs/v3_exact2x_graphtoken_predfix
+output_dir: outputs/v3_exact2x_graphtoken_e2e_predfix
 data_dir: datasets/metro_v3
 gpu_memory_fraction: 0.97
 
@@ -58,8 +58,7 @@ model:
   trust_remote_code: false
   torch_dtype: bfloat16
   gradient_checkpointing: true
-  gnn_checkpoint: outputs/v3_tea/gnn/gnn.pt
-  checkpoint: outputs/v3_graphtoken/projector/checkpoint-final
+  checkpoint: outputs/v3_graphtoken_e2e/projector/checkpoint-final
 
 training:
   seed: 42

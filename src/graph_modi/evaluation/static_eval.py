@@ -67,6 +67,7 @@ def evaluate_static_oracle(
                     "scale_bin": item.scale_bin,
                     "gold_answer": gold,
                     "predicted_answer": pred,
+                    "raw_prediction": predicted,
                     "correct": answers_match(
                         item.answer, predicted, reasoning_type=reasoning_type
                     ),

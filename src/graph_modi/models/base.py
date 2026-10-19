@@ -84,7 +84,12 @@ class SymbolicMockBackend:
             return None
 
     def answer(self, model_input: ModelInput) -> str | None:
-        if model_input.condition in {"question_only", "structure_only", "majority_prior"}:
+        if model_input.condition in {
+            "question_only",
+            "structure_only",
+            "stale_answer",
+            "majority_answer",
+        }:
             return None
         if model_input.condition == "soft_prompt":
             return answer_query(model_input.current_graph, model_input.query)
