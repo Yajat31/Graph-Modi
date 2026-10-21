@@ -1,0 +1,1528 @@
+{
+ "summary": {
+  "pass": 46,
+  "fail": 10,
+  "info": 44,
+  "warn": 8
+ },
+ "checks": [
+  {
+   "section": "reproduction",
+   "name": "pretraining_data_hash",
+   "status": "pass",
+   "detail": "regenerated 80b1df4735af vs original 80b1df4735af"
+  },
+  {
+   "section": "reproduction",
+   "name": "validation_operation_distribution",
+   "status": "pass",
+   "detail": "{'NOOP': 1701, 'DEL': 1800, 'SET': 1908, 'ADD': 1844}"
+  },
+  {
+   "section": "reproduction",
+   "name": "validation_answer_distribution",
+   "status": "pass",
+   "detail": ""
+  },
+  {
+   "section": "reproduction",
+   "name": "validation_answer_changing_fraction",
+   "status": "pass",
+   "detail": "0.4018"
+  },
+  {
+   "section": "reproduction",
+   "name": "test_operation_distribution",
+   "status": "pass",
+   "detail": "{'NOOP': 1668, 'SET': 1937, 'ADD': 1845, 'DEL': 1812}"
+  },
+  {
+   "section": "reproduction",
+   "name": "test_answer_distribution",
+   "status": "pass",
+   "detail": ""
+  },
+  {
+   "section": "reproduction",
+   "name": "test_answer_changing_fraction",
+   "status": "pass",
+   "detail": "0.4065"
+  },
+  {
+   "section": "reproduction",
+   "name": "static_train_label_counts",
+   "status": "pass",
+   "detail": "23992 tuples"
+  },
+  {
+   "section": "reproduction",
+   "name": "static_validation_label_counts",
+   "status": "pass",
+   "detail": "2178 tuples"
+  },
+  {
+   "section": "reproduction",
+   "name": "static_test_label_counts",
+   "status": "pass",
+   "detail": "4356 tuples"
+  },
+  {
+   "section": "labels",
+   "name": "static_train",
+   "status": "fail",
+   "detail": "23992 items, 363 mismatches ['train-static-000011-03:cycle_membership:no!=yes', 'train-static-000023-02:cycle_membership:no!=yes', 'train-static-000045-02:cycle_membership:no!=yes']"
+  },
+  {
+   "section": "labels",
+   "name": "static_train_library_consistency",
+   "status": "pass",
+   "detail": "0 library mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "static_validation",
+   "status": "fail",
+   "detail": "2178 items, 16 mismatches ['validation-static-000001-03:cycle_membership:no!=yes', 'validation-static-000007-03:cycle_membership:no!=yes', 'validation-static-000027-03:cycle_membership:no!=yes']"
+  },
+  {
+   "section": "labels",
+   "name": "static_validation_library_consistency",
+   "status": "pass",
+   "detail": "0 library mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "static_test",
+   "status": "fail",
+   "detail": "4356 items, 29 mismatches ['test-static-000019-03:cycle_membership:no!=yes', 'test-static-000027-03:cycle_membership:no!=yes', 'test-static-000048-03:cycle_membership:no!=yes']"
+  },
+  {
+   "section": "labels",
+   "name": "static_test_library_consistency",
+   "status": "pass",
+   "detail": "0 library mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_gold",
+   "status": "fail",
+   "detail": "4455 turns, 34 mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_stale",
+   "status": "fail",
+   "detail": "47 stale mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_replay",
+   "status": "pass",
+   "detail": "0 sessions diverge from library replay"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_edit_anomalies",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_gold",
+   "status": "fail",
+   "detail": "4455 turns, 27 mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_stale",
+   "status": "fail",
+   "detail": "35 stale mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_replay",
+   "status": "pass",
+   "detail": "0 sessions diverge from library replay"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_edit_anomalies",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "labels",
+   "name": "cycle_train",
+   "status": "info",
+   "detail": "142/2000 stored labels wrong (7.1%); 15.3% of degree>=3 queries; stored yes-rate 0.500 vs true 0.571; wrong by degree {1: 0, 2: 0, 3: 29, 4: 45, 5: 32, 6: 19, 7: 9, 8: 6, 9: 1, 10: 1, 11: 0}"
+  },
+  {
+   "section": "labels",
+   "name": "cycle_validation",
+   "status": "info",
+   "detail": "16/198 stored labels wrong (8.1%); 15.0% of degree>=3 queries; stored yes-rate 0.500 vs true 0.581; wrong by degree {1: 0, 2: 0, 3: 5, 4: 2, 5: 5, 6: 2, 7: 0, 8: 2, 9: 0, 10: 0}"
+  },
+  {
+   "section": "labels",
+   "name": "cycle_test",
+   "status": "info",
+   "detail": "29/396 stored labels wrong (7.3%); 14.1% of degree>=3 queries; stored yes-rate 0.500 vs true 0.573; wrong by degree {1: 0, 2: 0, 3: 5, 4: 6, 5: 9, 6: 5, 7: 4, 8: 0, 9: 0, 10: 0}"
+  },
+  {
+   "section": "structure",
+   "name": "static_train",
+   "status": "pass",
+   "detail": "3000 graphs, issues {}"
+  },
+  {
+   "section": "structure",
+   "name": "static_validation",
+   "status": "pass",
+   "detail": "198 graphs, issues {}"
+  },
+  {
+   "section": "structure",
+   "name": "static_test",
+   "status": "pass",
+   "detail": "396 graphs, issues {}"
+  },
+  {
+   "section": "structure",
+   "name": "sessions_validation_initial",
+   "status": "pass",
+   "detail": "1188 graphs, issues {}"
+  },
+  {
+   "section": "structure",
+   "name": "sessions_test_initial",
+   "status": "pass",
+   "detail": "1188 graphs, issues {}"
+  },
+  {
+   "section": "structure",
+   "name": "density_ranges",
+   "status": "info",
+   "detail": "{'sparse': (2.75, 2.86), 'medium': (3.73, 3.86), 'dense': (4.92, 5.07)}"
+  },
+  {
+   "section": "structure",
+   "name": "density_bins_separate",
+   "status": "pass",
+   "detail": ""
+  },
+  {
+   "section": "structure",
+   "name": "test_grid_exact",
+   "status": "pass",
+   "detail": "33 cells, {12} per cell"
+  },
+  {
+   "section": "splits",
+   "name": "rng_seeds_unique",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "splits",
+   "name": "graph_id_name_reuse",
+   "status": "info",
+   "detail": "{('sessions_test', 'static_test'): 396, ('sessions_validation', 'static_validation'): 198} (ids are per-split counters like test-v3-graph-000000; names collide, graphs differ: see fingerprint checks)"
+  },
+  {
+   "section": "splits",
+   "name": "attributed_graph_overlap_with_train",
+   "status": "pass",
+   "detail": "{'static_validation': 0, 'static_test': 0, 'sessions_validation': 0, 'sessions_test': 0}"
+  },
+  {
+   "section": "splits",
+   "name": "attributed_graph_overlap_between_eval_splits",
+   "status": "pass",
+   "detail": "{'validation_vs_test': 0, 'sessions_val_vs_test': 0, 'static_test_vs_sessions_test': 0}"
+  },
+  {
+   "section": "splits",
+   "name": "topology_only_overlap_with_train",
+   "status": "info",
+   "detail": "test graphs whose bare topology also occurs in train: {'static_test': 0, 'sessions_test': 0}"
+  },
+  {
+   "section": "splits",
+   "name": "identical_question_strings_with_train",
+   "status": "info",
+   "detail": "{'validation': 3, 'test': 6} (questions embed station names + attributes; a few collisions are expected from the 240-name pool)"
+  },
+  {
+   "section": "splits",
+   "name": "identical_graph_query_pairs_with_train",
+   "status": "pass",
+   "detail": "{'validation': 0, 'test': 0}"
+  },
+  {
+   "section": "splits",
+   "name": "station_name_pool",
+   "status": "info",
+   "detail": "train uses 240 names, test uses 240, test-only names 0 (names are exchangeable noise: shuffled per graph)"
+  },
+  {
+   "section": "prompt",
+   "name": "prefix_matches_spec",
+   "status": "pass",
+   "detail": "30526 prompts; W(f_i) = node attributes minus status (and the queried attribute on Facts tasks)"
+  },
+  {
+   "section": "prompt",
+   "name": "question_fields_present",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "prompt",
+   "name": "no_status_words",
+   "status": "pass",
+   "detail": "0 prompts mention status/closed"
+  },
+  {
+   "section": "prompt",
+   "name": "no_stray_open_wording",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "prompt",
+   "name": "categorical_answer_not_in_prompt",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "prompt",
+   "name": "numeric_answer_equals_a_prompt_number",
+   "status": "info",
+   "detail": "{'filtered_neighbor_count': '0/2906', 'node_degree': '0/3246', 'shortest_path': '0/2671', 'within_hops_count': '272/2855'} (hop counts in the template; coincidence, not leakage)"
+  },
+  {
+   "section": "prompt",
+   "name": "text_only_rule_leak_audit",
+   "status": "pass",
+   "detail": "flagged tasks: []"
+  },
+  {
+   "section": "balance",
+   "name": "train_yes_no_overall",
+   "status": "pass",
+   "detail": "max |P(yes)-0.5| = 0.001"
+  },
+  {
+   "section": "balance",
+   "name": "validation_yes_no_overall",
+   "status": "pass",
+   "detail": "max |P(yes)-0.5| = 0.005"
+  },
+  {
+   "section": "balance",
+   "name": "test_yes_no_overall",
+   "status": "pass",
+   "detail": "max |P(yes)-0.5| = 0.003"
+  },
+  {
+   "section": "balance",
+   "name": "train_vs_test_answer_marginal_TV",
+   "status": "info",
+   "detail": "{'edge_exists': 0.0, 'reachability': 0.0, 'constrained_reachability': 0.001, 'cycle_membership': 0.0, 'node_degree': 0.049, 'filtered_neighbor_count': 0.031, 'shortest_path': 0.053, 'within_hops_count': 0.033, 'most_common_attribute_within_hops': 0.03, 'attribute_lookup': 0.016, 'attribute_check': 0.002}"
+  },
+  {
+   "section": "balance",
+   "name": "P(reach=no | an endpoint closed)",
+   "status": "info",
+   "detail": "train=(1.0, 965) test=(1.0, 176)"
+  },
+  {
+   "section": "balance",
+   "name": "P(reach=no | both open)",
+   "status": "info",
+   "detail": "train=(0.11838989739542226, 1267) test=(0.1, 220)"
+  },
+  {
+   "section": "balance",
+   "name": "share of reach=no with a closed endpoint",
+   "status": "info",
+   "detail": "train=(965, 1115) test=(176, 198)"
+  },
+  {
+   "section": "balance",
+   "name": "share of shortest_path=unreachable with a closed endpoint",
+   "status": "info",
+   "detail": "train=(347, 408) test=(61, 67)"
+  },
+  {
+   "section": "balance",
+   "name": "share of cycle=no with degree 1",
+   "status": "info",
+   "detail": "train=(816, 1000) test=(165, 198)"
+  },
+  {
+   "section": "balance",
+   "name": "P(cycle=no | degree 1)",
+   "status": "info",
+   "detail": "train=(1.0, 816) test=(1.0, 165)"
+  },
+  {
+   "section": "balance",
+   "name": "P(constrained_reach=yes | endpoint closed)",
+   "status": "info",
+   "detail": "train=(0.5153846153846153, 520) test=(0.5411764705882353, 85)"
+  },
+  {
+   "section": "balance",
+   "name": "P(constrained_reach=yes | both open)",
+   "status": "info",
+   "detail": "train=(0.4962732919254658, 1610) test=(0.4887459807073955, 311)"
+  },
+  {
+   "section": "balance",
+   "name": "P(edge_exists=yes | min degree 1)",
+   "status": "info",
+   "detail": "train=(0.14616755793226383, 561) test=(0.1794871794871795, 117)"
+  },
+  {
+   "section": "balance",
+   "name": "P(edge_exists=yes | min degree >1)",
+   "status": "info",
+   "detail": "train=(0.6214114832535885, 1672) test=(0.6344086021505376, 279)"
+  },
+  {
+   "section": "balance",
+   "name": "share of reachability queries with a closed endpoint",
+   "status": "info",
+   "detail": "train=0.43234767025089604 test=0.4444444444444444"
+  },
+  {
+   "section": "balance",
+   "name": "reachability_label_not_decided_by_endpoint_status",
+   "status": "warn",
+   "detail": "176/198 of 'no' answers have a closed endpoint"
+  },
+  {
+   "section": "balance",
+   "name": "cycle_label_not_decided_by_degree",
+   "status": "warn",
+   "detail": "165/198 of 'no' answers are degree-1 stations"
+  },
+  {
+   "section": "balance",
+   "name": "constrained_reachability_independent_of_status",
+   "status": "pass",
+   "detail": "status is irrelevant by definition; label gap 0.052"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_noop_rate",
+   "status": "info",
+   "detail": "0.382 overall; by session length {1: 0.354, 2: 0.384, 4: 0.388, 8: 0.382} (docs say 15-20%)"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_one_task_per_session",
+   "status": "pass",
+   "detail": "every session asks one task for all of its turns"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_net_noop_programs",
+   "status": "fail",
+   "detail": "7/2754 non-NOOP programs leave the graph unchanged"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_cancelling_within_program",
+   "status": "warn",
+   "detail": "44/2754 programs touch the same node/edge twice"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_reverts_to_earlier_state",
+   "status": "info",
+   "detail": "3/2754 edit turns return the graph to a state it had before"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_repeated_queries",
+   "status": "info",
+   "detail": "268/4455 turns repeat an earlier query in the same session"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_added_edges",
+   "status": "info",
+   "detail": "1844 added; 492 join same-line stations but are labelled 'transfer' (original edges: track iff same line); 1844 carry no edge attributes; weights {1.0: 1844}"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_op_counts",
+   "status": "info",
+   "detail": "{('EDGE', 'DEL'): 1800, ('NODE', 'SET'): 1908, ('EDGE', 'ADD'): 1844}"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_status_edits_only_matter_for_reach_and_path",
+   "status": "pass",
+   "detail": "P(answer changes | set_only turn) for the 7 other tasks: {'edge_exists': 0.0, 'constrained_reachability': 0.0, 'cycle_membership': 0.0, 'node_degree': 0.0, 'filtered_neighbor_count': 0.0, 'within_hops_count': 0.0, 'most_common_attribute_within_hops': 0.0}"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_P(change|turn kind)",
+   "status": "info",
+   "detail": "reachability {'noop': (0.0, 177), 'set_only': (1.0, 48), 'edge_only': (0.127, 150), 'mixed': (0.983, 120)}, shortest_path {'noop': (0.0, 187), 'set_only': (0.984, 61), 'edge_only': (0.829, 129), 'mixed': (0.992, 118)}, edge_exists {'noop': (0.0, 191), 'set_only': (0.0, 49), 'edge_only': (0.726, 146), 'mixed': (0.725, 109)}"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_state_drift_by_turn",
+   "status": "info",
+   "detail": "{0: {'closed_fraction': 0.082, 'mean_degree': 3.87, 'components': 1.05, 'connected': 0.95, 'n': 1188}, 1: {'closed_fraction': 0.103, 'mean_degree': 3.87, 'components': 1.09, 'connected': 0.916, 'n': 891}, 2: {'closed_fraction': 0.123, 'mean_degree': 3.88, 'components': 1.1, 'connected': 0.897, 'n': 594}, 3: {'closed_fraction': 0.144, 'mean_degree': 3.88, 'components': 1.15, 'connected': 0.867, 'n': 594}, 4: {'closed_fraction': 0.162, 'mean_degree': 3.89, 'components': 1.17, 'connected': 0.859, 'n': 297}, 5: {'closed_fraction': 0.179, 'mean_degree': 3.89, 'components': 1.19, 'connected': 0.835, 'n': 297}, 6: {'closed_fraction': 0.198, 'mean_degree': 3.89, 'components': 1.19, 'connected': 0.832, 'n': 297}, 7: {'closed_fraction': 0.213, 'mean_degree': 3.9, 'components': 1.21, 'connected': 0.825, 'n': 297}}"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_final_state_by_session_length",
+   "status": "info",
+   "detail": "{1: {'closed_fraction': 0.079, 'connected': 0.949}, 2: {'closed_fraction': 0.104, 'connected': 0.889}, 4: {'closed_fraction': 0.141, 'connected': 0.852}, 8: {'closed_fraction': 0.213, 'connected': 0.825}} (static train closed fraction 0.122)"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_no_large_state_drift",
+   "status": "warn",
+   "detail": "turn 7: closed 0.213 vs train 0.122, connected 0.825"
+  },
+  {
+   "section": "sessions",
+   "name": "test_noop_rate",
+   "status": "info",
+   "detail": "0.374 overall; by session length {1: 0.354, 2: 0.369, 4: 0.379, 8: 0.376} (docs say 15-20%)"
+  },
+  {
+   "section": "sessions",
+   "name": "test_one_task_per_session",
+   "status": "pass",
+   "detail": "every session asks one task for all of its turns"
+  },
+  {
+   "section": "sessions",
+   "name": "test_net_noop_programs",
+   "status": "fail",
+   "detail": "7/2787 non-NOOP programs leave the graph unchanged"
+  },
+  {
+   "section": "sessions",
+   "name": "test_cancelling_within_program",
+   "status": "warn",
+   "detail": "39/2787 programs touch the same node/edge twice"
+  },
+  {
+   "section": "sessions",
+   "name": "test_reverts_to_earlier_state",
+   "status": "info",
+   "detail": "1/2787 edit turns return the graph to a state it had before"
+  },
+  {
+   "section": "sessions",
+   "name": "test_repeated_queries",
+   "status": "info",
+   "detail": "296/4455 turns repeat an earlier query in the same session"
+  },
+  {
+   "section": "sessions",
+   "name": "test_added_edges",
+   "status": "info",
+   "detail": "1845 added; 502 join same-line stations but are labelled 'transfer' (original edges: track iff same line); 1845 carry no edge attributes; weights {1.0: 1845}"
+  },
+  {
+   "section": "sessions",
+   "name": "test_op_counts",
+   "status": "info",
+   "detail": "{('NODE', 'SET'): 1937, ('EDGE', 'ADD'): 1845, ('EDGE', 'DEL'): 1812}"
+  },
+  {
+   "section": "sessions",
+   "name": "test_status_edits_only_matter_for_reach_and_path",
+   "status": "pass",
+   "detail": "P(answer changes | set_only turn) for the 7 other tasks: {'edge_exists': 0.0, 'constrained_reachability': 0.0, 'cycle_membership': 0.0, 'node_degree': 0.0, 'filtered_neighbor_count': 0.0, 'within_hops_count': 0.0, 'most_common_attribute_within_hops': 0.0}"
+  },
+  {
+   "section": "sessions",
+   "name": "test_P(change|turn kind)",
+   "status": "info",
+   "detail": "reachability {'noop': (0.0, 194), 'set_only': (1.0, 44), 'edge_only': (0.168, 119), 'mixed': (0.986, 138)}, shortest_path {'noop': (0.0, 201), 'set_only': (0.978, 45), 'edge_only': (0.818, 137), 'mixed': (0.973, 112)}, edge_exists {'noop': (0.0, 202), 'set_only': (0.0, 43), 'edge_only': (0.793, 135), 'mixed': (0.591, 115)}"
+  },
+  {
+   "section": "sessions",
+   "name": "test_state_drift_by_turn",
+   "status": "info",
+   "detail": "{0: {'closed_fraction': 0.084, 'mean_degree': 3.87, 'components': 1.04, 'connected': 0.961, 'n': 1188}, 1: {'closed_fraction': 0.107, 'mean_degree': 3.87, 'components': 1.08, 'connected': 0.926, 'n': 891}, 2: {'closed_fraction': 0.122, 'mean_degree': 3.87, 'components': 1.1, 'connected': 0.906, 'n': 594}, 3: {'closed_fraction': 0.142, 'mean_degree': 3.87, 'components': 1.14, 'connected': 0.869, 'n': 594}, 4: {'closed_fraction': 0.158, 'mean_degree': 3.86, 'components': 1.16, 'connected': 0.848, 'n': 297}, 5: {'closed_fraction': 0.18, 'mean_degree': 3.86, 'components': 1.16, 'connected': 0.855, 'n': 297}, 6: {'closed_fraction': 0.196, 'mean_degree': 3.86, 'components': 1.17, 'connected': 0.848, 'n': 297}, 7: {'closed_fraction': 0.212, 'mean_degree': 3.87, 'components': 1.21, 'connected': 0.828, 'n': 297}}"
+  },
+  {
+   "section": "sessions",
+   "name": "test_final_state_by_session_length",
+   "status": "info",
+   "detail": "{1: {'closed_fraction': 0.083, 'connected': 0.956}, 2: {'closed_fraction': 0.112, 'connected': 0.909}, 4: {'closed_fraction': 0.145, 'connected': 0.872}, 8: {'closed_fraction': 0.212, 'connected': 0.828}} (static train closed fraction 0.122)"
+  },
+  {
+   "section": "sessions",
+   "name": "test_no_large_state_drift",
+   "status": "warn",
+   "detail": "turn 7: closed 0.212 vs train 0.122, connected 0.828"
+  },
+  {
+   "section": "counterfactual",
+   "name": "pairs_share_question_text",
+   "status": "pass",
+   "detail": "0/2996 pairs differ in prompt text"
+  },
+  {
+   "section": "counterfactual",
+   "name": "answers_differ",
+   "status": "pass",
+   "detail": "0/2996 pairs have equal answers"
+  },
+  {
+   "section": "counterfactual",
+   "name": "labels_correct",
+   "status": "fail",
+   "detail": "38/2996 pairs mislabeled by independent solver"
+  },
+  {
+   "section": "counterfactual",
+   "name": "graphs_differ",
+   "status": "pass",
+   "detail": "0/2996 pairs have identical graphs"
+  },
+  {
+   "section": "counterfactual",
+   "name": "pairs_by_task_and_edit_kind",
+   "status": "info",
+   "detail": "2996 pairs; {'constrained_reachability': {'set': 0, 'edge': 153, 'mixed': 94}, 'cycle_membership': {'set': 0, 'edge': 112, 'mixed': 70}, 'edge_exists': {'set': 0, 'edge': 174, 'mixed': 129}, 'filtered_neighbor_count': {'set': 0, 'edge': 183, 'mixed': 155}, 'most_common_attribute_within_hops': {'set': 0, 'edge': 196, 'mixed': 138}, 'node_degree': {'set': 0, 'edge': 273, 'mixed': 235}, 'reachability': {'set': 79, 'edge': 27, 'mixed': 192}, 'shortest_path': {'set': 76, 'edge': 208, 'mixed': 190}, 'within_hops_count': {'set': 0, 'edge': 178, 'mixed': 134}}"
+  },
+  {
+   "section": "counterfactual",
+   "name": "reachability_status_flip_pairs",
+   "status": "info",
+   "detail": "79/298 pairs are status-only edits; 72 of them flip a queried endpoint"
+  },
+  {
+   "section": "counterfactual",
+   "name": "shortest_path_status_flip_pairs",
+   "status": "info",
+   "detail": "76/474 pairs are status-only edits; 40 of them flip a queried endpoint"
+  },
+  {
+   "section": "shortcuts",
+   "name": "static_8_task_ceiling",
+   "status": "info",
+   "detail": "lookup 63.9% vs gradient-boosting 64.0% in shortcut_audit.json; best trained model (warm start) 66.5%"
+  },
+  {
+   "section": "shortcuts",
+   "name": "shortcut_ceiling_reproduced",
+   "status": "pass",
+   "detail": "|lookup - committed gradient boosting| = 0.000"
+  },
+  {
+   "section": "shortcuts",
+   "name": "multi_turn_8_tasks",
+   "status": "info",
+   "detail": "3960 turns: stale answer 59.0, tracker on updated graph 62.9, tracker on stale graph 45.5, status-only 39.2, degree-only 57.1 (committed gradient boosting: 64.6 updated / 45.5 stale)"
+  },
+  {
+   "section": "hazards",
+   "name": "node_order_hides_terminals",
+   "status": "warn",
+   "detail": "in 396/396 test graphs the last 2-3 entries of graph.nodes are exactly degree-1 stations; they hold 1008/1213 of all degree-1 stations"
+  },
+  {
+   "section": "hazards",
+   "name": "node_order_hides_depth",
+   "status": "warn",
+   "detail": "mean corr(position in graph.nodes, BFS distance from first node) = 0.62"
+  },
+  {
+   "section": "hazards",
+   "name": "ids_permuted",
+   "status": "info",
+   "detail": "0/40 sampled test graphs list nodes in id order (ids are permuted, node order is not)"
+  },
+  {
+   "section": "hazards",
+   "name": "edge_order",
+   "status": "info",
+   "detail": "edges are stored sorted by generation position; example first edges [('n6', 'n11'), ('n6', 'n9'), ('n6', 'n2')]"
+  }
+ ],
+ "sections": {
+  "reproduction": {
+   "pretraining_graph_sha256": "80b1df4735af47f26f81ecc01b73db37833330a381642ee93b24fd87798f9b83",
+   "original": "80b1df4735af47f26f81ecc01b73db37833330a381642ee93b24fd87798f9b83"
+  },
+  "labels": {
+   "train": {
+    "checked": 23992,
+    "mismatches": 363,
+    "examples": [
+     "train-static-000011-03:cycle_membership:no!=yes",
+     "train-static-000023-02:cycle_membership:no!=yes",
+     "train-static-000045-02:cycle_membership:no!=yes",
+     "train-static-000067-02:cycle_membership:no!=yes",
+     "train-static-000078-02:cycle_membership:no!=yes"
+    ],
+    "by_task": {
+     "cycle_membership": 142,
+     "tied_mode": 221
+    }
+   },
+   "validation": {
+    "checked": 2178,
+    "mismatches": 16,
+    "examples": [
+     "validation-static-000001-03:cycle_membership:no!=yes",
+     "validation-static-000007-03:cycle_membership:no!=yes",
+     "validation-static-000027-03:cycle_membership:no!=yes",
+     "validation-static-000029-03:cycle_membership:no!=yes",
+     "validation-static-000045-03:cycle_membership:no!=yes"
+    ],
+    "by_task": {
+     "cycle_membership": 16
+    }
+   },
+   "test": {
+    "checked": 4356,
+    "mismatches": 29,
+    "examples": [
+     "test-static-000019-03:cycle_membership:no!=yes",
+     "test-static-000027-03:cycle_membership:no!=yes",
+     "test-static-000048-03:cycle_membership:no!=yes",
+     "test-static-000057-03:cycle_membership:no!=yes",
+     "test-static-000067-03:cycle_membership:no!=yes"
+    ],
+    "by_task": {
+     "cycle_membership": 29
+    }
+   },
+   "sessions_validation": {
+    "turns": 4455,
+    "label_mismatches": 34,
+    "stale_mismatches": 47,
+    "replay_divergence": 0,
+    "edit_anomalies": {}
+   },
+   "sessions_test": {
+    "turns": 4455,
+    "label_mismatches": 27,
+    "stale_mismatches": 35,
+    "replay_divergence": 0,
+    "edit_anomalies": {}
+   }
+  },
+  "cycle_labels": {
+   "train": {
+    "items": 2000,
+    "wrong": 142,
+    "wrong_rate": 0.071,
+    "wrong_among_degree_ge3": 0.15268817204301074,
+    "stored_yes_rate": 0.5,
+    "true_yes_rate": 0.571,
+    "wrong_by_degree": {
+     "1": 0,
+     "2": 0,
+     "3": 29,
+     "4": 45,
+     "5": 32,
+     "6": 19,
+     "7": 9,
+     "8": 6,
+     "9": 1,
+     "10": 1,
+     "11": 0
+    }
+   },
+   "validation": {
+    "items": 198,
+    "wrong": 16,
+    "wrong_rate": 0.08080808080808081,
+    "wrong_among_degree_ge3": 0.14953271028037382,
+    "stored_yes_rate": 0.5,
+    "true_yes_rate": 0.5808080808080808,
+    "wrong_by_degree": {
+     "1": 0,
+     "2": 0,
+     "3": 5,
+     "4": 2,
+     "5": 5,
+     "6": 2,
+     "7": 0,
+     "8": 2,
+     "9": 0,
+     "10": 0
+    }
+   },
+   "test": {
+    "items": 396,
+    "wrong": 29,
+    "wrong_rate": 0.07323232323232323,
+    "wrong_among_degree_ge3": 0.1407766990291262,
+    "stored_yes_rate": 0.5,
+    "true_yes_rate": 0.5732323232323232,
+    "wrong_by_degree": {
+     "1": 0,
+     "2": 0,
+     "3": 5,
+     "4": 6,
+     "5": 9,
+     "6": 5,
+     "7": 4,
+     "8": 0,
+     "9": 0,
+     "10": 0
+    }
+   }
+  },
+  "structure": {
+   "density_ranges": {
+    "sparse": [
+     2.75,
+     2.857142857142857
+    ],
+    "medium": [
+     3.7333333333333334,
+     3.857142857142857
+    ],
+    "dense": [
+     4.923076923076923,
+     5.066666666666666
+    ]
+   }
+  },
+  "splits": {
+   "overlap_with_train": {
+    "static_validation": 0,
+    "static_test": 0,
+    "sessions_validation": 0,
+    "sessions_test": 0
+   },
+   "topology_overlap": {
+    "static_test": 0,
+    "sessions_test": 0
+   }
+  },
+  "prompt": {
+   "checked": 30526,
+   "problems": {},
+   "leak_flags": []
+  },
+  "balance": {
+   "tv": {
+    "edge_exists": 0.0,
+    "reachability": 0.0,
+    "constrained_reachability": 0.001,
+    "cycle_membership": 0.0,
+    "node_degree": 0.049,
+    "filtered_neighbor_count": 0.031,
+    "shortest_path": 0.053,
+    "within_hops_count": 0.033,
+    "most_common_attribute_within_hops": 0.03,
+    "attribute_lookup": 0.016,
+    "attribute_check": 0.002
+   },
+   "structure": {
+    "train": {
+     "P(reach=no | an endpoint closed)": [
+      1.0,
+      965
+     ],
+     "P(reach=no | both open)": [
+      0.11838989739542226,
+      1267
+     ],
+     "share of reach=no with a closed endpoint": [
+      965,
+      1115
+     ],
+     "share of shortest_path=unreachable with a closed endpoint": [
+      347,
+      408
+     ],
+     "share of cycle=no with degree 1": [
+      816,
+      1000
+     ],
+     "P(cycle=no | degree 1)": [
+      1.0,
+      816
+     ],
+     "P(constrained_reach=yes | endpoint closed)": [
+      0.5153846153846153,
+      520
+     ],
+     "P(constrained_reach=yes | both open)": [
+      0.4962732919254658,
+      1610
+     ],
+     "P(edge_exists=yes | min degree 1)": [
+      0.14616755793226383,
+      561
+     ],
+     "P(edge_exists=yes | min degree >1)": [
+      0.6214114832535885,
+      1672
+     ],
+     "share of reachability queries with a closed endpoint": 0.43234767025089604
+    },
+    "test": {
+     "P(reach=no | an endpoint closed)": [
+      1.0,
+      176
+     ],
+     "P(reach=no | both open)": [
+      0.1,
+      220
+     ],
+     "share of reach=no with a closed endpoint": [
+      176,
+      198
+     ],
+     "share of shortest_path=unreachable with a closed endpoint": [
+      61,
+      67
+     ],
+     "share of cycle=no with degree 1": [
+      165,
+      198
+     ],
+     "P(cycle=no | degree 1)": [
+      1.0,
+      165
+     ],
+     "P(constrained_reach=yes | endpoint closed)": [
+      0.5411764705882353,
+      85
+     ],
+     "P(constrained_reach=yes | both open)": [
+      0.4887459807073955,
+      311
+     ],
+     "P(edge_exists=yes | min degree 1)": [
+      0.1794871794871795,
+      117
+     ],
+     "P(edge_exists=yes | min degree >1)": [
+      0.6344086021505376,
+      279
+     ],
+     "share of reachability queries with a closed endpoint": 0.4444444444444444
+    }
+   }
+  },
+  "sessions": {
+   "validation_p_answer_changes": {
+    "edge_exists": {
+     "noop": [
+      0.0,
+      191
+     ],
+     "set_only": [
+      0.0,
+      49
+     ],
+     "edge_only": [
+      0.726,
+      146
+     ],
+     "mixed": [
+      0.725,
+      109
+     ]
+    },
+    "reachability": {
+     "noop": [
+      0.0,
+      177
+     ],
+     "set_only": [
+      1.0,
+      48
+     ],
+     "edge_only": [
+      0.127,
+      150
+     ],
+     "mixed": [
+      0.983,
+      120
+     ]
+    },
+    "constrained_reachability": {
+     "noop": [
+      0.0,
+      197
+     ],
+     "set_only": [
+      0.0,
+      49
+     ],
+     "edge_only": [
+      0.607,
+      145
+     ],
+     "mixed": [
+      0.548,
+      104
+     ]
+    },
+    "cycle_membership": {
+     "noop": [
+      0.0,
+      190
+     ],
+     "set_only": [
+      0.0,
+      47
+     ],
+     "edge_only": [
+      0.38,
+      137
+     ],
+     "mixed": [
+      0.289,
+      121
+     ]
+    },
+    "node_degree": {
+     "noop": [
+      0.0,
+      183
+     ],
+     "set_only": [
+      0.0,
+      53
+     ],
+     "edge_only": [
+      1.0,
+      134
+     ],
+     "mixed": [
+      1.0,
+      125
+     ]
+    },
+    "filtered_neighbor_count": {
+     "noop": [
+      0.0,
+      188
+     ],
+     "set_only": [
+      0.0,
+      58
+     ],
+     "edge_only": [
+      0.977,
+      131
+     ],
+     "mixed": [
+      0.966,
+      118
+     ]
+    },
+    "shortest_path": {
+     "noop": [
+      0.0,
+      187
+     ],
+     "set_only": [
+      0.984,
+      61
+     ],
+     "edge_only": [
+      0.829,
+      129
+     ],
+     "mixed": [
+      0.992,
+      118
+     ]
+    },
+    "within_hops_count": {
+     "noop": [
+      0.0,
+      186
+     ],
+     "set_only": [
+      0.0,
+      58
+     ],
+     "edge_only": [
+      0.904,
+      135
+     ],
+     "mixed": [
+      0.897,
+      116
+     ]
+    },
+    "most_common_attribute_within_hops": {
+     "noop": [
+      0.0,
+      202
+     ],
+     "set_only": [
+      0.0,
+      55
+     ],
+     "edge_only": [
+      0.779,
+      145
+     ],
+     "mixed": [
+      0.688,
+      93
+     ]
+    }
+   },
+   "validation_drift": {
+    "0": {
+     "closed_fraction": 0.082,
+     "mean_degree": 3.87,
+     "components": 1.05,
+     "connected": 0.95,
+     "n": 1188
+    },
+    "1": {
+     "closed_fraction": 0.103,
+     "mean_degree": 3.87,
+     "components": 1.09,
+     "connected": 0.916,
+     "n": 891
+    },
+    "2": {
+     "closed_fraction": 0.123,
+     "mean_degree": 3.88,
+     "components": 1.1,
+     "connected": 0.897,
+     "n": 594
+    },
+    "3": {
+     "closed_fraction": 0.144,
+     "mean_degree": 3.88,
+     "components": 1.15,
+     "connected": 0.867,
+     "n": 594
+    },
+    "4": {
+     "closed_fraction": 0.162,
+     "mean_degree": 3.89,
+     "components": 1.17,
+     "connected": 0.859,
+     "n": 297
+    },
+    "5": {
+     "closed_fraction": 0.179,
+     "mean_degree": 3.89,
+     "components": 1.19,
+     "connected": 0.835,
+     "n": 297
+    },
+    "6": {
+     "closed_fraction": 0.198,
+     "mean_degree": 3.89,
+     "components": 1.19,
+     "connected": 0.832,
+     "n": 297
+    },
+    "7": {
+     "closed_fraction": 0.213,
+     "mean_degree": 3.9,
+     "components": 1.21,
+     "connected": 0.825,
+     "n": 297
+    }
+   },
+   "validation_summary": {
+    "noop_rate": 0.38181818181818183,
+    "net_noop": 7,
+    "cancelling": 44,
+    "reverts": 3,
+    "repeated_queries": 268,
+    "turns": 4455,
+    "added_edges": 1844,
+    "added_same_line": 492
+   },
+   "test_p_answer_changes": {
+    "edge_exists": {
+     "noop": [
+      0.0,
+      202
+     ],
+     "set_only": [
+      0.0,
+      43
+     ],
+     "edge_only": [
+      0.793,
+      135
+     ],
+     "mixed": [
+      0.591,
+      115
+     ]
+    },
+    "reachability": {
+     "noop": [
+      0.0,
+      194
+     ],
+     "set_only": [
+      1.0,
+      44
+     ],
+     "edge_only": [
+      0.168,
+      119
+     ],
+     "mixed": [
+      0.986,
+      138
+     ]
+    },
+    "constrained_reachability": {
+     "noop": [
+      0.0,
+      177
+     ],
+     "set_only": [
+      0.0,
+      57
+     ],
+     "edge_only": [
+      0.57,
+      135
+     ],
+     "mixed": [
+      0.46,
+      126
+     ]
+    },
+    "cycle_membership": {
+     "noop": [
+      0.0,
+      167
+     ],
+     "set_only": [
+      0.0,
+      64
+     ],
+     "edge_only": [
+      0.401,
+      152
+     ],
+     "mixed": [
+      0.411,
+      112
+     ]
+    },
+    "node_degree": {
+     "noop": [
+      0.0,
+      182
+     ],
+     "set_only": [
+      0.0,
+      56
+     ],
+     "edge_only": [
+      0.986,
+      138
+     ],
+     "mixed": [
+      1.0,
+      119
+     ]
+    },
+    "filtered_neighbor_count": {
+     "noop": [
+      0.0,
+      174
+     ],
+     "set_only": [
+      0.0,
+      67
+     ],
+     "edge_only": [
+      0.979,
+      140
+     ],
+     "mixed": [
+      0.974,
+      114
+     ]
+    },
+    "shortest_path": {
+     "noop": [
+      0.0,
+      201
+     ],
+     "set_only": [
+      0.978,
+      45
+     ],
+     "edge_only": [
+      0.818,
+      137
+     ],
+     "mixed": [
+      0.973,
+      112
+     ]
+    },
+    "within_hops_count": {
+     "noop": [
+      0.0,
+      183
+     ],
+     "set_only": [
+      0.0,
+      51
+     ],
+     "edge_only": [
+      0.899,
+      139
+     ],
+     "mixed": [
+      0.918,
+      122
+     ]
+    },
+    "most_common_attribute_within_hops": {
+     "noop": [
+      0.0,
+      188
+     ],
+     "set_only": [
+      0.0,
+      47
+     ],
+     "edge_only": [
+      0.75,
+      156
+     ],
+     "mixed": [
+      0.692,
+      104
+     ]
+    }
+   },
+   "test_drift": {
+    "0": {
+     "closed_fraction": 0.084,
+     "mean_degree": 3.87,
+     "components": 1.04,
+     "connected": 0.961,
+     "n": 1188
+    },
+    "1": {
+     "closed_fraction": 0.107,
+     "mean_degree": 3.87,
+     "components": 1.08,
+     "connected": 0.926,
+     "n": 891
+    },
+    "2": {
+     "closed_fraction": 0.122,
+     "mean_degree": 3.87,
+     "components": 1.1,
+     "connected": 0.906,
+     "n": 594
+    },
+    "3": {
+     "closed_fraction": 0.142,
+     "mean_degree": 3.87,
+     "components": 1.14,
+     "connected": 0.869,
+     "n": 594
+    },
+    "4": {
+     "closed_fraction": 0.158,
+     "mean_degree": 3.86,
+     "components": 1.16,
+     "connected": 0.848,
+     "n": 297
+    },
+    "5": {
+     "closed_fraction": 0.18,
+     "mean_degree": 3.86,
+     "components": 1.16,
+     "connected": 0.855,
+     "n": 297
+    },
+    "6": {
+     "closed_fraction": 0.196,
+     "mean_degree": 3.86,
+     "components": 1.17,
+     "connected": 0.848,
+     "n": 297
+    },
+    "7": {
+     "closed_fraction": 0.212,
+     "mean_degree": 3.87,
+     "components": 1.21,
+     "connected": 0.828,
+     "n": 297
+    }
+   },
+   "test_summary": {
+    "noop_rate": 0.3744107744107744,
+    "net_noop": 7,
+    "cancelling": 39,
+    "reverts": 1,
+    "repeated_queries": 296,
+    "turns": 4455,
+    "added_edges": 1845,
+    "added_same_line": 502
+   }
+  },
+  "counterfactual": {
+   "pairs": 2996,
+   "by_task": {
+    "constrained_reachability": {
+     "set": 0,
+     "edge": 153,
+     "mixed": 94
+    },
+    "cycle_membership": {
+     "set": 0,
+     "edge": 112,
+     "mixed": 70
+    },
+    "edge_exists": {
+     "set": 0,
+     "edge": 174,
+     "mixed": 129
+    },
+    "filtered_neighbor_count": {
+     "set": 0,
+     "edge": 183,
+     "mixed": 155
+    },
+    "most_common_attribute_within_hops": {
+     "set": 0,
+     "edge": 196,
+     "mixed": 138
+    },
+    "node_degree": {
+     "set": 0,
+     "edge": 273,
+     "mixed": 235
+    },
+    "reachability": {
+     "set": 79,
+     "edge": 27,
+     "mixed": 192
+    },
+    "shortest_path": {
+     "set": 76,
+     "edge": 208,
+     "mixed": 190
+    },
+    "within_hops_count": {
+     "set": 0,
+     "edge": 178,
+     "mixed": 134
+    }
+   }
+  },
+  "shortcuts": {
+   "static_table": {
+    "majority": {
+     "edge_exists": 0.5,
+     "reachability": 0.5,
+     "constrained_reachability": 0.5,
+     "cycle_membership": 0.5,
+     "node_degree": 0.12121212121212122,
+     "filtered_neighbor_count": 0.16666666666666666,
+     "shortest_path": 0.16666666666666666,
+     "within_hops_count": 0.09848484848484848,
+     "most_common_attribute_within_hops": 0.05555555555555555,
+     "attribute_lookup": 0.05808080808080808,
+     "attribute_check": 0.5025252525252525
+    },
+    "status_only": {
+     "edge_exists": 0.5025252525252525,
+     "reachability": 0.9444444444444444,
+     "constrained_reachability": 0.5176767676767676,
+     "cycle_membership": 0.5050505050505051,
+     "node_degree": 0.1111111111111111,
+     "filtered_neighbor_count": 0.14393939393939395,
+     "shortest_path": 0.3207070707070707,
+     "within_hops_count": 0.09090909090909091,
+     "most_common_attribute_within_hops": 0.05808080808080808,
+     "attribute_lookup": 0.05303030303030303,
+     "attribute_check": 0.5126262626262627
+    },
+    "degree_only": {
+     "edge_exists": 0.6843434343434344,
+     "reachability": 0.5606060606060606,
+     "constrained_reachability": 0.6994949494949495,
+     "cycle_membership": 0.9166666666666666,
+     "node_degree": 1.0,
+     "filtered_neighbor_count": 0.3207070707070707,
+     "shortest_path": 0.2727272727272727,
+     "within_hops_count": 0.13131313131313133,
+     "most_common_attribute_within_hops": 0.047979797979797977,
+     "attribute_lookup": 0.06313131313131314,
+     "attribute_check": 0.5050505050505051
+    },
+    "degree_status": {
+     "edge_exists": 0.6843434343434344,
+     "reachability": 0.9444444444444444,
+     "constrained_reachability": 0.6792929292929293,
+     "cycle_membership": 0.9141414141414141,
+     "node_degree": 1.0,
+     "filtered_neighbor_count": 0.30303030303030304,
+     "shortest_path": 0.43434343434343436,
+     "within_hops_count": 0.15404040404040403,
+     "most_common_attribute_within_hops": 0.06818181818181818,
+     "attribute_lookup": 0.06818181818181818,
+     "attribute_check": 0.49242424242424243
+    }
+   },
+   "static_summary": {
+    "majority": {
+     "all_11_tasks": 0.28810835629017445,
+     "eight_tasks": 0.3191287878787879
+    },
+    "status_only": {
+     "all_11_tasks": 0.34182736455463725,
+     "eight_tasks": 0.39204545454545453
+    },
+    "degree_only": {
+     "all_11_tasks": 0.472910927456382,
+     "eight_tasks": 0.5732323232323232
+    },
+    "degree_status": {
+     "all_11_tasks": 0.522038567493113,
+     "eight_tasks": 0.6392045454545454
+    }
+   },
+   "multi_turn": {
+    "stale_answer": 0.5904040404040404,
+    "tracker_updated": 0.6290404040404041,
+    "tracker_stale": 0.45454545454545453,
+    "status_only_updated": 0.3924242424242424,
+    "degree_only_updated": 0.5714646464646465,
+    "on_changed": {
+     "updated": 0.591861898890259,
+     "stale": 0.16276202219482122
+    },
+    "on_unchanged": {
+     "updated": 0.6548331907613345
+    },
+    "turns": 3960,
+    "changed_fraction": 0.40959595959595957
+   }
+  }
+ }
+}
