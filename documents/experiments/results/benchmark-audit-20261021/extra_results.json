@@ -1,0 +1,251 @@
+{
+ "summary": {
+  "warn": 6,
+  "pass": 6,
+  "info": 14
+ },
+ "checks": [
+  {
+   "section": "x1",
+   "name": "train_endpoint_exemption",
+   "status": "warn",
+   "detail": "1508/2140 items have an endpoint with the avoided value; 768 of them flip to 'no' if endpoints are not exempt (the question text never says endpoints are exempt)"
+  },
+  {
+   "section": "x1",
+   "name": "validation_endpoint_exemption",
+   "status": "warn",
+   "detail": "147/198 items have an endpoint with the avoided value; 79 of them flip to 'no' if endpoints are not exempt (the question text never says endpoints are exempt)"
+  },
+  {
+   "section": "x1",
+   "name": "test_endpoint_exemption",
+   "status": "warn",
+   "detail": "263/396 items have an endpoint with the avoided value; 129 of them flip to 'no' if endpoints are not exempt (the question text never says endpoints are exempt)"
+  },
+  {
+   "section": "x2",
+   "name": "no_self_pairs",
+   "status": "pass",
+   "detail": "0 queries ask about a station and itself"
+  },
+  {
+   "section": "x3",
+   "name": "train_repeated_items",
+   "status": "info",
+   "detail": "1 repeated (graph, question) items of 23990"
+  },
+  {
+   "section": "x3",
+   "name": "validation_repeated_items",
+   "status": "info",
+   "detail": "0 repeated (graph, question) items of 2178"
+  },
+  {
+   "section": "x3",
+   "name": "test_repeated_items",
+   "status": "info",
+   "detail": "0 repeated (graph, question) items of 4356"
+  },
+  {
+   "section": "x3",
+   "name": "no_conflicting_duplicates",
+   "status": "pass",
+   "detail": "0 (graph, question) keys with more than one answer"
+  },
+  {
+   "section": "x4",
+   "name": "no_name_is_a_substring_of_another",
+   "status": "pass",
+   "detail": "240 names; 0 containment pairs"
+  },
+  {
+   "section": "x5",
+   "name": "attribute_check",
+   "status": "info",
+   "detail": "{'local': 396}"
+  },
+  {
+   "section": "x5",
+   "name": "attribute_lookup",
+   "status": "info",
+   "detail": "{'local': 396}"
+  },
+  {
+   "section": "x5",
+   "name": "constrained_reachability",
+   "status": "info",
+   "detail": "{'global': 396}"
+  },
+  {
+   "section": "x5",
+   "name": "cycle_membership",
+   "status": "info",
+   "detail": "{'global': 396}"
+  },
+  {
+   "section": "x5",
+   "name": "edge_exists",
+   "status": "info",
+   "detail": "{'local': 396}"
+  },
+  {
+   "section": "x5",
+   "name": "filtered_neighbor_count",
+   "status": "info",
+   "detail": "{'local': 396}"
+  },
+  {
+   "section": "x5",
+   "name": "most_common_attribute_within_hops",
+   "status": "info",
+   "detail": "{'local': 396}"
+  },
+  {
+   "section": "x5",
+   "name": "node_degree",
+   "status": "info",
+   "detail": "{'local': 396}"
+  },
+  {
+   "section": "x5",
+   "name": "reachability",
+   "status": "info",
+   "detail": "{'mid': 396}"
+  },
+  {
+   "section": "x5",
+   "name": "shortest_path",
+   "status": "info",
+   "detail": "{'local': 67, 'mid': 132, 'global': 197}"
+  },
+  {
+   "section": "x5",
+   "name": "within_hops_count",
+   "status": "info",
+   "detail": "{'local': 396}"
+  },
+  {
+   "section": "x5",
+   "name": "hop_depth_varies_within_task",
+   "status": "warn",
+   "detail": "10 of 11 tasks always get the same tag ['edge_exists', 'reachability', 'constrained_reachability', 'cycle_membership', 'node_degree', 'filtered_neighbor_count', 'within_hops_count', 'most_common_attribute_within_hops', 'attribute_lookup', 'attribute_check']: hop_depth is mostly a task label, not a difficulty measure"
+  },
+  {
+   "section": "x5",
+   "name": "shortest_path_tag_follows_answer",
+   "status": "pass",
+   "detail": "0 mismatches"
+  },
+  {
+   "section": "x6",
+   "name": "validation_metadata_consistent",
+   "status": "pass",
+   "detail": "{'session_length': 0, 'node_count': 0, 'edit_count': 0, 'noop_tag': 0, 'density_tags_differ': 0}"
+  },
+  {
+   "section": "x7",
+   "name": "validation_stale_mode_ties",
+   "status": "warn",
+   "detail": "135/495 most_common turns have a tied mode in the stale graph (stale answer is an alphabetical tie-break); 134 of them are counted as 'answer changed'"
+  },
+  {
+   "section": "x6",
+   "name": "test_metadata_consistent",
+   "status": "pass",
+   "detail": "{'session_length': 0, 'node_count': 0, 'edit_count': 0, 'noop_tag': 0, 'density_tags_differ': 0}"
+  },
+  {
+   "section": "x7",
+   "name": "test_stale_mode_ties",
+   "status": "warn",
+   "detail": "135/495 most_common turns have a tied mode in the stale graph (stale answer is an alphabetical tie-break); 133 of them are counted as 'answer changed'"
+  }
+ ],
+ "sections": {
+  "x1": {
+   "train": {
+    "items": 2140,
+    "endpoint_has_avoided_value": 1508,
+    "answer_differs_under_strict_reading": 768
+   },
+   "validation": {
+    "items": 198,
+    "endpoint_has_avoided_value": 147,
+    "answer_differs_under_strict_reading": 79
+   },
+   "test": {
+    "items": 396,
+    "endpoint_has_avoided_value": 263,
+    "answer_differs_under_strict_reading": 129
+   }
+  },
+  "x2_x3_x4": {
+   "self_pairs": 0,
+   "conflicts": 0,
+   "repeats": 1,
+   "containment_pairs": 0
+  },
+  "x5": {
+   "edge_exists": {
+    "local": 396
+   },
+   "reachability": {
+    "mid": 396
+   },
+   "constrained_reachability": {
+    "global": 396
+   },
+   "cycle_membership": {
+    "global": 396
+   },
+   "node_degree": {
+    "local": 396
+   },
+   "filtered_neighbor_count": {
+    "local": 396
+   },
+   "shortest_path": {
+    "local": 67,
+    "mid": 132,
+    "global": 197
+   },
+   "within_hops_count": {
+    "local": 396
+   },
+   "most_common_attribute_within_hops": {
+    "local": 396
+   },
+   "attribute_lookup": {
+    "local": 396
+   },
+   "attribute_check": {
+    "local": 396
+   }
+  },
+  "x6_x7_validation": {
+   "bad": {
+    "session_length": 0,
+    "node_count": 0,
+    "edit_count": 0,
+    "noop_tag": 0,
+    "density_tags_differ": 0
+   },
+   "stale_ties": 135,
+   "turns": 495,
+   "tie_flagged_changed": 134
+  },
+  "x6_x7_test": {
+   "bad": {
+    "session_length": 0,
+    "node_count": 0,
+    "edit_count": 0,
+    "noop_tag": 0,
+    "density_tags_differ": 0
+   },
+   "stale_ties": 135,
+   "turns": 495,
+   "tie_flagged_changed": 133
+  }
+ }
+}

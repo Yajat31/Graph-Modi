@@ -86,3 +86,13 @@ All 13,008 original edges sampled carry four attributes (`built`, `has_aircon`, 
 4. Choose session queries independently of the edit, or report accuracy separately for "mentioned" and "not mentioned" turns, so revision text does not answer the question alone.
 5. Use all three paraphrase families (and add free-text edge edits) so write-path accuracy is not a regex.
 6. Include 0-closed graphs in static training, or start sessions with at least one closed station.
+
+## Third pass: semantics, metadata, ties (`scripts/audit_benchmark_extra.py`, run on data from the fixed solver)
+
+Passed: no query asks about a station and itself; no (graph, question) key has two different answers; one train item is repeated and none in validation or test; no station name is a substring of another; session metadata (length, node count, edit count, NOOP tag, density) matches what the sessions contain; the `shortest_path` hop tag follows its answer.
+
+Problems:
+
+1. **Constrained reachability has an unstated convention.** The question says "without passing through any station where X is V", but the solver exempts the two endpoints. On test, 263 of 396 items have an endpoint with the avoided value, and 129 of those (33% of all items) become "no" under the literal reading. Train: 768 of 2140. The text should state the convention, or the sampler should avoid such endpoints.
+2. **Tied modes in the stale graph.** In 135 of 495 `most_common_attribute_within_hops` session turns (27%, both splits) the stale graph has a tied mode, so the stale answer is an alphabetical tie-break, and 133–134 of them are counted as "answer changed". The sampler only checks that the mode is unique in the updated graph. The stale-answer baseline and the answer-changing statistic are affected for this task. Together with the 221 tied counterfactual "before" graphs in training, ties are a recurring problem for this task.
+3. **`hop_depth` is a task label.** 10 of the 11 tasks always get the same tag (for example reachability is always "mid", cycle and constrained reachability always "global", all the count and lookup tasks "local"). Only `shortest_path` varies (67 local, 132 mid, 197 global on test). Any breakdown by hop depth is mostly a breakdown by task.
