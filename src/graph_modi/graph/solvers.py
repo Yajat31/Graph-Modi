@@ -135,22 +135,30 @@ def nodes_within_hops(
 def _cycle_member(graph: AttributedGraph, source: str) -> bool:
     if graph.directed or source not in graph.node_map():
         return False
-    neighbors = [node for node, _ in adjacency(graph, available_only=False)[source]]
+    # A station lies on a cycle iff two of its neighbours are still connected once the station is
+    # removed. Every neighbour has to be tried as a start: testing only the first one misses cycles
+    # through the other neighbours whenever the first is a dead-end or bridge branch.
+    graph_adjacency = adjacency(graph, available_only=False)
+    neighbors = sorted({node for node, _ in graph_adjacency[source]} - {source})
     if len(neighbors) < 2:
         return False
-    blocked = source
-    target_set = set(neighbors[1:])
-    queue: deque[str] = deque([neighbors[0]])
-    visited = {blocked, neighbors[0]}
-    graph_adjacency = adjacency(graph, available_only=False)
-    while queue:
-        node = queue.popleft()
-        if node in target_set:
+    neighbor_set = set(neighbors)
+    visited = {source}
+    for start in neighbors:
+        if start in visited:
+            continue  # already in a component that held at most one neighbour
+        component = {start}
+        queue: deque[str] = deque([start])
+        visited.add(start)
+        while queue:
+            node = queue.popleft()
+            for neighbor, _ in graph_adjacency[node]:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    component.add(neighbor)
+                    queue.append(neighbor)
+        if len(component & neighbor_set) >= 2:
             return True
-        for neighbor, _ in graph_adjacency[node]:
-            if neighbor not in visited:
-                visited.add(neighbor)
-                queue.append(neighbor)
     return False
 
 
