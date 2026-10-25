@@ -74,25 +74,91 @@ def reachable(graph: AttributedGraph, source: str, target: str) -> bool:
     return bool(shortest_path(graph, source, target))
 
 
+def reachable_avoiding(
+    graph: AttributedGraph,
+    source: str,
+    target: str,
+    attribute: str,
+    value: Scalar,
+) -> bool:
+    """Reachability that additionally excludes intermediate nodes matching a filter.
+
+    Endpoints are always exempt from the exclusion, so a query about a source or
+    target that happens to match the avoided class still has a well-defined answer.
+    """
+    nodes = graph.node_map()
+    if source not in nodes or target not in nodes:
+        return False
+
+    def allowed(node_id: str) -> bool:
+        if node_id in (source, target):
+            return True
+        return nodes[node_id].attributes.get(attribute) != value
+
+    neighbors = adjacency(graph, available_only=False)
+    visited = {source}
+    queue: deque[str] = deque([source])
+    while queue:
+        node = queue.popleft()
+        if node == target:
+            return True
+        for neighbor, _ in neighbors[node]:
+            if neighbor not in visited and allowed(neighbor):
+                visited.add(neighbor)
+                queue.append(neighbor)
+    return False
+
+
+def nodes_within_hops(
+    graph: AttributedGraph,
+    source: str,
+    hops: int,
+    *,
+    available_only: bool = False,
+) -> dict[str, int]:
+    """Map of node id -> hop distance from ``source``, excluding ``source`` itself."""
+    neighbors = adjacency(graph, available_only=available_only)
+    distances: dict[str, int] = {source: 0}
+    queue: deque[str] = deque([source])
+    while queue:
+        node = queue.popleft()
+        if distances[node] >= hops:
+            continue
+        for neighbor, _ in neighbors[node]:
+            if neighbor not in distances:
+                distances[neighbor] = distances[node] + 1
+                queue.append(neighbor)
+    distances.pop(source, None)
+    return distances
+
+
 def _cycle_member(graph: AttributedGraph, source: str) -> bool:
     if graph.directed or source not in graph.node_map():
         return False
-    neighbors = [node for node, _ in adjacency(graph, available_only=False)[source]]
+    # A station lies on a cycle iff two of its neighbours are still connected once the station is
+    # removed. Every neighbour has to be tried as a start: testing only the first one misses cycles
+    # through the other neighbours whenever the first is a dead-end or bridge branch.
+    graph_adjacency = adjacency(graph, available_only=False)
+    neighbors = sorted({node for node, _ in graph_adjacency[source]} - {source})
     if len(neighbors) < 2:
         return False
-    blocked = source
-    target_set = set(neighbors[1:])
-    queue: deque[str] = deque([neighbors[0]])
-    visited = {blocked, neighbors[0]}
-    graph_adjacency = adjacency(graph, available_only=False)
-    while queue:
-        node = queue.popleft()
-        if node in target_set:
+    neighbor_set = set(neighbors)
+    visited = {source}
+    for start in neighbors:
+        if start in visited:
+            continue  # already in a component that held at most one neighbour
+        component = {start}
+        queue: deque[str] = deque([start])
+        visited.add(start)
+        while queue:
+            node = queue.popleft()
+            for neighbor, _ in graph_adjacency[node]:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    component.add(neighbor)
+                    queue.append(neighbor)
+        if len(component & neighbor_set) >= 2:
             return True
-        for neighbor, _ in graph_adjacency[node]:
-            if neighbor not in visited:
-                visited.add(neighbor)
-                queue.append(neighbor)
     return False
 
 
@@ -164,12 +230,141 @@ def answer_query(graph: AttributedGraph, query: GraphQuery) -> str:
             if any(neighbor == query.target for neighbor, _ in graph_adjacency[query.source])
             else "no"
         )
+    if query.reasoning_type is ReasoningType.CONSTRAINED_REACHABILITY:
+        if query.target is None or query.attribute is None:
+            return "invalid"
+        return (
+            "yes"
+            if reachable_avoiding(graph, query.source, query.target, query.attribute, query.value)
+            else "no"
+        )
+    if query.reasoning_type is ReasoningType.WITHIN_HOPS_COUNT:
+        hops = query.hops or 2
+        in_range = nodes_within_hops(graph, query.source, hops)
+        if query.attribute is not None:
+            return str(
+                sum(
+                    nodes[node_id].attributes.get(query.attribute) == query.value
+                    for node_id in in_range
+                )
+            )
+        return str(len(in_range))
+    if query.reasoning_type is ReasoningType.WITHIN_HOPS_LIST:
+        hops = query.hops or 2
+        in_range = nodes_within_hops(graph, query.source, hops)
+        matching = [
+            node_id
+            for node_id in in_range
+            if query.attribute is None
+            or nodes[node_id].attributes.get(query.attribute) == query.value
+        ]
+        labels = sorted(nodes[node_id].label for node_id in matching)
+        return ", ".join(labels) if labels else "none"
+    if query.reasoning_type is ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS:
+        if query.attribute is None:
+            return "invalid"
+        hops = query.hops or 2
+        sample_ids = set(nodes_within_hops(graph, query.source, hops)) | {query.source}
+        counts: dict[str, int] = {}
+        for node_id in sample_ids:
+            attribute_value = nodes[node_id].attributes.get(query.attribute)
+            if attribute_value is None:
+                continue
+            key = str(attribute_value)
+            counts[key] = counts.get(key, 0) + 1
+        if not counts:
+            return "none"
+        best_count = max(counts.values())
+        winners = sorted(key for key, count in counts.items() if count == best_count)
+        return winners[0]
+    if query.reasoning_type is ReasoningType.ATTRIBUTE_LOOKUP:
+        if query.attribute is None:
+            return "invalid"
+        value = nodes[query.source].attributes.get(query.attribute)
+        return "none" if value is None else str(value)
+    if query.reasoning_type is ReasoningType.ATTRIBUTE_CHECK:
+        if query.attribute is None:
+            return "invalid"
+        return "yes" if nodes[query.source].attributes.get(query.attribute) == query.value else "no"
     raise ValueError(f"Unsupported reasoning type: {query.reasoning_type}")
+
+
+def _node_wfi_text(
+    graph: AttributedGraph,
+    node_id: str | None,
+    exclude: frozenset[str] = frozenset(),
+) -> str | None:
+    """W(f_i): the node's own textual attributes, as the CLEGR paper's Eq. 1
+    concatenates alongside the graph-encoded prefix
+    (clegr.md section 0: "M_l(M_P(M_g(G,n_i)) || W(f_i) || W(q))").
+    None when node_id is absent, so graph-level questions get no W(f_i) text.
+    ``exclude`` lists attribute names withheld from the text (they stay in the
+    graph itself): dynamic state such as ``status`` and, for Facts questions,
+    the attribute being asked about."""
+    if not node_id:
+        return None
+    node = next((n for n in graph.nodes if n.id == node_id), None)
+    if node is None:
+        return None
+    attrs = ", ".join(
+        f"{key}={value}" for key, value in sorted(node.attributes.items()) if key not in exclude
+    )
+    return f"{node.label}: {attrs}." if attrs else f"{node.label}."
+
+
+def _prepend_wfi(
+    question: str,
+    graph: AttributedGraph,
+    source_id: str | None,
+    target_id: str | None,
+    exclude: frozenset[str] = frozenset(),
+) -> str:
+    texts = [
+        t
+        for t in (
+            _node_wfi_text(graph, source_id, exclude),
+            _node_wfi_text(graph, target_id, exclude),
+        )
+        if t
+    ]
+    if not texts:
+        return question
+    return " ".join(dict.fromkeys(texts)) + "\n" + question
+
+
+# Tasks whose answer is (or, for the mode, is largely decided by) the source's own value of the
+# queried attribute: that attribute is withheld from the W(f_i) text so the text cannot give it away.
+_FACTS_TYPES = frozenset(
+    {
+        ReasoningType.ATTRIBUTE_LOOKUP,
+        ReasoningType.ATTRIBUTE_CHECK,
+        ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS,
+    }
+)
+
+
+def wfi_excluded_attributes(query: GraphQuery, graph: AttributedGraph) -> frozenset[str]:
+    """Attributes withheld from the W(f_i) text: the graph's ``wfi_exclude`` list
+    (comma-separated in metadata) plus the queried attribute on Facts questions."""
+    excluded = {name for name in str(graph.metadata.get("wfi_exclude", "")).split(",") if name}
+    if query.reasoning_type in _FACTS_TYPES and query.attribute:
+        excluded.add(query.attribute)
+    return frozenset(excluded)
 
 
 def render_question(query: GraphQuery, graph: AttributedGraph) -> str:
     if query.question:
         return query.question
+    return _prepend_wfi(
+        _render_question_text(query, graph),
+        graph,
+        query.source,
+        query.target,
+        wfi_excluded_attributes(query, graph),
+    )
+
+
+def _render_question_text(query: GraphQuery, graph: AttributedGraph) -> str:
     labels = {node.id: node.label for node in graph.nodes}
     source = labels.get(query.source, query.source)
     target = labels.get(query.target or "", query.target or "")
@@ -201,4 +396,38 @@ def render_question(query: GraphQuery, graph: AttributedGraph) -> str:
             f"What is the total travel cost along the shortest open path from "
             f"{source} to {target}? Answer with a number or unreachable."
         )
+    if query.reasoning_type is ReasoningType.CONSTRAINED_REACHABILITY:
+        return (
+            f"Can {target} be reached from {source} without passing through any station "
+            f"where {query.attribute} is {query.value}? Answer yes or no."
+        )
+    if query.reasoning_type is ReasoningType.WITHIN_HOPS_COUNT:
+        hops = query.hops or 2
+        if query.attribute is not None:
+            return (
+                f"How many other stations within {hops} hops of {source} have "
+                f"{query.attribute} equal to {query.value}? Answer with a number."
+            )
+        return f"How many other stations are within {hops} hops of {source}? Answer with a number."
+    if query.reasoning_type is ReasoningType.WITHIN_HOPS_LIST:
+        hops = query.hops or 2
+        if query.attribute is not None:
+            return (
+                f"Which stations within {hops} hops of {source} have {query.attribute} "
+                f"equal to {query.value}? Answer with a comma-separated list, or 'none'."
+            )
+        return (
+            f"Which stations are within {hops} hops of {source}? "
+            "Answer with a comma-separated list, or 'none'."
+        )
+    if query.reasoning_type is ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS:
+        hops = query.hops or 2
+        return (
+            f"What is the most common {query.attribute} among stations within {hops} "
+            f"hops of {source}, including {source} itself?"
+        )
+    if query.reasoning_type is ReasoningType.ATTRIBUTE_LOOKUP:
+        return f"What is the {query.attribute} of {source}? Answer directly."
+    if query.reasoning_type is ReasoningType.ATTRIBUTE_CHECK:
+        return f"Does {source} have {query.attribute} equal to {query.value}? Answer yes or no."
     return f"Is there a direct edge between {source} and {target}? Answer yes or no."

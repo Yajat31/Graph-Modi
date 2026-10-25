@@ -1,34 +1,13 @@
-"""GraphToken-style GLM: end-to-end GNN + projector training on static QA."""
+"""GraphToken-style GLM (Perozzi et al., 2024): a GNN trained from random initialisation
+jointly with the projector on static QA, with no alignment pretraining and a frozen LLM."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import replace
 from typing import Any
 
-from graph_modi.models.tea_glm import TEAGLM, TEAGLMBackend, require_tea_dependencies
+from graph_modi.models.tea_glm import TEAGLM, TEAGLMBackend
 from graph_modi.training import ProjectorTrainingConfig, TrainingExample, train_projector
-
-GRAPH_TOKEN_CHECKPOINT_FORMAT = "graph-modi-graph-token-v1"
-
-
-@dataclass(frozen=True, slots=True)
-class GraphTokenConfig:
-    prefix_tokens: int = 10
-    train_gnn: bool = True
-
-
-def configure_graph_token(model: TEAGLM, *, train_gnn: bool = True) -> TEAGLM:
-    """Enable joint GNN + projector training (no TEA alignment phase)."""
-    require_tea_dependencies()
-    model.set_gnn_frozen(not train_gnn)
-    for parameter in model.language_model.parameters():
-        parameter.requires_grad_(False)
-    for parameter in model.projector.parameters():
-        parameter.requires_grad_(True)
-    if train_gnn:
-        for parameter in model.gnn.parameters():
-            parameter.requires_grad_(True)
-    return model
 
 
 def train_graph_token(
@@ -37,9 +16,15 @@ def train_graph_token(
     config: ProjectorTrainingConfig,
     *,
     data_split: dict[str, Any] | None = None,
+    val_examples: Any = None,
 ) -> Any:
-    configure_graph_token(model, train_gnn=True)
-    return train_projector(model, examples, config, data_split=data_split)
+    return train_projector(
+        model,
+        examples,
+        replace(config, train_gnn=True),
+        data_split=data_split,
+        val_examples=val_examples,
+    )
 
 
 class GraphTokenBackend(TEAGLMBackend):

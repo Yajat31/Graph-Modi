@@ -139,10 +139,20 @@ class ReasoningType(str, Enum):
     NODE_COUNT = "node_count"
     PATH_COST = "path_cost"
     LINK_PREDICTION = "link_prediction"
+    # CLEGR-style additions: constrained reachability (avoid a semantic class),
+    # multi-hop filtered aggregation/enumeration, and topology-with-filter.
+    CONSTRAINED_REACHABILITY = "constrained_reachability"
+    WITHIN_HOPS_COUNT = "within_hops_count"
+    WITHIN_HOPS_LIST = "within_hops_list"
+    MOST_COMMON_ATTRIBUTE_WITHIN_HOPS = "most_common_attribute_within_hops"
+    # CLEGR-Facts-style retrieval: read one node attribute (categorical) or check it (yes/no).
+    ATTRIBUTE_LOOKUP = "attribute_lookup"
+    ATTRIBUTE_CHECK = "attribute_check"
 
 
 class TopologyFamily(str, Enum):
     WATTS_STROGATZ = "watts_strogatz"
+    METRO = "metro_lines"
     SBM = "sbm"
     ERDOS_RENYI = "erdos_renyi"
 
@@ -235,6 +245,10 @@ class GraphQuery:
     attribute: str | None = None
     value: Scalar = None
     question: str = ""
+    # Hop radius for WITHIN_HOPS_COUNT / WITHIN_HOPS_LIST / MOST_COMMON_ATTRIBUTE_WITHIN_HOPS.
+    # For CONSTRAINED_REACHABILITY, attribute/value name the class of station to avoid
+    # (endpoints are always exempt from the exclusion).
+    hops: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         record = asdict(self)
@@ -250,6 +264,7 @@ class GraphQuery:
             attribute=record.get("attribute"),
             value=record.get("value"),
             question=str(record.get("question", "")),
+            hops=record.get("hops"),
         )
 
 

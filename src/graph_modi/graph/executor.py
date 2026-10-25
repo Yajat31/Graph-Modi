@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Sequence
+import random
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -16,7 +17,37 @@ from graph_modi.schema import (
     EditTarget,
     GraphEdit,
     Node,
+    Scalar,
 )
+
+# CLEGR-style edge strokes keyed by line colour. Kept here so ADD EDGE replay
+# (materialize_states) produces the same attributes the v4 generator stores.
+_LINE_STROKES = {"red": "solid", "blue": "solid", "green": "dashed", "yellow": "dotted"}
+
+
+def metro_edge_attributes(
+    source_id: str,
+    target_id: str,
+    lines: Mapping[str, Scalar],
+) -> dict[str, Scalar]:
+    """Deterministic track/transfer attributes for an undirected metro edge.
+
+    ``has_aircon`` and ``built`` are drawn from a seed derived from the endpoint
+    ids, so generation and later replay (``apply_edit`` / ``materialize_states``)
+    agree without carrying an RNG stream.
+    """
+    left_line = lines.get(source_id)
+    right_line = lines.get(target_id)
+    same = left_line is not None and left_line == right_line
+    line = str(left_line) if same else "transfer"
+    seed = int(hashlib.sha256(f"{source_id}|{target_id}|{line}".encode()).hexdigest()[:8], 16)
+    local = random.Random(seed)
+    return {
+        "line_color": line if same else "transfer",
+        "line_stroke": _LINE_STROKES.get(str(left_line), "solid") if same else "solid",
+        "has_aircon": bool(local.getrandbits(1)),
+        "built": local.randint(1950, 2020),
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,11 +181,19 @@ def apply_edit(
             return _failure(graph, "Self-loops are not supported", strict)
         if edit.source not in node_index or edit.destination not in node_index:
             return _failure(graph, "Edge references an unknown node", strict)
+        edge_attributes: dict[str, Scalar] = {}
+        if edit.operation is EditOperation.ADD:
+            line_map = {
+                node.id: node.attributes.get("line") for node in nodes if "line" in node.attributes
+            }
+            if edit.source in line_map and edit.destination in line_map:
+                edge_attributes = metro_edge_attributes(edit.source, edit.destination, line_map)
         candidate = Edge(
             source=edit.source,
             target=edit.destination,
             relation=edit.relation,
             weight=edit.weight,
+            attributes=edge_attributes,
         )
         key = _edge_key(candidate, graph.directed)
         matches = [

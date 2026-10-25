@@ -1,0 +1,90 @@
+{
+ "test": {
+  "summary": {
+   "soft_prompt": {
+    "answer_accuracy": 0.3418630751964085,
+    "answer_accuracy_ci95": [
+     0.3280757681952444,
+     0.3559228739632929
+    ],
+    "answer_accuracy_ci95_session_bootstrap": [
+     0.3229563761998307,
+     0.36021186848656495
+    ],
+    "exact_graph_state": 1.0,
+    "execution_equivalent_edit_accuracy": 0.0,
+    "final_state_accuracy": 0.3468013468013468,
+    "mean_graph_prefix_tokens": 10.0,
+    "mean_input_tokens": 72.08013468013468,
+    "mean_latency_seconds": 0.07546340394420205,
+    "sessions": 1188,
+    "stale_rate": 0.31560044893378225,
+    "turns": 4455
+   },
+   "soft_prompt_no_history": {
+    "answer_accuracy": 0.31851851851851853,
+    "answer_accuracy_ci95": [
+     0.30499860290282627,
+     0.3323511517957933
+    ],
+    "answer_accuracy_ci95_session_bootstrap": [
+     0.3010880526130136,
+     0.3363254912088911
+    ],
+    "exact_graph_state": 1.0,
+    "execution_equivalent_edit_accuracy": 0.0,
+    "final_state_accuracy": 0.3333333333333333,
+    "mean_graph_prefix_tokens": 10.0,
+    "mean_input_tokens": 29.555555555555557,
+    "mean_latency_seconds": 0.045688445430654534,
+    "sessions": 1188,
+    "stale_rate": 0.3207631874298541,
+    "turns": 4455
+   }
+  }
+ },
+ "validation": {
+  "summary": {
+   "soft_prompt": {
+    "answer_accuracy": 0.33827160493827163,
+    "answer_accuracy_ci95": [
+     0.32452294963900813,
+     0.35229894060261885
+    ],
+    "answer_accuracy_ci95_session_bootstrap": [
+     0.3203456221410248,
+     0.3560994638779495
+    ],
+    "exact_graph_state": 1.0,
+    "execution_equivalent_edit_accuracy": 0.0,
+    "final_state_accuracy": 0.3451178451178451,
+    "mean_graph_prefix_tokens": 10.0,
+    "mean_input_tokens": 72.14769921436589,
+    "mean_latency_seconds": 0.07546977301679059,
+    "sessions": 1188,
+    "stale_rate": 0.29854096520763185,
+    "turns": 4455
+   },
+   "soft_prompt_no_history": {
+    "answer_accuracy": 0.31560044893378225,
+    "answer_accuracy_ci95": [
+     0.30211668991573504,
+     0.3294019538503947
+    ],
+    "answer_accuracy_ci95_session_bootstrap": [
+     0.29775634236369947,
+     0.33356131580488657
+    ],
+    "exact_graph_state": 1.0,
+    "execution_equivalent_edit_accuracy": 0.0,
+    "final_state_accuracy": 0.31313131313131315,
+    "mean_graph_prefix_tokens": 10.0,
+    "mean_input_tokens": 29.555555555555557,
+    "mean_latency_seconds": 0.045826991976737376,
+    "sessions": 1188,
+    "stale_rate": 0.30662177328844,
+    "turns": 4455
+   }
+  }
+ }
+}

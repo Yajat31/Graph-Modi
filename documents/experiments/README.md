@@ -2,61 +2,52 @@
 
 Two different places hold run artifacts:
 
-- [`datasets/`](../../datasets/) — shared session JSONL the whole team trains
-  and evaluates on. Tracked in git.
+- [`datasets/`](../../datasets/) — shared session JSONL (gitignored) plus manifests.
+  Regenerate with the configs; verify sha256 against the manifest.
 - `outputs/` — local checkpoints, smoke scratch, and full evaluation dumps.
   Gitignored; nothing there survives a fresh clone.
 
-This folder is the durable run record: an append-only log of every run
-whose result was actually used, plus tiny summary JSON so someone can check
-the outcome without re-running or needing `outputs/` to still exist.
-
-Do not start generating or training runs "just to try something" without a
-line in [`log.md`](log.md). The point is that six months from now, or after
-someone's laptop is wiped, `documents/experiments/log.md` plus
-`documents/experiments/results/<run-id>/` (and the matching
-`datasets/<id>/` for data) should be enough to know what was run.
+This folder is the durable run record: an append-only log of every run whose
+result was used, plus tiny summary JSON so someone can check the outcome
+without re-running or needing `outputs/` to still exist.
 
 ## Before running anything
 
-1. Confirm the config you're about to run corresponds to a locked choice —
-   check [`documents/decisions/`](../decisions/) for the distribution,
-   scale, and model settings you're relying on. If nothing is locked yet,
-   either lock it first (write a decision record) or mark the run in the
-   log as exploratory/pre-decision.
-2. Make sure the config lives in [`configs/`](../../configs/) under version
-   control — do not run an experiment from an untracked, ad hoc config.
-3. For training/eval, prefer an existing `data_dir` under `datasets/` over
-   regenerating. Only regenerate when the locked generator changes.
-4. Commit or at least note the exact git commit you're running from. A run
-   on uncommitted code is not reproducible; say so in the log if it
-   happens anyway.
+1. Confirm the config matches a locked choice in [`documents/decisions/`](../decisions/),
+   or mark the run exploratory in [`log.md`](log.md).
+2. Keep the config under [`configs/`](../../configs/) (or [`archive/configs/`](../../archive/configs/)
+   for superseded recipes).
+3. Prefer an existing `data_dir` under `datasets/` over regenerating. Only
+   regenerate when the locked generator changes; then update the manifest.
+4. Record the exact git commit in the log.
 
-## Run ID convention
+## Current vs historical
 
-```text
-<config-stem>-<YYYYMMDD>[-<short-suffix>]
-```
+- **metro_v4** — current benchmark. Gates: `scripts/audit_v4_gates.py`. Final
+  audit: `scripts/audit_v4_final.py`. See [benchmark_v4_2026-10-25.md](benchmark_v4_2026-10-25.md)
+  and [benchmark_v4_final_audit_2026-10-25.md](benchmark_v4_final_audit_2026-10-25.md).
+- **metro_v3** — frozen. Status report: [status_report_v3.md](status_report_v3.md).
+  Results under `results/v3-20260929/` and `results/v3x-20260929/`.
 
-Examples: `smoke-20260821`, `qwen8b_projector-20260821-data`. The config
-stem should match the run name used in `output_dir`
-(`outputs/<config-stem>/...`).
+## Audit documents (date order)
+
+| Date | Doc |
+|---|---|
+| 2026-10-21 | [experimental_audit_2026-10-21.md](experimental_audit_2026-10-21.md) |
+| 2026-10-21 | [experimental_audit_addendum_2026-10-21.md](experimental_audit_addendum_2026-10-21.md) |
+| 2026-10-21 | [benchmark_audit_2026-10-21.md](benchmark_audit_2026-10-21.md) |
+| 2026-10-22 | [benchmark_audit_deep_2026-10-22.md](benchmark_audit_deep_2026-10-22.md) |
+| 2026-10-25 | [benchmark_v4_2026-10-25.md](benchmark_v4_2026-10-25.md) |
+| 2026-10-25 | [benchmark_v4_final_audit_2026-10-25.md](benchmark_v4_final_audit_2026-10-25.md) |
+| 2026-10-25 | [v4_run_checklist.md](v4_run_checklist.md) |
 
 ## After running
 
 1. Append one row to [`log.md`](log.md).
-2. If the run released or updated a shared dataset, put the JSONL under
-   [`datasets/<id>/`](../../datasets/) and keep only `audit.json` (plus any
-   tiny summaries) under `results/<run-id>/`.
-3. For training/eval runs, copy only small summary artifacts into
-   `documents/experiments/results/<run-id>/` — never checkpoints,
-   `.pt`/`.safetensors` files, or full session JSONL here:
-   - `datasets/<id>/audit.json` or `outputs/<name>/data/audit.json`
-   - `outputs/<name>/evaluation.json`
-   - GNN/projector `metadata.json` files only
-4. If the run's result changes or confirms a decision, link it from that
-   decision record's **Related** section, and link the decision back from
-   the log row.
+2. If the run released or updated a shared dataset, regenerate under
+   `datasets/<id>/`, update `manifest.json`, and keep only small summaries under
+   `results/<run-id>/`.
+3. Never put checkpoints or full session JSONL under `documents/`.
 
 ## Layout
 
@@ -66,7 +57,5 @@ documents/experiments/
   log.md
   results/
     <run-id>/
-      audit.json
-      evaluation.json
-      ...
+      audit.json / results.json / *_summary.json
 ```

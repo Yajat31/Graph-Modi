@@ -1,0 +1,561 @@
+{
+ "summary": {
+  "pass": 3,
+  "info": 32,
+  "warn": 1
+ },
+ "checks": [
+  {
+   "section": "write",
+   "name": "validation_regex_parser_recovers_gold",
+   "status": "pass",
+   "detail": "4455/4455 turns parsed exactly by a ~25-line regex parser"
+  },
+  {
+   "section": "write",
+   "name": "validation_utterance_skeletons",
+   "status": "info",
+   "detail": "136 distinct skeletons after masking station names; top [('NOOP: no graph update this turn.', 1701), ('ADD EDGE <S> <S> transfer', 300), ('<S> is closed now.', 290), ('DEL EDGE <S> <S> track', 169), ('ADD EDGE <S> <S> transfer ; ADD EDGE <S> <S> transfer', 114), ('DEL EDGE <S> <S> transfer', 106)]"
+  },
+  {
+   "section": "write",
+   "name": "validation_edge_edits_are_copy_tasks",
+   "status": "info",
+   "detail": "2276/2276 edge-edit turns state the edit as the literal 'ADD/DEL EDGE <A> <B> <relation>' string"
+  },
+  {
+   "section": "write",
+   "name": "validation_all_noop_baseline",
+   "status": "info",
+   "detail": "predicting NOOP everywhere is exact on 1701/4455 = 0.382 of turns"
+  },
+  {
+   "section": "write",
+   "name": "test_regex_parser_recovers_gold",
+   "status": "pass",
+   "detail": "4455/4455 turns parsed exactly by a ~25-line regex parser"
+  },
+  {
+   "section": "write",
+   "name": "test_utterance_skeletons",
+   "status": "info",
+   "detail": "134 distinct skeletons after masking station names; top [('NOOP: no graph update this turn.', 1668), ('<S> is closed now.', 295), ('ADD EDGE <S> <S> transfer', 293), ('DEL EDGE <S> <S> track', 170), ('DEL EDGE <S> <S> transfer', 136), ('ADD EDGE <S> <S> transfer ; <S> is closed now.', 100)]"
+  },
+  {
+   "section": "write",
+   "name": "test_edge_edits_are_copy_tasks",
+   "status": "info",
+   "detail": "2313/2313 edge-edit turns state the edit as the literal 'ADD/DEL EDGE <A> <B> <relation>' string"
+  },
+  {
+   "section": "write",
+   "name": "test_all_noop_baseline",
+   "status": "info",
+   "detail": "predicting NOOP everywhere is exact on 1668/4455 = 0.374 of turns"
+  },
+  {
+   "section": "coupling",
+   "name": "validation_constrained_reachability",
+   "status": "info",
+   "detail": "{'edit_turns': 298, 'mention_rate': 0.584, 'chance_mention_rate': 0.351, 'answer_changing_given_mentioned': 0.782, 'answer_changing_given_not_mentioned': 0.073, 'text_rule_fire_rate': 0.0, 'text_rule_precision': None}"
+  },
+  {
+   "section": "coupling",
+   "name": "validation_cycle_membership",
+   "status": "info",
+   "detail": "{'edit_turns': 305, 'mention_rate': 0.377, 'chance_mention_rate': 0.198, 'answer_changing_given_mentioned': 0.687, 'answer_changing_given_not_mentioned': 0.042, 'text_rule_fire_rate': 0.0, 'text_rule_precision': None}"
+  },
+  {
+   "section": "coupling",
+   "name": "validation_edge_exists",
+   "status": "info",
+   "detail": "{'edit_turns': 304, 'mention_rate': 0.684, 'chance_mention_rate': 0.337, 'answer_changing_given_mentioned': 0.889, 'answer_changing_given_not_mentioned': 0.0, 'text_rule_fire_rate': 0.609, 'text_rule_precision': 1.0}"
+  },
+  {
+   "section": "coupling",
+   "name": "validation_filtered_neighbor_count",
+   "status": "info",
+   "detail": "{'edit_turns': 307, 'mention_rate': 0.808, 'chance_mention_rate': 0.193, 'answer_changing_given_mentioned': 0.976, 'answer_changing_given_not_mentioned': 0.0, 'text_rule_fire_rate': 0.0, 'text_rule_precision': None}"
+  },
+  {
+   "section": "coupling",
+   "name": "validation_most_common_attribute_within_hops",
+   "status": "info",
+   "detail": "{'edit_turns': 293, 'mention_rate': 0.41, 'chance_mention_rate': 0.182, 'answer_changing_given_mentioned': 0.892, 'answer_changing_given_not_mentioned': 0.405, 'text_rule_fire_rate': 0.0, 'text_rule_precision': None}"
+  },
+  {
+   "section": "coupling",
+   "name": "validation_node_degree",
+   "status": "info",
+   "detail": "{'edit_turns': 312, 'mention_rate': 0.846, 'chance_mention_rate': 0.19, 'answer_changing_given_mentioned': 0.981, 'answer_changing_given_not_mentioned': 0.0, 'text_rule_fire_rate': 0.83, 'text_rule_precision': 1.0}"
+  },
+  {
+   "section": "coupling",
+   "name": "validation_reachability",
+   "status": "info",
+   "detail": "{'edit_turns': 318, 'mention_rate': 0.698, 'chance_mention_rate': 0.36, 'answer_changing_given_mentioned': 0.806, 'answer_changing_given_not_mentioned': 0.062, 'text_rule_fire_rate': 0.434, 'text_rule_precision': 1.0}"
+  },
+  {
+   "section": "coupling",
+   "name": "validation_shortest_path",
+   "status": "info",
+   "detail": "{'edit_turns': 308, 'mention_rate': 0.756, 'chance_mention_rate': 0.333, 'answer_changing_given_mentioned': 0.974, 'answer_changing_given_not_mentioned': 0.76, 'text_rule_fire_rate': 0.227, 'text_rule_precision': 0.986}"
+  },
+  {
+   "section": "coupling",
+   "name": "validation_within_hops_count",
+   "status": "info",
+   "detail": "{'edit_turns': 309, 'mention_rate': 0.421, 'chance_mention_rate': 0.183, 'answer_changing_given_mentioned': 0.938, 'answer_changing_given_not_mentioned': 0.581, 'text_rule_fire_rate': 0.0, 'text_rule_precision': None}"
+  },
+  {
+   "section": "coupling",
+   "name": "test_constrained_reachability",
+   "status": "info",
+   "detail": "{'edit_turns': 318, 'mention_rate': 0.557, 'chance_mention_rate': 0.343, 'answer_changing_given_mentioned': 0.718, 'answer_changing_given_not_mentioned': 0.057, 'text_rule_fire_rate': 0.0, 'text_rule_precision': None}"
+  },
+  {
+   "section": "coupling",
+   "name": "test_cycle_membership",
+   "status": "info",
+   "detail": "{'edit_turns': 328, 'mention_rate': 0.363, 'chance_mention_rate': 0.187, 'answer_changing_given_mentioned': 0.798, 'answer_changing_given_not_mentioned': 0.057, 'text_rule_fire_rate': 0.0, 'text_rule_precision': None}"
+  },
+  {
+   "section": "coupling",
+   "name": "test_edge_exists",
+   "status": "info",
+   "detail": "{'edit_turns': 293, 'mention_rate': 0.683, 'chance_mention_rate': 0.345, 'answer_changing_given_mentioned': 0.875, 'answer_changing_given_not_mentioned': 0.0, 'text_rule_fire_rate': 0.597, 'text_rule_precision': 1.0}"
+  },
+  {
+   "section": "coupling",
+   "name": "test_filtered_neighbor_count",
+   "status": "info",
+   "detail": "{'edit_turns': 321, 'mention_rate': 0.788, 'chance_mention_rate': 0.18, 'answer_changing_given_mentioned': 0.98, 'answer_changing_given_not_mentioned': 0.0, 'text_rule_fire_rate': 0.0, 'text_rule_precision': None}"
+  },
+  {
+   "section": "coupling",
+   "name": "test_most_common_attribute_within_hops",
+   "status": "info",
+   "detail": "{'edit_turns': 307, 'mention_rate': 0.44, 'chance_mention_rate': 0.188, 'answer_changing_given_mentioned': 0.896, 'answer_changing_given_not_mentioned': 0.395, 'text_rule_fire_rate': 0.0, 'text_rule_precision': None}"
+  },
+  {
+   "section": "coupling",
+   "name": "test_node_degree",
+   "status": "info",
+   "detail": "{'edit_turns': 313, 'mention_rate': 0.824, 'chance_mention_rate': 0.185, 'answer_changing_given_mentioned': 0.988, 'answer_changing_given_not_mentioned': 0.0, 'text_rule_fire_rate': 0.815, 'text_rule_precision': 1.0}"
+  },
+  {
+   "section": "coupling",
+   "name": "test_reachability",
+   "status": "info",
+   "detail": "{'edit_turns': 301, 'mention_rate': 0.708, 'chance_mention_rate': 0.359, 'answer_changing_given_mentioned': 0.869, 'answer_changing_given_not_mentioned': 0.17, 'text_rule_fire_rate': 0.458, 'text_rule_precision': 1.0}"
+  },
+  {
+   "section": "coupling",
+   "name": "test_shortest_path",
+   "status": "info",
+   "detail": "{'edit_turns': 294, 'mention_rate': 0.762, 'chance_mention_rate': 0.349, 'answer_changing_given_mentioned': 0.964, 'answer_changing_given_not_mentioned': 0.7, 'text_rule_fire_rate': 0.201, 'text_rule_precision': 1.0}"
+  },
+  {
+   "section": "coupling",
+   "name": "test_within_hops_count",
+   "status": "info",
+   "detail": "{'edit_turns': 312, 'mention_rate': 0.455, 'chance_mention_rate': 0.194, 'answer_changing_given_mentioned': 0.944, 'answer_changing_given_not_mentioned': 0.606, 'text_rule_fire_rate': 0.0, 'text_rule_precision': None}"
+  },
+  {
+   "section": "shift",
+   "name": "initial_closed_count",
+   "status": "info",
+   "detail": "static train {1: 661, 2: 654, 3: 685}; session test starts {0: 413, 1: 393, 2: 382}"
+  },
+  {
+   "section": "shift",
+   "name": "no_zero_closed_start_in_training",
+   "status": "warn",
+   "detail": "35% of test sessions start with 0 closed stations; static train never has 0"
+  },
+  {
+   "section": "shift",
+   "name": "session_reachability",
+   "status": "info",
+   "detail": "'no' share 0.503; 'no' with a closed endpoint 205/249; queries with a closed endpoint 0.414"
+  },
+  {
+   "section": "shift",
+   "name": "session_cycle",
+   "status": "info",
+   "detail": "'no' share 0.497; 'no' on degree-1 stations 201/246"
+  },
+  {
+   "section": "shift",
+   "name": "session_yes_rate_balanced",
+   "status": "pass",
+   "detail": "P(yes) in session test turns {'constrained_reachability': 0.501, 'cycle_membership': 0.503, 'edge_exists': 0.501, 'reachability': 0.497}"
+  },
+  {
+   "section": "cycle_truth",
+   "name": "static_train",
+   "status": "info",
+   "detail": "true 'no' = 858/2000; of those degree-1 816, non-leaf 42 (4.9%); by degree {1: 816, 2: 38, 3: 4, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0}"
+  },
+  {
+   "section": "cycle_truth",
+   "name": "static_test",
+   "status": "info",
+   "detail": "true 'no' = 169/396; of those degree-1 165, non-leaf 4 (2.4%); by degree {1: 165, 2: 4, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0}"
+  },
+  {
+   "section": "cycle_truth",
+   "name": "sessions_test",
+   "status": "info",
+   "detail": "true 'no' turns: degree<=1 207, non-leaf 12 of 495 cycle turns"
+  },
+  {
+   "section": "edges",
+   "name": "initial_edges",
+   "status": "info",
+   "detail": "13008 edges; with attributes 13008, without 0; relations {'transfer': 5799, 'track': 7209}; line_color {'transfer': 5799, 'blue': 1876, 'green': 1224, 'red': 3495, 'yellow': 614}"
+  },
+  {
+   "section": "edges",
+   "name": "added_edges",
+   "status": "info",
+   "detail": "1845 ADD EDGE edits in test sessions create edges with relation 'transfer' and no attributes; every original edge has 4 attributes"
+  }
+ ],
+ "sections": {
+  "write": {
+   "validation": {
+    "turns": 4455,
+    "regex_exact": 1.0,
+    "unparsed": 0,
+    "noop_turns": 1701,
+    "skeleton_count": 136,
+    "top_skeletons": [
+     [
+      "NOOP: no graph update this turn.",
+      1701
+     ],
+     [
+      "ADD EDGE <S> <S> transfer",
+      300
+     ],
+     [
+      "<S> is closed now.",
+      290
+     ],
+     [
+      "DEL EDGE <S> <S> track",
+      169
+     ],
+     [
+      "ADD EDGE <S> <S> transfer ; ADD EDGE <S> <S> transfer",
+      114
+     ],
+     [
+      "DEL EDGE <S> <S> transfer",
+      106
+     ],
+     [
+      "<S> is closed now. ; <S> is closed now.",
+      95
+     ],
+     [
+      "ADD EDGE <S> <S> transfer ; <S> is closed now.",
+      87
+     ]
+    ]
+   },
+   "test": {
+    "turns": 4455,
+    "regex_exact": 1.0,
+    "unparsed": 0,
+    "noop_turns": 1668,
+    "skeleton_count": 134,
+    "top_skeletons": [
+     [
+      "NOOP: no graph update this turn.",
+      1668
+     ],
+     [
+      "<S> is closed now.",
+      295
+     ],
+     [
+      "ADD EDGE <S> <S> transfer",
+      293
+     ],
+     [
+      "DEL EDGE <S> <S> track",
+      170
+     ],
+     [
+      "DEL EDGE <S> <S> transfer",
+      136
+     ],
+     [
+      "ADD EDGE <S> <S> transfer ; <S> is closed now.",
+      100
+     ],
+     [
+      "ADD EDGE <S> <S> transfer ; ADD EDGE <S> <S> transfer",
+      100
+     ],
+     [
+      "<S> is closed now. ; <S> is closed now.",
+      93
+     ]
+    ]
+   }
+  },
+  "coupling": {
+   "validation": {
+    "constrained_reachability": {
+     "edit_turns": 298,
+     "mention_rate": 0.584,
+     "chance_mention_rate": 0.351,
+     "answer_changing_given_mentioned": 0.782,
+     "answer_changing_given_not_mentioned": 0.073,
+     "text_rule_fire_rate": 0.0,
+     "text_rule_precision": null
+    },
+    "cycle_membership": {
+     "edit_turns": 305,
+     "mention_rate": 0.377,
+     "chance_mention_rate": 0.198,
+     "answer_changing_given_mentioned": 0.687,
+     "answer_changing_given_not_mentioned": 0.042,
+     "text_rule_fire_rate": 0.0,
+     "text_rule_precision": null
+    },
+    "edge_exists": {
+     "edit_turns": 304,
+     "mention_rate": 0.684,
+     "chance_mention_rate": 0.337,
+     "answer_changing_given_mentioned": 0.889,
+     "answer_changing_given_not_mentioned": 0.0,
+     "text_rule_fire_rate": 0.609,
+     "text_rule_precision": 1.0
+    },
+    "filtered_neighbor_count": {
+     "edit_turns": 307,
+     "mention_rate": 0.808,
+     "chance_mention_rate": 0.193,
+     "answer_changing_given_mentioned": 0.976,
+     "answer_changing_given_not_mentioned": 0.0,
+     "text_rule_fire_rate": 0.0,
+     "text_rule_precision": null
+    },
+    "most_common_attribute_within_hops": {
+     "edit_turns": 293,
+     "mention_rate": 0.41,
+     "chance_mention_rate": 0.182,
+     "answer_changing_given_mentioned": 0.892,
+     "answer_changing_given_not_mentioned": 0.405,
+     "text_rule_fire_rate": 0.0,
+     "text_rule_precision": null
+    },
+    "node_degree": {
+     "edit_turns": 312,
+     "mention_rate": 0.846,
+     "chance_mention_rate": 0.19,
+     "answer_changing_given_mentioned": 0.981,
+     "answer_changing_given_not_mentioned": 0.0,
+     "text_rule_fire_rate": 0.83,
+     "text_rule_precision": 1.0
+    },
+    "reachability": {
+     "edit_turns": 318,
+     "mention_rate": 0.698,
+     "chance_mention_rate": 0.36,
+     "answer_changing_given_mentioned": 0.806,
+     "answer_changing_given_not_mentioned": 0.062,
+     "text_rule_fire_rate": 0.434,
+     "text_rule_precision": 1.0
+    },
+    "shortest_path": {
+     "edit_turns": 308,
+     "mention_rate": 0.756,
+     "chance_mention_rate": 0.333,
+     "answer_changing_given_mentioned": 0.974,
+     "answer_changing_given_not_mentioned": 0.76,
+     "text_rule_fire_rate": 0.227,
+     "text_rule_precision": 0.986
+    },
+    "within_hops_count": {
+     "edit_turns": 309,
+     "mention_rate": 0.421,
+     "chance_mention_rate": 0.183,
+     "answer_changing_given_mentioned": 0.938,
+     "answer_changing_given_not_mentioned": 0.581,
+     "text_rule_fire_rate": 0.0,
+     "text_rule_precision": null
+    }
+   },
+   "test": {
+    "constrained_reachability": {
+     "edit_turns": 318,
+     "mention_rate": 0.557,
+     "chance_mention_rate": 0.343,
+     "answer_changing_given_mentioned": 0.718,
+     "answer_changing_given_not_mentioned": 0.057,
+     "text_rule_fire_rate": 0.0,
+     "text_rule_precision": null
+    },
+    "cycle_membership": {
+     "edit_turns": 328,
+     "mention_rate": 0.363,
+     "chance_mention_rate": 0.187,
+     "answer_changing_given_mentioned": 0.798,
+     "answer_changing_given_not_mentioned": 0.057,
+     "text_rule_fire_rate": 0.0,
+     "text_rule_precision": null
+    },
+    "edge_exists": {
+     "edit_turns": 293,
+     "mention_rate": 0.683,
+     "chance_mention_rate": 0.345,
+     "answer_changing_given_mentioned": 0.875,
+     "answer_changing_given_not_mentioned": 0.0,
+     "text_rule_fire_rate": 0.597,
+     "text_rule_precision": 1.0
+    },
+    "filtered_neighbor_count": {
+     "edit_turns": 321,
+     "mention_rate": 0.788,
+     "chance_mention_rate": 0.18,
+     "answer_changing_given_mentioned": 0.98,
+     "answer_changing_given_not_mentioned": 0.0,
+     "text_rule_fire_rate": 0.0,
+     "text_rule_precision": null
+    },
+    "most_common_attribute_within_hops": {
+     "edit_turns": 307,
+     "mention_rate": 0.44,
+     "chance_mention_rate": 0.188,
+     "answer_changing_given_mentioned": 0.896,
+     "answer_changing_given_not_mentioned": 0.395,
+     "text_rule_fire_rate": 0.0,
+     "text_rule_precision": null
+    },
+    "node_degree": {
+     "edit_turns": 313,
+     "mention_rate": 0.824,
+     "chance_mention_rate": 0.185,
+     "answer_changing_given_mentioned": 0.988,
+     "answer_changing_given_not_mentioned": 0.0,
+     "text_rule_fire_rate": 0.815,
+     "text_rule_precision": 1.0
+    },
+    "reachability": {
+     "edit_turns": 301,
+     "mention_rate": 0.708,
+     "chance_mention_rate": 0.359,
+     "answer_changing_given_mentioned": 0.869,
+     "answer_changing_given_not_mentioned": 0.17,
+     "text_rule_fire_rate": 0.458,
+     "text_rule_precision": 1.0
+    },
+    "shortest_path": {
+     "edit_turns": 294,
+     "mention_rate": 0.762,
+     "chance_mention_rate": 0.349,
+     "answer_changing_given_mentioned": 0.964,
+     "answer_changing_given_not_mentioned": 0.7,
+     "text_rule_fire_rate": 0.201,
+     "text_rule_precision": 1.0
+    },
+    "within_hops_count": {
+     "edit_turns": 312,
+     "mention_rate": 0.455,
+     "chance_mention_rate": 0.194,
+     "answer_changing_given_mentioned": 0.944,
+     "answer_changing_given_not_mentioned": 0.606,
+     "text_rule_fire_rate": 0.0,
+     "text_rule_precision": null
+    }
+   }
+  },
+  "shift": {
+   "closed": {
+    "static": {
+     "1": 661,
+     "3": 685,
+     "2": 654
+    },
+    "sessions": {
+     "2": 382,
+     "1": 393,
+     "0": 413
+    }
+   },
+   "structure": {
+    "reachability": {
+     "n": 495,
+     "no": 249,
+     "no_closed": 205,
+     "closed_endpoint": 205
+    },
+    "cycle": {
+     "n": 495,
+     "no": 246,
+     "no_deg1": 201
+    }
+   },
+   "session_yes_rate": {
+    "constrained_reachability": 0.501,
+    "cycle_membership": 0.503,
+    "edge_exists": 0.501,
+    "reachability": 0.497
+   }
+  },
+  "cycle_truth": {
+   "train": {
+    "items": 2000,
+    "true_no": 858,
+    "true_no_nonleaf": 42,
+    "no_by_degree": {
+     "1": 816,
+     "2": 38,
+     "3": 4,
+     "4": 0,
+     "5": 0,
+     "6": 0,
+     "7": 0,
+     "8": 0,
+     "9": 0,
+     "10": 0,
+     "11": 0
+    }
+   },
+   "test": {
+    "items": 396,
+    "true_no": 169,
+    "true_no_nonleaf": 4,
+    "no_by_degree": {
+     "1": 165,
+     "2": 4,
+     "3": 0,
+     "4": 0,
+     "5": 0,
+     "6": 0,
+     "7": 0,
+     "8": 0,
+     "9": 0,
+     "10": 0
+    }
+   },
+   "sessions_test": {
+    "leaf_no": 207,
+    "nonleaf_no": 12,
+    "turns": 495
+   }
+  },
+  "edges": {
+   "initial": 13008,
+   "attrs": {
+    "true": 13008
+   },
+   "added": 1845
+  }
+ }
+}

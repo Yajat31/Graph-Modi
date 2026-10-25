@@ -1,4 +1,5 @@
 .venv/
+datasets/
 .uv-cache/
 .pytest_cache/
 .mypy_cache/
@@ -17,11 +18,14 @@ outputs/
 *.pth
 *.safetensors
 
-# Shared session JSONL lives under datasets/ and is tracked in git.
-# Do not add a blanket ignore for datasets/.
+# Dataset JSONL under datasets/ is gitignored (too large). Regenerate with
+# `graph-modi generate` or scripts/audit_v4_gates.py; hashes live in
+# datasets/<id>/manifest.json (tracked if present) and in audit result manifests.
 
 # Local configuration and credentials
 .env
 .env.*
 !.env.example
 wandb/
+irel
+*.pdf

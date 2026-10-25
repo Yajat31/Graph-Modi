@@ -150,6 +150,43 @@ def test_line_valued_neighbor_queries_are_generated_and_solvable() -> None:
         assert answer_query(graph, query).isdigit()
 
 
+def test_node_degree_queries_are_generated_and_solvable() -> None:
+    graph = build()
+    queries = list(_queries(graph, ReasoningType.NODE_DEGREE))
+    assert len(queries) == len(graph.nodes)
+    for query in queries[:5]:
+        assert answer_query(graph, query).isdigit()
+
+
+def test_constrained_reachability_queries_are_generated_and_solvable() -> None:
+    graph = build()
+    queries = list(_queries(graph, ReasoningType.CONSTRAINED_REACHABILITY))
+    assert queries
+    for query in queries[:5]:
+        assert answer_query(graph, query) in {"yes", "no"}
+
+
+@pytest.mark.parametrize(
+    "reasoning_type", [ReasoningType.WITHIN_HOPS_COUNT, ReasoningType.WITHIN_HOPS_LIST]
+)
+def test_within_hops_queries_are_generated_and_solvable(reasoning_type: ReasoningType) -> None:
+    graph = build()
+    queries = list(_queries(graph, reasoning_type))
+    assert queries
+    assert all(query.hops == 2 for query in queries)
+    for query in queries[:5]:
+        answer = answer_query(graph, query)
+        assert answer  # every query on a connected graph yields a non-empty answer
+
+
+def test_most_common_attribute_within_hops_queries_are_generated_and_solvable() -> None:
+    graph = build()
+    queries = list(_queries(graph, ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS))
+    assert queries
+    for query in queries[:5]:
+        assert answer_query(graph, query) != "invalid"
+
+
 def test_closing_a_station_usually_reroutes_rather_than_disconnecting() -> None:
     """The ring backbone should make closures lengthen trips, not sever the map."""
     graph = build(20)

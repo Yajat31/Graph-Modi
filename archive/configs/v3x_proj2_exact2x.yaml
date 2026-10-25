@@ -1,0 +1,89 @@
+seed: 42
+output_dir: outputs/v3x_proj2_exact2x
+data_dir: datasets/metro_v3
+gpu_memory_fraction: 0.97
+
+data:
+  distribution: metro_v3
+  # 12-22 stations, CLEGR-style node semantics, label-balanced (data/v3.py)
+  static_train_graphs: 2000
+  static_tuples_per_graph: 9
+  counterfactual_graphs: 1000
+  counterfactual_pairs_per_graph: 3
+  static_validation_replicates: 6
+  static_test_replicates: 12
+  sessions:
+    validation_replicates: 1
+    test_replicates: 1
+  static_tasks:
+    [
+      edge_exists,
+      reachability,
+      constrained_reachability,
+      cycle_membership,
+      node_degree,
+      filtered_neighbor_count,
+      shortest_path,
+      within_hops_count,
+      most_common_attribute_within_hops,
+      attribute_lookup,
+      attribute_check,
+    ]
+  dynamic_tasks:
+    [
+      edge_exists,
+      reachability,
+      constrained_reachability,
+      cycle_membership,
+      node_degree,
+      filtered_neighbor_count,
+      shortest_path,
+      within_hops_count,
+      most_common_attribute_within_hops,
+    ]
+
+model:
+  backend: tea
+  architecture: tea
+  lm_name: /data/lmw/models/Meta-Llama-3.1-8B-Instruct
+  tensorizer: bert
+  bert_model_name: bert-base-uncased
+  node_feature_size: 768
+  graph_hidden_size: 1024
+  graph_layers: 3
+  graph_dropout: 0.5
+  graph_aggregation: mean
+  prefix_tokens: 10
+  projector_num_layers: 2
+  projector_hidden_size: 2048
+  trust_remote_code: false
+  torch_dtype: bfloat16
+  gradient_checkpointing: true
+  checkpoint: outputs/v3x_proj2/projector/checkpoint-final
+  gnn_checkpoint: outputs/v3_tea/gnn/gnn.pt
+
+training:
+  seed: 42
+  pretrain_objective: contrastive
+  gnn_epochs: 10
+  gnn_learning_rate: 0.001
+  gnn_graphs_per_batch: 8
+  contrastive_temperature: 0.07
+  epochs: 3
+  batch_size: 2
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  gradient_accumulation_steps: 12
+  mixed_precision: bf16
+  save_every_steps: 500
+  resume_from: null
+
+evaluation:
+  splits: [test]
+  batch_size: 128
+  max_new_tokens: 32
+  conditions:
+    - oracle_updated_graph
+    - frozen_graph_history
+    - structure_only
+    - shuffled_graph

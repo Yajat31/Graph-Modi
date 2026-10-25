@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
-from graph_modi.evaluation.metrics import aggregate_rows, normalize_answer
-from graph_modi.graph.edits import execution_equivalent
+from graph_modi.evaluation.metrics import aggregate_rows, answers_match, normalize_answer
+from graph_modi.graph.edits import execution_equivalent_program
 from graph_modi.graph.executor import apply_edit, apply_edit_program, graph_fingerprint
 from graph_modi.graph.serialization import (
     serialize_graph,
@@ -34,10 +34,21 @@ CONDITIONS = (
     "serialized_current_graph",
     "tool_solver",
     "soft_prompt",
+    # Soft-prompt model answering from the question alone (no edit history text): the like-for-like
+    # control for the graph models, whose `oracle_updated_graph` prompt has no history either.
+    "soft_prompt_no_history",
     "structure_only",
     "modify_and_print",
-    "majority_prior",
+    # Answer the question with the pre-edit (stale) gold answer: measures how often the answer
+    # actually changed. Called "majority_prior" in results produced before 2026-10-14.
+    "stale_answer",
+    # Constant per-task prior: the most common gold answer of that reasoning type in the
+    # training split (passed in as ``answer_prior``). A real majority baseline.
+    "majority_answer",
 )
+
+# Names used by earlier result files / configs, mapped to the current condition.
+LEGACY_CONDITION_NAMES = {"majority_prior": "stale_answer"}
 
 _REENCODE_CONDITIONS = {"oracle_updated_graph", "predicted_updated_graph"}
 
@@ -83,6 +94,7 @@ class _Task:
     predicted_edit: GraphEdit | None = None
     edit_correct: bool | None = None
     predicted_answer: str | None = None
+    graph_prefix_tokens: int = 0
 
 
 def _advance_round(
@@ -90,6 +102,7 @@ def _advance_round(
     round_index: int,
     chunk: list[_Task],
     backend: GraphBackend,
+    answer_prior: Mapping[str, str] | None = None,
 ) -> None:
     """Advance one batch of tasks through round ``round_index``: append history,
     predict/apply the edit, re-encode if needed, and get an answer — batched
@@ -101,9 +114,13 @@ def _advance_round(
         items = [(task.session.turns[round_index].utterance, task.current) for task in chunk]
         predicted_edits = backend.predict_edit_batch(items)
         for task, edit in zip(chunk, predicted_edits, strict=True):
-            gold_edit = task.session.turns[round_index].gold_edit
+            turn = task.session.turns[round_index]
+            gold_edits = turn.gold_edits or (
+                turn.edit_program.edits if turn.edit_program else (turn.gold_edit,)
+            )
+            predicted = edit if isinstance(edit, tuple) else ((edit,) if edit is not None else None)
             task.predicted_edit = edit
-            task.edit_correct = execution_equivalent(edit, gold_edit)
+            task.edit_correct = execution_equivalent_program(predicted, gold_edits)
     else:
         for task in chunk:
             task.predicted_edit = None
@@ -138,10 +155,18 @@ def _advance_round(
             task.predicted_answer = answer_query(task.current, turn.query)
         return
 
-    if condition == "majority_prior":
+    if condition == "stale_answer":
         for task in chunk:
             turn = task.session.turns[round_index]
             task.predicted_answer = turn.stale_answer
+        return
+
+    if condition == "majority_answer":
+        if answer_prior is None:
+            raise ValueError("majority_answer needs answer_prior (reasoning type -> answer)")
+        for task in chunk:
+            turn = task.session.turns[round_index]
+            task.predicted_answer = answer_prior.get(turn.query.reasoning_type.value)
         return
 
     model_inputs = []
@@ -163,12 +188,17 @@ def _advance_round(
             )
         )
     answers = backend.answer_batch(model_inputs)
-    for task, answer in zip(chunk, answers, strict=True):
+    count_prefix = getattr(backend, "prefix_token_count", None)
+    for task, model_input, answer in zip(chunk, model_inputs, answers, strict=True):
         task.predicted_answer = answer
+        task.graph_prefix_tokens = int(count_prefix(model_input)) if count_prefix else 0
 
 
-def _row_for(task: _Task, round_index: int, latency_seconds: float) -> dict[str, Any]:
+def _row_for(
+    task: _Task, round_index: int, latency_seconds: float, batch_size: int = 1
+) -> dict[str, Any]:
     turn = task.session.turns[round_index]
+    reasoning_type = turn.query.reasoning_type.value
     predicted_normalized = normalize_answer(task.predicted_answer)
     gold = normalize_answer(turn.gold_answer)
     stale = normalize_answer(turn.stale_answer)
@@ -182,12 +212,22 @@ def _row_for(task: _Task, round_index: int, latency_seconds: float) -> dict[str,
         "gold_answer": gold,
         "stale_answer": stale,
         "predicted_answer": predicted_normalized,
-        "answer_correct": predicted_normalized == gold,
-        "stale": predicted_normalized == stale,
+        # The unparsed generation, so scoring can be re-run without a GPU.
+        "raw_answer": task.predicted_answer,
+        "answer_correct": answers_match(
+            turn.gold_answer, task.predicted_answer, reasoning_type=reasoning_type
+        ),
+        "stale": answers_match(
+            turn.stale_answer, task.predicted_answer, reasoning_type=reasoning_type
+        ),
         "edit_correct": task.edit_correct,
         "state_exact": graph_fingerprint(task.current) == turn.after_fingerprint,
+        # Whitespace-split words of the text prompt; the graph prefix is counted separately.
         "input_tokens": len(prompt.split()),
+        "graph_prefix_tokens": task.graph_prefix_tokens,
+        # Mean over the batch this turn was generated in, not a per-row measurement.
         "latency_seconds": latency_seconds,
+        "latency_batch_size": batch_size,
         "graph_fingerprint": graph_fingerprint(task.current),
     }
 
@@ -199,7 +239,9 @@ def evaluate_sessions(
     conditions: Sequence[str] = CONDITIONS,
     batch_size: int = 16,
     progress: bool = False,
+    answer_prior: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
+    conditions = [LEGACY_CONDITION_NAMES.get(condition, condition) for condition in conditions]
     unknown = set(conditions) - set(CONDITIONS)
     if unknown:
         raise ValueError(f"Unknown evaluation conditions: {sorted(unknown)}")
@@ -253,9 +295,11 @@ def evaluate_sessions(
             for start in range(0, len(active), batch_size):
                 chunk = active[start : start + batch_size]
                 batch_started = time.perf_counter()
-                _advance_round(condition, round_index, chunk, backend)
+                _advance_round(condition, round_index, chunk, backend, answer_prior)
                 batch_latency = (time.perf_counter() - batch_started) / len(chunk)
-                rows.extend(_row_for(task, round_index, batch_latency) for task in chunk)
+                rows.extend(
+                    _row_for(task, round_index, batch_latency, len(chunk)) for task in chunk
+                )
                 tracker.tick(
                     len(chunk),
                     condition=condition,

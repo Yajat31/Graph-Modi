@@ -10,14 +10,48 @@ import contextlib
 import hashlib
 import json
 import math
+import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-from graph_modi.graph.edits import parse_edit
+from graph_modi.graph.edits import parse_edit_program
 from graph_modi.models.base import ModelInput
-from graph_modi.schema import AttributedGraph
+from graph_modi.schema import AttributedGraph, ReasoningType
+
+# WITHIN_HOPS_COUNT/WITHIN_HOPS_LIST/MOST_COMMON_ATTRIBUTE_WITHIN_HOPS queries
+# name a hop radius (v3 uses only 2, so this is redundant with the task one-hot; kept for
+# checkpoint compatibility) that the GraphSAGE readout otherwise has no way
+# to see: node_repr is the *final*, num_layers-mixed embedding, which
+# conflates every radius up to num_layers into one vector per node. Appending
+# the raw hop count lets the projector at least condition on which radius a
+# query means, instead of the frozen LM having to infer it purely from the
+# question text.
+HOPS_FEATURE_DIM = 1
+
+# Training on many heterogeneous task types (boolean, numeric, list, string)
+# with no explicit task-identity signal causes answer-format leakage: e.g. a
+# cycle_membership (yes/no) query answered with a bare number, or a
+# most_common_attribute_within_hops (categorical) query answered with a
+# station-ID list -- the model apparently can't reliably infer which of the
+# ~12 task formats applies from the question text plus a graph prefix alone,
+# and defaults to whatever format is best-represented in the training mix.
+# A one-hot task-identity feature (covering every ReasoningType, not just the
+# ones observed to leak) removes that ambiguity the same way HOPS_FEATURE_DIM
+# does for hop radius.
+_REASONING_TYPE_VALUES = tuple(member.value for member in ReasoningType)
+_REASONING_TYPE_INDEX = {value: index for index, value in enumerate(_REASONING_TYPE_VALUES)}
+REASONING_TYPE_FEATURE_DIM = len(_REASONING_TYPE_VALUES)
+
+
+def _reasoning_type_onehot(reasoning_type: str | None, *, dtype: Any, device: Any) -> Any:
+    vector = torch.zeros(REASONING_TYPE_FEATURE_DIM, dtype=dtype, device=device)
+    index = _REASONING_TYPE_INDEX.get(reasoning_type) if reasoning_type is not None else None
+    if index is not None:
+        vector[index] = 1.0
+    return vector
+
 
 _TEA_IMPORT_ERROR: ImportError | None = None
 try:
@@ -190,8 +224,8 @@ class GraphSAGEConfig:
             raise ValueError("GraphSAGE dimensions and num_layers must be positive")
         if not 0.0 <= self.dropout < 1.0:
             raise ValueError("dropout must be in [0, 1)")
-        if self.aggregation not in {"mean", "sum", "max"}:
-            raise ValueError("aggregation must be one of: mean, sum, max")
+        if self.aggregation not in {"mean", "sum", "max", "sum_mlp"}:
+            raise ValueError("aggregation must be one of: mean, sum, max, sum_mlp")
 
 
 class GraphSAGEEncoder(_Module):
@@ -221,11 +255,30 @@ class GraphSAGEEncoder(_Module):
             nn.LayerNorm(dimensions[i + 1]) for i in range(config.num_layers)
         )
         self.dropout = nn.Dropout(config.dropout)
+        # "sum_mlp" (GIN-style): each neighbour's features go through a small MLP before the sum, so
+        # the sum can count nonlinear properties (e.g. closed neighbours). Only created for that
+        # mode, so state dicts of the other modes are unchanged.
+        if config.aggregation == "sum_mlp":
+            self.message_mlps = nn.ModuleList(
+                nn.Sequential(
+                    nn.Linear(dimensions[i], dimensions[i]),
+                    nn.ReLU(),
+                    nn.Linear(dimensions[i], dimensions[i]),
+                )
+                for i in range(config.num_layers)
+            )
 
-    def _aggregate(self, x: Any, sources: Any, destinations: Any, edge_weight: Any) -> Any:
+    def _aggregate(
+        self, x: Any, sources: Any, destinations: Any, edge_weight: Any, layer_index: int = 0
+    ) -> Any:
         if not sources.numel():
             return torch.zeros_like(x)
         weights = edge_weight.to(dtype=x.dtype).unsqueeze(-1)
+        if self.config.aggregation == "sum_mlp":
+            messages = self.message_mlps[layer_index](x[sources]) * weights
+            aggregate = torch.zeros_like(x)
+            aggregate.index_add_(0, destinations, messages)
+            return aggregate
         messages = x[sources] * weights
         if self.config.aggregation == "max":
             index = destinations.unsqueeze(-1).expand_as(messages)
@@ -250,7 +303,7 @@ class GraphSAGEEncoder(_Module):
         for layer_index, (self_layer, neighbor_layer) in enumerate(
             zip(self.self_layers, self.neighbor_layers, strict=True)
         ):
-            aggregate = self._aggregate(x, sources, destinations, graph.edge_weight)
+            aggregate = self._aggregate(x, sources, destinations, graph.edge_weight, layer_index)
             x = self_layer(x) + neighbor_layer(aggregate)
             x = self.norms[layer_index](x)
             if layer_index + 1 < self.config.num_layers:
@@ -358,8 +411,16 @@ class TEAGLM(_Module):
         self.tensorizer = tensorizer
         self.config = config or TEAGLMConfig()
         lm_hidden_dim = int(language_model.get_input_embeddings().embedding_dim)
-        if gnn.config.output_dim != projector.config.graph_dim:
-            raise ValueError("GNN output_dim must equal projector graph_dim")
+        expected_graph_dim = (
+            gnn.config.output_dim * 3 + HOPS_FEATURE_DIM + REASONING_TYPE_FEATURE_DIM
+        )
+        if expected_graph_dim != projector.config.graph_dim:
+            raise ValueError(
+                "projector graph_dim must equal 3 * GNN output_dim + HOPS_FEATURE_DIM "
+                "+ REASONING_TYPE_FEATURE_DIM (pooled graph vector concatenated with "
+                "source and target node embeddings, plus the query's hop-radius "
+                "scalar and one-hot task identity)"
+            )
         if projector.config.lm_hidden_dim != lm_hidden_dim:
             raise ValueError(
                 "Projector lm_hidden_dim does not match LM input embedding dimension "
@@ -413,7 +474,7 @@ class TEAGLM(_Module):
             raise ValueError("Tensorizer feature_dim must equal GNN input_dim")
         lm_hidden_dim = int(language_model.get_input_embeddings().embedding_dim)
         prefix_config = projector_config or PrefixProjectorConfig(
-            graph_dim=graph_config.output_dim,
+            graph_dim=graph_config.output_dim * 3 + HOPS_FEATURE_DIM + REASONING_TYPE_FEATURE_DIM,
             lm_hidden_dim=lm_hidden_dim,
             prefix_tokens=prefix_tokens,
             hidden_dim=projector_hidden_dim,
@@ -446,6 +507,24 @@ class TEAGLM(_Module):
     def device(self) -> Any:
         return next(self.projector.parameters()).device
 
+    # Plain attributes (set by the CLI), not config fields, so checkpoint metadata stays comparable.
+    # "none": normal model. "zero_gnn": node embeddings are zeroed, so the projector only sees the
+    # query's hop radius and task one-hot -- a task-conditioned, graph-free control.
+    graph_ablation: str = "none"
+    # "none" or "standardize": non-parametric layer-norm of the pooled/source/target/hops/task vector
+    # before the projector (one-factor pilot for the collapsed end-to-end GraphToken).
+    graph_vector_norm: str = "none"
+    # Autocast dtype for the GNN + projector outside Accelerate. Training runs them under the
+    # Accelerate mixed-precision autocast (bf16); inference otherwise runs them in fp32. Set this
+    # to the training dtype to evaluate under matched numerics (None = historical fp32).
+    encoder_autocast_dtype: Any = None
+
+    def _encoder_autocast(self) -> Any:
+        dtype = self.encoder_autocast_dtype
+        if dtype is None or self.device.type != "cuda":
+            return contextlib.nullcontext()
+        return torch.autocast(device_type="cuda", dtype=dtype)
+
     def _lm_autocast(self) -> Any:
         """Autocast to the language model's dtype outside of Accelerate.
 
@@ -461,20 +540,130 @@ class TEAGLM(_Module):
             return torch.autocast(device_type="cuda", dtype=lm_dtype)
         return contextlib.nullcontext()
 
-    def encode_graphs(self, graphs: Sequence[AttributedGraph | GraphTensor]) -> Any:
-        pooled = []
-        for graph in graphs:
+    def encode_graphs(
+        self,
+        graphs: Sequence[AttributedGraph | GraphTensor],
+        *,
+        source_ids: Sequence[str | None] | None = None,
+        target_ids: Sequence[str | None] | None = None,
+        hops: Sequence[int | None] | None = None,
+        reasoning_types: Sequence[str | None] | None = None,
+    ) -> Any:
+        """Query-conditioned graph vector: a specific node's own embedding for
+        node/edge-level queries, or a whole-graph mean pool only when there is
+        no node to point at -- plus the query's hop radius and task identity.
+
+        Mean pooling alone collapses every node into one vector, discarding
+        which node(s) a query is about -- fatal for path/reachability/
+        neighbor-count tasks that name specific nodes (README section 5:
+        "task-appropriate readouts ... do not represent every problem with
+        one repeated mean-pooled vector"). Matches the source CLEGR paper's
+        own GLM baseline (arXiv:2508.20583), which switches between
+        M_g(graph, n_i) (a specific node's representation, no pooling) for
+        node-level questions and Pool(M_g(graph)) only for graph-level
+        questions with no single relevant node -- rather than unconditionally
+        concatenating both, which dilutes the node-specific signal with an
+        undifferentiated average over every other node for exactly the
+        questions that least need it. This mirrors the pooled+source+
+        target representation pretrain_graph_encoder's classification head
+        already uses (training.py::_batch_query_vectors); zero-filled when a
+        task has no source/target (e.g. pure graph-level tasks). ``hops`` is
+        appended as a raw scalar (0.0 when absent) for WITHIN_HOPS_*/
+        MOST_COMMON_ATTRIBUTE_WITHIN_HOPS queries, whose answer depends on a
+        radius node_repr alone cannot distinguish (see HOPS_FEATURE_DIM).
+        ``reasoning_types`` is appended as a one-hot over every ReasoningType
+        (all zeros when absent) so the model has an explicit task-identity
+        signal instead of inferring answer format from question text plus an
+        otherwise task-agnostic graph prefix -- observed to leak badly across
+        the ~12-task mix (e.g. cycle_membership answered with a bare number;
+        see REASONING_TYPE_FEATURE_DIM).
+        """
+        if source_ids is None:
+            source_ids = [None] * len(graphs)
+        if target_ids is None:
+            target_ids = [None] * len(graphs)
+        if hops is None:
+            hops = [None] * len(graphs)
+        if reasoning_types is None:
+            reasoning_types = [None] * len(graphs)
+        vectors = []
+        for graph, source_id, target_id, hop_count, reasoning_type in zip(
+            graphs, source_ids, target_ids, hops, reasoning_types, strict=True
+        ):
             tensor_graph = self.tensorizer(graph) if isinstance(graph, AttributedGraph) else graph
             tensor_graph = tensor_graph.to(self.device)
-            if self.config.freeze_gnn:
+            if self.graph_ablation == "zero_gnn":
+                node_repr = torch.zeros(
+                    (len(tensor_graph.node_ids), self.gnn.config.output_dim),
+                    dtype=torch.float32,
+                    device=self.device,
+                )
+            elif self._gnn_frozen:
                 with torch.no_grad():
-                    pooled.append(self.gnn.pooled(tensor_graph))
+                    node_repr = self.gnn(tensor_graph)
             else:
-                pooled.append(self.gnn.pooled(tensor_graph))
-        return torch.stack(pooled)
+                node_repr = self.gnn(tensor_graph)
+            zeros = torch.zeros(node_repr.shape[-1], dtype=node_repr.dtype, device=node_repr.device)
+            node_index = {
+                node_id: position for position, node_id in enumerate(tensor_graph.node_ids)
+            }
+            source_row = node_repr[node_index[source_id]] if source_id in node_index else zeros
+            target_row = node_repr[node_index[target_id]] if target_id in node_index else zeros
+            # Task-conditional pooling: the real CLEGR paper's own GLM baseline switches
+            # between M_g(graph, n_i) (a specific node's own representation, no pooling) for
+            # node/edge-level questions and Pool(M_g(graph)) only for graph-level questions
+            # that have no single node to point at (arXiv:2508.20583). Unconditionally
+            # concatenating a whole-graph mean pool alongside source/target rows -- as this
+            # function did previously -- dilutes the node-specific signal with an
+            # undifferentiated average over every other node in the graph, for exactly the
+            # questions that least need it. Pool only when there is no node anchor at all.
+            has_node_anchor = source_id in node_index or target_id in node_index
+            pooled = zeros if has_node_anchor else node_repr.mean(dim=0)
+            hop_feature = torch.tensor(
+                [float(hop_count) if hop_count is not None else 0.0],
+                dtype=node_repr.dtype,
+                device=node_repr.device,
+            )
+            task_feature = _reasoning_type_onehot(
+                reasoning_type, dtype=node_repr.dtype, device=node_repr.device
+            )
+            vectors.append(
+                torch.cat([pooled, source_row, target_row, hop_feature, task_feature], dim=-1)
+            )
+        return torch.stack(vectors)
 
-    def graph_prefix(self, graphs: Sequence[AttributedGraph | GraphTensor]) -> Any:
-        return self.projector(self.encode_graphs(graphs))
+    def graph_prefix(
+        self,
+        graphs: Sequence[AttributedGraph | GraphTensor],
+        *,
+        source_ids: Sequence[str | None] | None = None,
+        target_ids: Sequence[str | None] | None = None,
+        hops: Sequence[int | None] | None = None,
+        reasoning_types: Sequence[str | None] | None = None,
+    ) -> Any:
+        """Project pooled+source+target graph vectors, then cast to the LM's embedding dtype.
+
+        Training goes through Accelerate's autocast (accelerator.prepare(...,
+        mixed_precision=...)), which reconciles the fp32 GNN/projector output
+        with the bf16 frozen LM automatically. Plain inference (generate/
+        generate_batch) has no such wrapper, so without this explicit cast,
+        concatenating the fp32 prefix with bf16 token embeddings promotes the
+        whole sequence to fp32 and crashes deep inside the LM's attention
+        projections, which run at the LM's native (bf16) parameter dtype.
+        """
+        embedding_dtype = self.language_model.get_input_embeddings().weight.dtype
+        with self._encoder_autocast():
+            vectors = self.encode_graphs(
+                graphs,
+                source_ids=source_ids,
+                target_ids=target_ids,
+                hops=hops,
+                reasoning_types=reasoning_types,
+            )
+            if self.graph_vector_norm == "standardize":
+                vectors = torch.nn.functional.layer_norm(vectors, vectors.shape[-1:])
+            prefix = self.projector(vectors)
+        return prefix.to(dtype=embedding_dtype)
 
     def _encode_text(self, text: str, *, answer: bool) -> list[int]:
         token_ids = list(self.tokenizer.encode(text, add_special_tokens=False))
@@ -483,6 +672,12 @@ class TEAGLM(_Module):
         if answer and self.config.add_eos_token and self.tokenizer.eos_token_id is not None:
             token_ids.append(int(self.tokenizer.eos_token_id))
         return token_ids
+
+    def _assemble_prompt(self, prompt_ids: list[int], prefix: Any, embedding: Any) -> list[Any]:
+        """[prompt][graph tokens], ready to be followed by the answer or generation."""
+        prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
+        parts = [embedding(prompt_tensor), prefix]
+        return [part for part in parts if part.shape[0] > 0]
 
     def _truncate(
         self, prompt_ids: list[int], answer_ids: list[int]
@@ -501,12 +696,22 @@ class TEAGLM(_Module):
         graphs: Sequence[AttributedGraph | GraphTensor],
         prompts: Sequence[str],
         answers: Sequence[str],
+        source_ids: Sequence[str | None] | None = None,
+        target_ids: Sequence[str | None] | None = None,
+        hops: Sequence[int | None] | None = None,
+        reasoning_types: Sequence[str | None] | None = None,
     ) -> Any:
         """Compute causal loss over every answer token, masking prompt and graph prefix."""
         if not graphs or not (len(graphs) == len(prompts) == len(answers)):
             raise ValueError("graphs, prompts, and answers must be non-empty and equally sized")
         embedding = self.language_model.get_input_embeddings()
-        prefixes = self.graph_prefix(graphs)
+        prefixes = self.graph_prefix(
+            graphs,
+            source_ids=source_ids,
+            target_ids=target_ids,
+            hops=hops,
+            reasoning_types=reasoning_types,
+        )
         sequences: list[Any] = []
         label_rows: list[Any] = []
         for index, (prompt, answer) in enumerate(zip(prompts, answers, strict=True)):
@@ -516,12 +721,9 @@ class TEAGLM(_Module):
             )
             if not answer_ids:
                 raise ValueError("An answer produced no tokens")
-            prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
             answer_tensor = torch.tensor(answer_ids, dtype=torch.long, device=self.device)
-            text_parts = []
-            if prompt_ids:
-                text_parts.append(embedding(prompt_tensor))
-            text_parts.extend([prefixes[index], embedding(answer_tensor)])
+            text_parts = self._assemble_prompt(prompt_ids, prefixes[index], embedding)
+            text_parts.append(embedding(answer_tensor))
             sequences.append(torch.cat(text_parts, dim=0))
             masked = len(prompt_ids) + self.projector.config.prefix_tokens
             label_rows.append(
@@ -564,15 +766,26 @@ class TEAGLM(_Module):
         graph: AttributedGraph | GraphTensor,
         prompt: str,
         *,
+        source_id: str | None = None,
+        target_id: str | None = None,
+        hops: int | None = None,
+        reasoning_type: str | None = None,
         max_new_tokens: int = 64,
         **generation_kwargs: Any,
     ) -> str:
         prompt_ids = self._encode_text(prompt, answer=False)
         prompt_ids, _ = self._truncate(prompt_ids, [])
-        prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
-        prompt_embeds = self.language_model.get_input_embeddings()(prompt_tensor)
-        prefix = self.graph_prefix([graph])[0]
-        inputs_embeds = torch.cat([prompt_embeds, prefix], dim=0).unsqueeze(0)
+        prefix = self.graph_prefix(
+            [graph],
+            source_ids=[source_id],
+            target_ids=[target_id],
+            hops=[hops],
+            reasoning_types=[reasoning_type],
+        )[0]
+        embedding = self.language_model.get_input_embeddings()
+        inputs_embeds = torch.cat(
+            self._assemble_prompt(prompt_ids, prefix, embedding), dim=0
+        ).unsqueeze(0)
         attention_mask = torch.ones(inputs_embeds.shape[:2], dtype=torch.long, device=self.device)
         with self._lm_autocast():
             generated = self.language_model.generate(
@@ -582,7 +795,7 @@ class TEAGLM(_Module):
                 use_cache=True,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs,
+                **{"do_sample": False, **generation_kwargs},
             )
         return self.tokenizer.decode(generated[0], skip_special_tokens=True).strip()
 
@@ -606,7 +819,7 @@ class TEAGLM(_Module):
                 use_cache=True,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs,
+                **{"do_sample": False, **generation_kwargs},
             )
         completion = generated[0, input_ids.shape[1] :]
         return self.tokenizer.decode(completion, skip_special_tokens=True).strip()
@@ -637,6 +850,10 @@ class TEAGLM(_Module):
         graphs: Sequence[AttributedGraph | GraphTensor],
         prompts: Sequence[str],
         *,
+        source_ids: Sequence[str | None] | None = None,
+        target_ids: Sequence[str | None] | None = None,
+        hops: Sequence[int | None] | None = None,
+        reasoning_types: Sequence[str | None] | None = None,
         max_new_tokens: int = 64,
         **generation_kwargs: Any,
     ) -> list[str]:
@@ -646,12 +863,19 @@ class TEAGLM(_Module):
         if not graphs or len(graphs) != len(prompts):
             raise ValueError("graphs and prompts must be non-empty and equally sized")
         embedding = self.language_model.get_input_embeddings()
-        prefixes = self.graph_prefix(graphs)
+        prefixes = self.graph_prefix(
+            graphs,
+            source_ids=source_ids,
+            target_ids=target_ids,
+            hops=hops,
+            reasoning_types=reasoning_types,
+        )
         sequences = []
         for index, prompt in enumerate(prompts):
             prompt_ids, _ = self._truncate(self._encode_text(prompt, answer=False), [])
-            prompt_tensor = torch.tensor(prompt_ids, dtype=torch.long, device=self.device)
-            sequences.append(torch.cat([embedding(prompt_tensor), prefixes[index]], dim=0))
+            sequences.append(
+                torch.cat(self._assemble_prompt(prompt_ids, prefixes[index], embedding), dim=0)
+            )
         inputs_embeds, attention_mask = self._left_pad_embeds(sequences, self.device)
         with self._lm_autocast():
             generated = self.language_model.generate(
@@ -661,7 +885,7 @@ class TEAGLM(_Module):
                 use_cache=True,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs,
+                **{"do_sample": False, **generation_kwargs},
             )
         return [self.tokenizer.decode(row, skip_special_tokens=True).strip() for row in generated]
 
@@ -703,7 +927,7 @@ class TEAGLM(_Module):
                 use_cache=True,
                 pad_token_id=self.tokenizer.pad_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
-                **generation_kwargs,
+                **{"do_sample": False, **generation_kwargs},
             )
         completions = generated[:, max_length:]
         return [self.tokenizer.decode(row, skip_special_tokens=True).strip() for row in completions]
@@ -865,29 +1089,63 @@ class TEAGLMBackend:
         self.encode_calls += 1
         return self.model.tensorizer(graph)
 
+    # Few-shot revisions use the direct and service paraphrase families only.
+    # The notice family is held out so write-path accuracy is not a copy of the prompt
+    # (see data/v4.HELD_OUT_FAMILY).
     _EDIT_PROMPT_PREFIX = (
-        "You maintain a metro graph. Given a one-sentence revision, output exactly "
-        "one edit and nothing else, in one of these formats:\n"
+        "You maintain a metro graph. A revision may describe one or several changes "
+        'at once, separated by " ; ". Output every edit it describes, each in one '
+        'of these formats, separated by " ; ", and always finish with END:\n'
         "  SET NODE <station> status open\n"
         "  SET NODE <station> status closed\n"
         "  ADD EDGE <station> <station> transfer\n"
+        "  ADD EDGE <station> <station> track\n"
         "  DEL EDGE <station> <station> track\n"
         "  DEL EDGE <station> <station> transfer\n"
-        "Use the station name exactly as it appears in the revision.\n\n"
+        "  NOOP <reason>\n"
+        "Use the station name exactly as it appears in the revision. If the revision "
+        "does not describe any change to the graph, output NOOP with a short reason. "
+        "Always end your output with END.\n\n"
         "Revision: Elm is closed now.\n"
-        "Edit: SET NODE Elm status closed\n\n"
+        "Edit: SET NODE Elm status closed ; END\n\n"
         "Revision: Service at Oak has resumed.\n"
-        "Edit: SET NODE Oak status open\n\n"
-        "Revision: Please mark Pine as closed.\n"
-        "Edit: SET NODE Pine status closed\n\n"
-        "Revision: ADD EDGE Elm Cedar transfer\n"
-        "Edit: ADD EDGE Elm Cedar transfer\n\n"
-        "Revision: DEL EDGE Oak Pine track\n"
-        "Edit: DEL EDGE Oak Pine track\n\n"
+        "Edit: SET NODE Oak status open ; END\n\n"
+        "Revision: A new transfer link now connects Elm and Cedar.\n"
+        "Edit: ADD EDGE Elm Cedar transfer ; END\n\n"
+        "Revision: The track link between Oak and Pine is gone.\n"
+        "Edit: DEL EDGE Oak Pine track ; END\n\n"
+        "Revision: A track connection between Elm and Ash has opened.\n"
+        "Edit: ADD EDGE Elm Ash track ; END\n\n"
+        "Revision: No change this turn.\n"
+        "Edit: NOOP no change mentioned ; END\n\n"
+        "Revision: Operations report: no network changes.\n"
+        "Edit: NOOP no change mentioned ; END\n\n"
+        "Revision: Elm is closed now. ; A new transfer link now connects Elm and Cedar.\n"
+        "Edit: SET NODE Elm status closed ; ADD EDGE Elm Cedar transfer ; END\n\n"
+        "Revision: Service at Oak has been suspended. ; The track connection between Oak and Pine has closed.\n"
+        "Edit: SET NODE Oak status closed ; DEL EDGE Oak Pine track ; END\n\n"
     )
 
+    _EDIT_MAX_NEW_TOKENS = 64
+
+    @staticmethod
+    def _extract_edit_program_text(generated: str) -> str:
+        """Truncate at the first END marker.
+
+        The model has no stop token for this format and will keep rambling
+        into hallucinated "Revision:/Edit:" continuations past the program it
+        actually meant to output; everything after the first END is noise.
+        Falls back to the first line if the model never emits END (matches
+        the old single-edit behavior for malformed output).
+        """
+        # Whole word only, so a station name containing "end" cannot truncate the program.
+        match = re.search(r"\bEND\b", generated, flags=re.IGNORECASE)
+        if match is not None:
+            return generated[: match.start()]
+        return generated.split("\n", 1)[0]
+
     def predict_edit(self, utterance: str, graph: AttributedGraph) -> Any:
-        """Extract the edit named by a revision sentence.
+        """Extract the ordered edit program named by a revision sentence.
 
         Text-only generation, deliberately not graph-conditioned: the target
         node is always named explicitly in the utterance, so no graph
@@ -899,26 +1157,36 @@ class TEAGLMBackend:
         frozen LM and produces incoherent output.
         """
         prompt = f"{self._EDIT_PROMPT_PREFIX}Revision: {utterance}\nEdit:"
-        generated = self.model.generate_text_only(prompt, max_new_tokens=self.max_new_tokens)
-        # The model has no stop token for this format and will keep rambling
-        # into hallucinated "Revision:/Edit:" continuations; only the first
-        # line is ever the actual edit.
-        first_line = generated.split("\n", 1)[0].strip()
+        generated = self.model.generate_text_only(prompt, max_new_tokens=self._EDIT_MAX_NEW_TOKENS)
+        program_text = self._extract_edit_program_text(generated)
         try:
-            return parse_edit(
-                first_line,
+            program = parse_edit_program(
+                program_text,
                 {node.label.casefold(): node.id for node in graph.nodes},
             )
         except ValueError:
             return None
+        return program.edits or None
 
-    def answer(self, model_input: ModelInput) -> str | None:
-        text_only_conditions = {
+    _TEXT_ONLY_CONDITIONS = frozenset(
+        {
             "question_only",
             "serialized_initial_history",
             "token_matched_history",
             "serialized_current_graph",
         }
+    )
+
+    def prefix_token_count(self, model_input: ModelInput) -> int:
+        """Graph prefix tokens the model sees for this input (0 on the text-only paths)."""
+        if model_input.condition in self._TEXT_ONLY_CONDITIONS or (
+            model_input.condition == "graph_once_then_text" and model_input.turn_index > 0
+        ):
+            return 0
+        return int(self.model.projector.config.prefix_tokens)
+
+    def answer(self, model_input: ModelInput) -> str | None:
+        text_only_conditions = self._TEXT_ONLY_CONDITIONS
         prompt = self.model.config.prompt_template.format(question=model_input.question)
         graph_once_after_first_turn = (
             model_input.condition == "graph_once_then_text" and model_input.turn_index > 0
@@ -931,37 +1199,48 @@ class TEAGLMBackend:
         graph = model_input.encoded_graph
         if not isinstance(graph, GraphTensor):
             graph = self.encode(model_input.current_graph)
-        return self.model.generate(graph, prompt, max_new_tokens=self.max_new_tokens)
+        return self.model.generate(
+            graph,
+            prompt,
+            source_id=model_input.query.source,
+            target_id=model_input.query.target,
+            hops=model_input.query.hops,
+            reasoning_type=model_input.query.reasoning_type.value,
+            max_new_tokens=self.max_new_tokens,
+        )
 
     def predict_edit_batch(self, items: Sequence[tuple[str, AttributedGraph]]) -> list[Any]:
         prompts = [
             f"{self._EDIT_PROMPT_PREFIX}Revision: {utterance}\nEdit:" for utterance, _ in items
         ]
-        generated = self.model.generate_text_only_batch(prompts, max_new_tokens=self.max_new_tokens)
+        generated = self.model.generate_text_only_batch(
+            prompts, max_new_tokens=self._EDIT_MAX_NEW_TOKENS
+        )
         results: list[Any] = []
         for (_, graph), text in zip(items, generated, strict=True):
-            first_line = text.split("\n", 1)[0].strip()
+            program_text = self._extract_edit_program_text(text)
             try:
-                results.append(
-                    parse_edit(first_line, {node.label.casefold(): node.id for node in graph.nodes})
+                program = parse_edit_program(
+                    program_text, {node.label.casefold(): node.id for node in graph.nodes}
                 )
             except ValueError:
                 results.append(None)
+                continue
+            results.append(program.edits or None)
         return results
 
     def answer_batch(self, model_inputs: Sequence[ModelInput]) -> list[str | None]:
-        text_only_conditions = {
-            "question_only",
-            "serialized_initial_history",
-            "token_matched_history",
-            "serialized_current_graph",
-        }
+        text_only_conditions = self._TEXT_ONLY_CONDITIONS
         results: list[str | None] = [None] * len(model_inputs)
         text_indices: list[int] = []
         text_prompts: list[str] = []
         graph_indices: list[int] = []
         graph_graphs: list[Any] = []
         graph_prompts: list[str] = []
+        graph_source_ids: list[str | None] = []
+        graph_target_ids: list[str | None] = []
+        graph_hops: list[int | None] = []
+        graph_reasoning_types: list[str | None] = []
         for index, model_input in enumerate(model_inputs):
             prompt = self.model.config.prompt_template.format(question=model_input.question)
             graph_once_after_first_turn = (
@@ -977,6 +1256,10 @@ class TEAGLMBackend:
             graph_indices.append(index)
             graph_graphs.append(graph)
             graph_prompts.append(prompt)
+            graph_source_ids.append(model_input.query.source)
+            graph_target_ids.append(model_input.query.target)
+            graph_hops.append(model_input.query.hops)
+            graph_reasoning_types.append(model_input.query.reasoning_type.value)
         if text_prompts:
             generated = self.model.generate_text_only_batch(
                 text_prompts,
@@ -988,7 +1271,13 @@ class TEAGLMBackend:
             for index, output in zip(
                 graph_indices,
                 self.model.generate_batch(
-                    graph_graphs, graph_prompts, max_new_tokens=self.max_new_tokens
+                    graph_graphs,
+                    graph_prompts,
+                    source_ids=graph_source_ids,
+                    target_ids=graph_target_ids,
+                    hops=graph_hops,
+                    reasoning_types=graph_reasoning_types,
+                    max_new_tokens=self.max_new_tokens,
                 ),
                 strict=True,
             ):

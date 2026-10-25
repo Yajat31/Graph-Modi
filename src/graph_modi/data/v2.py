@@ -54,6 +54,15 @@ _OOD_SCALE = (40, 48)
 _ID_TURNS = (1, 2, 4)
 _OOD_TURNS = (8,)
 
+_FACTORIAL_SCALES: dict[str, tuple[int, int]] = {
+    "scale_small": (16, 24),
+    "scale_medium": (25, 32),
+    "scale_large": (40, 48),
+}
+_FACTORIAL_TURNS = (1, 2, 4, 8)
+_FACTORIAL_DENSITIES = (DensityBin.SPARSE, DensityBin.MEDIUM, DensityBin.DENSE)
+_DENSITY_ADJUST_ATTEMPTS = 96
+
 _STATIC_TASKS = (
     ReasoningType.EDGE_EXISTS,
     ReasoningType.NODE_DEGREE,
@@ -63,6 +72,10 @@ _STATIC_TASKS = (
     ReasoningType.FILTERED_PATH_COUNT,
     ReasoningType.SHORTEST_PATH,
     ReasoningType.PATH_COST,
+    ReasoningType.CONSTRAINED_REACHABILITY,
+    ReasoningType.WITHIN_HOPS_COUNT,
+    ReasoningType.WITHIN_HOPS_LIST,
+    ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS,
 )
 
 _DYNAMIC_TASKS = (
@@ -71,7 +84,17 @@ _DYNAMIC_TASKS = (
     ReasoningType.FILTERED_NEIGHBOR_COUNT,
     ReasoningType.EDGE_EXISTS,
     ReasoningType.PATH_COST,
+    ReasoningType.CONSTRAINED_REACHABILITY,
+    ReasoningType.WITHIN_HOPS_COUNT,
+    ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS,
 )
+
+# CLEGR-style task families layered on top of the original 3-task yes/no gate:
+# filtered aggregation (FILTERED_NEIGHBOR_COUNT/FILTERED_PATH_COUNT/WITHIN_HOPS_COUNT),
+# weighted path cost (PATH_COST), constrained reachability (CONSTRAINED_REACHABILITY),
+# and topology-with-filter (WITHIN_HOPS_LIST/MOST_COMMON_ATTRIBUTE_WITHIN_HOPS).
+CLEGR_EXTENDED_STATIC_TASKS = _STATIC_TASKS
+CLEGR_EXTENDED_DYNAMIC_TASKS = _DYNAMIC_TASKS
 
 
 def _density_bin(node_count: int, edge_count: int) -> DensityBin:
@@ -90,6 +113,115 @@ def _scale_bin(node_count: int, *, ood: bool) -> str:
     if node_count <= 24:
         return "scale_small"
     return "scale_medium"
+
+
+def _even_degrees(node_count: int) -> list[int]:
+    upper = node_count - 1 if (node_count - 1) % 2 == 0 else node_count - 2
+    return list(range(2, max(2, upper) + 1, 2))
+
+
+def _degree_for_target_density(node_count: int, target: DensityBin) -> int:
+    """Pick an even WS degree that lands in ``target`` when possible."""
+    matches: list[int] = []
+    for degree in _even_degrees(node_count):
+        if _density_bin(node_count, node_count * degree // 2) is target:
+            matches.append(degree)
+    if matches:
+        return matches[len(matches) // 2]
+    # Fall back to the degree whose implied ratio is closest to the bin center.
+    centers = {
+        DensityBin.SPARSE: 0.05,
+        DensityBin.MEDIUM: 0.13,
+        DensityBin.DENSE: 0.25,
+    }
+    target_ratio = centers[target]
+    best = 2
+    best_dist = float("inf")
+    for degree in _even_degrees(node_count):
+        ratio = degree / max(1, node_count - 1)
+        dist = abs(ratio - target_ratio)
+        if dist < best_dist:
+            best = degree
+            best_dist = dist
+    return best
+
+
+def _graph_density(graph: AttributedGraph) -> DensityBin:
+    return _density_bin(len(graph.nodes), len(graph.edges))
+
+
+def _adjust_graph_density(
+    graph: AttributedGraph,
+    rng: random.Random,
+    target: DensityBin,
+) -> AttributedGraph:
+    """Add/remove edges (keeping connectivity) until density matches ``target``."""
+    current = graph
+    node_ids = [node.id for node in current.nodes]
+    for _ in range(_DENSITY_ADJUST_ATTEMPTS):
+        if _graph_density(current) is target:
+            return current
+        edge_count = len(current.edges)
+        max_edges = len(node_ids) * (len(node_ids) - 1) // 2
+        ratio = edge_count / max(1, max_edges)
+        if target is DensityBin.SPARSE or (target is DensityBin.MEDIUM and ratio >= 0.18):
+            if edge_count <= len(node_ids) - 1:
+                break
+            # Prefer deleting transfer edges; fall back to any non-bridge-ish pick.
+            candidates = list(current.edges)
+            rng.shuffle(candidates)
+            removed = False
+            for edge in candidates:
+                remaining = tuple(
+                    item
+                    for item in current.edges
+                    if not (
+                        {item.source, item.target} == {edge.source, edge.target}
+                        and item.relation == edge.relation
+                    )
+                )
+                probe = replace(current, edges=remaining)
+                undirected = {
+                    (min(item.source, item.target), max(item.source, item.target))
+                    for item in remaining
+                }
+                # Connectivity on node indices via adjacency of ids.
+                adjacency: dict[str, list[str]] = {node_id: [] for node_id in node_ids}
+                for left, right in undirected:
+                    adjacency[left].append(right)
+                    adjacency[right].append(left)
+                seen = {node_ids[0]}
+                frontier = [node_ids[0]]
+                while frontier:
+                    node = frontier.pop()
+                    for neighbor in adjacency[node]:
+                        if neighbor not in seen:
+                            seen.add(neighbor)
+                            frontier.append(neighbor)
+                if len(seen) == len(node_ids):
+                    current = probe
+                    removed = True
+                    break
+            if not removed:
+                break
+            continue
+        # Too sparse for target: add a random missing undirected edge.
+        existing = {frozenset((edge.source, edge.target)) for edge in current.edges}
+        missing = [
+            frozenset((left, right))
+            for left_index, left in enumerate(node_ids)
+            for right in node_ids[left_index + 1 :]
+            if frozenset((left, right)) not in existing
+        ]
+        if not missing:
+            break
+        pair = rng.choice(missing)
+        left, right = tuple(pair)
+        current = replace(
+            current,
+            edges=current.edges + (Edge(source=left, target=right, relation=TRANSFER_RELATION),),
+        )
+    return current
 
 
 def _hop_depth(query: GraphQuery, graph: AttributedGraph) -> HopDepth:
@@ -115,6 +247,19 @@ def _hop_depth(query: GraphQuery, graph: AttributedGraph) -> HopDepth:
             return HopDepth.MID
         return HopDepth.GLOBAL
     if query.reasoning_type is ReasoningType.CYCLE_MEMBERSHIP:
+        return HopDepth.GLOBAL
+    if query.reasoning_type is ReasoningType.CONSTRAINED_REACHABILITY:
+        return HopDepth.GLOBAL
+    if query.reasoning_type in {
+        ReasoningType.WITHIN_HOPS_COUNT,
+        ReasoningType.WITHIN_HOPS_LIST,
+        ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS,
+    }:
+        hops = query.hops or 2
+        if hops <= 2:
+            return HopDepth.LOCAL
+        if hops <= 4:
+            return HopDepth.MID
         return HopDepth.GLOBAL
     return HopDepth.MID
 
@@ -258,7 +403,10 @@ def make_graph(
     degree: int = DEFAULT_GRAPH_DEGREE,
     rewire_probability: float = DEFAULT_REWIRE_PROBABILITY,
     line_count: int = DEFAULT_LINE_COUNT,
+    target_density: DensityBin | None = None,
 ) -> AttributedGraph:
+    if target_density is not None and topology is TopologyFamily.WATTS_STROGATZ:
+        degree = _degree_for_target_density(node_count, target_density)
     if topology is TopologyFamily.WATTS_STROGATZ:
         graph = _make_ws_graph(
             rng,
@@ -269,7 +417,7 @@ def make_graph(
             rewire_probability=rewire_probability,
             line_count=line_count,
         )
-        return replace(
+        graph = replace(
             graph,
             metadata={
                 **graph.metadata,
@@ -277,15 +425,40 @@ def make_graph(
                 "topology": topology.value,
             },
         )
+        if target_density is not None:
+            graph = _adjust_graph_density(graph, rng, target_density)
+            graph = replace(
+                graph,
+                metadata={
+                    **graph.metadata,
+                    "target_density": target_density.value,
+                    "density": _graph_density(graph).value,
+                },
+            )
+        # Watts-Strogatz edges otherwise keep the schema default weight of 1.0,
+        # which makes PATH_COST degenerate (every path costs its hop count).
+        # Assign the same weight range SBM/ER already use so cost tasks are
+        # meaningful on this topology too.
+        graph = replace(
+            graph,
+            edges=tuple(replace(edge, weight=float(rng.randint(1, 5))) for edge in graph.edges),
+        )
+        return graph
     if topology is TopologyFamily.SBM:
-        density = _density_bin(node_count, node_count * degree // 2)
+        density = target_density or _density_bin(node_count, node_count * degree // 2)
         p_in = {"sparse": 0.25, "medium": 0.35, "dense": 0.5}[density.value]
         p_out = {"sparse": 0.04, "medium": 0.08, "dense": 0.12}[density.value]
-        return _sbm_graph(
+        graph = _sbm_graph(
             rng, split, index, node_count, p_in=p_in, p_out=p_out, line_count=line_count
         )
+        if target_density is not None:
+            graph = _adjust_graph_density(graph, rng, target_density)
+        return graph
     if topology is TopologyFamily.ERDOS_RENYI:
-        return _erdos_renyi_graph(rng, split, index, node_count, line_count=line_count)
+        graph = _erdos_renyi_graph(rng, split, index, node_count, line_count=line_count)
+        if target_density is not None:
+            graph = _adjust_graph_density(graph, rng, target_density)
+        return graph
     raise ValueError(f"Unsupported topology: {topology}")
 
 
@@ -338,6 +511,10 @@ def generate_session_v2(
     degree: int = DEFAULT_GRAPH_DEGREE,
     rewire_probability: float = DEFAULT_REWIRE_PROBABILITY,
     line_count: int = DEFAULT_LINE_COUNT,
+    fallback_tasks: Sequence[ReasoningType] | None = None,
+    target_density: DensityBin | None = None,
+    scale_bin: str | None = None,
+    factorial_cell: str | None = None,
 ) -> Session:
     rng = random.Random(seed)
     initial = make_graph(
@@ -349,12 +526,13 @@ def generate_session_v2(
         degree=degree,
         rewire_probability=rewire_probability,
         line_count=line_count,
+        target_density=target_density,
     )
     current = initial
     turns: list[Turn] = []
     family = "direct"
-    density = _density_bin(len(initial.nodes), len(initial.edges))
-    scale = _scale_bin(node_count, ood=ood)
+    density = _graph_density(initial)
+    scale = scale_bin or _scale_bin(node_count, ood=ood)
     for turn_index in range(turn_count):
         preferred = reasoning_types[turn_index % len(reasoning_types)]
         force_noop = rng.random() < NOOP_RATE
@@ -362,7 +540,7 @@ def generate_session_v2(
         before = current
         result = apply_edit_program(current, program)
         updated = result.graph
-        query = _changed_query(before, updated, preferred, rng)
+        query = _changed_query(before, updated, preferred, rng, fallback_order=fallback_tasks)
         if query is None:
             candidates = list(_queries(updated, preferred))
             rng.shuffle(candidates)
@@ -381,6 +559,19 @@ def generate_session_v2(
             utterance = " ; ".join(_utterance(edit, before, family) for edit in program.edits)
             primary_edit = program.edits[0]
         hop = _hop_depth(query, updated)
+        complexity = {
+            "topology": topology.value,
+            "density": density.value,
+            "scale_bin": scale,
+            "hop_depth": hop.value,
+            "edit_count": len(program.edits),
+            "ood": ood,
+            "session_length": turn_count,
+        }
+        if factorial_cell is not None:
+            complexity["factorial_cell"] = factorial_cell
+        if target_density is not None:
+            complexity["target_density"] = target_density.value
         turns.append(
             Turn(
                 turn_index=turn_index,
@@ -399,14 +590,7 @@ def generate_session_v2(
                     topology.value,
                     "noop" if primary_edit.operation is EditOperation.NOOP else "edit",
                 ),
-                complexity={
-                    "topology": topology.value,
-                    "density": density.value,
-                    "scale_bin": scale,
-                    "hop_depth": hop.value,
-                    "edit_count": len(program.edits),
-                    "ood": ood,
-                },
+                complexity=complexity,
             )
         )
         current = updated
@@ -438,8 +622,10 @@ def generate_static_corpus(
     seed: int,
     node_count_ranges: dict[str, tuple[int, int]],
     topologies: Sequence[TopologyFamily],
+    tasks: Sequence[ReasoningType] | None = None,
     progress: bool = True,
 ) -> dict[str, list[StaticQATuple]]:
+    static_tasks = tuple(tasks) if tasks else _STATIC_TASKS
     total_graphs = sum(graph_counts.values())
     tracker = ProgressTracker("[generate]", total_graphs, phase="static", enabled=progress)
     tracker.banner(graphs=total_graphs, tuples_per_graph=tuples_per_graph)
@@ -458,7 +644,7 @@ def generate_static_corpus(
             density = _density_bin(len(graph.nodes), len(graph.edges))
             scale = _scale_bin(node_count, ood=node_count >= 40)
             for tuple_index in range(tuples_per_graph):
-                reasoning_type = _STATIC_TASKS[(index + tuple_index) % len(_STATIC_TASKS)]
+                reasoning_type = static_tasks[(index + tuple_index) % len(static_tasks)]
                 candidates = list(_static_queries(graph, reasoning_type))
                 rng.shuffle(candidates)
                 if not candidates:
@@ -487,14 +673,351 @@ def generate_static_corpus(
     return result
 
 
+def generate_counterfactual_static_pairs(
+    *,
+    graph_count: int,
+    pairs_per_graph: int,
+    seed: int,
+    node_count_range: tuple[int, int],
+    topologies: Sequence[TopologyFamily],
+    tasks: Sequence[ReasoningType],
+    split: str,
+    progress: bool = True,
+) -> list[StaticQATuple]:
+    """Counterfactual (before/after-one-edit) static training pairs.
+
+    generate_static_corpus draws every tuple from an independent, freshly
+    sampled graph, so the projector never sees "same entities, graph state
+    changed, answer must track the change" -- exactly the CLEGR-style signal
+    README section 3 calls for. This reuses the dynamic-session edit/query
+    machinery (_sample_edit_program, apply_edit_program, _changed_query) to
+    build that signal directly into static training: for each base graph,
+    sample one edit and find an answer-changing query, then emit a before
+    tuple (stale answer) and an after tuple (updated answer) sharing a
+    pair_id, so both states of the same entities appear in training.
+    """
+    tracker = ProgressTracker(
+        "[generate]", graph_count, phase="counterfactual-static", enabled=progress
+    )
+    tracker.banner(graphs=graph_count, pairs_per_graph=pairs_per_graph)
+    tuples: list[StaticQATuple] = []
+    offset = 8_000_000
+    low, high = node_count_range
+    for index in range(graph_count):
+        graph_seed = seed + offset + index
+        rng = random.Random(graph_seed)
+        node_count = rng.randint(low, high)
+        topology = topologies[index % len(topologies)]
+        before = make_graph(rng, split, index, node_count, topology)
+        scale = _scale_bin(node_count, ood=node_count >= 40)
+        for pair_index in range(pairs_per_graph):
+            preferred = tasks[(index + pair_index) % len(tasks)]
+            found: tuple[AttributedGraph, GraphQuery] | None = None
+            for _attempt in range(5):
+                program = _sample_edit_program(before, rng, force_noop=False)
+                result = apply_edit_program(before, program)
+                if not result.applied:
+                    continue
+                after = result.graph
+                query = _changed_query(before, after, preferred, rng, fallback_order=tasks)
+                if query is not None:
+                    found = (after, query)
+                    break
+            if found is None:
+                continue
+            after, query = found
+            before_query = replace(query, question=render_question(query, before))
+            after_query = replace(query, question=render_question(query, after))
+            stale_answer = answer_query(before, before_query)
+            answer = answer_query(after, after_query)
+            pair_id = f"{split}-cf-{index:06d}-{pair_index:02d}"
+            tuples.append(
+                StaticQATuple(
+                    tuple_id=f"{pair_id}-before",
+                    split=split,
+                    graph=before,
+                    query=before_query,
+                    answer=stale_answer,
+                    topology=topology,
+                    density_bin=_density_bin(len(before.nodes), len(before.edges)),
+                    hop_depth=_hop_depth(before_query, before),
+                    scale_bin=scale,
+                    metadata={
+                        "reasoning_type": query.reasoning_type.value,
+                        "counterfactual_role": "before",
+                        "pair_id": pair_id,
+                    },
+                )
+            )
+            tuples.append(
+                StaticQATuple(
+                    tuple_id=f"{pair_id}-after",
+                    split=split,
+                    graph=after,
+                    query=after_query,
+                    answer=answer,
+                    topology=topology,
+                    density_bin=_density_bin(len(after.nodes), len(after.edges)),
+                    hop_depth=_hop_depth(after_query, after),
+                    scale_bin=scale,
+                    metadata={
+                        "reasoning_type": query.reasoning_type.value,
+                        "counterfactual_role": "after",
+                        "pair_id": pair_id,
+                    },
+                )
+            )
+        tracker.tick(graph_i=f"{index + 1}/{graph_count}")
+    tracker.end(tuples=len(tuples))
+    return tuples
+
+
+def generate_factorial_sessions(
+    *,
+    sessions_per_cell: dict[str, int],
+    seed: int,
+    dynamic_tasks: Sequence[ReasoningType] | None = None,
+    progress: bool = True,
+) -> dict[str, list[Session]]:
+    """Cross scale × session_length with density balanced inside each cell.
+
+    Topology is Watts–Strogatz only so axis trends are not re-entangled with
+    graph-family shifts. ``sessions_per_cell`` maps split name → sessions per
+    (scale, turns) cell.
+    """
+    session_tasks = tuple(dynamic_tasks) if dynamic_tasks else _DYNAMIC_TASKS
+    cells = [
+        (scale_name, turn_count)
+        for scale_name in _FACTORIAL_SCALES
+        for turn_count in _FACTORIAL_TURNS
+    ]
+    total = sum(int(count) * len(cells) for count in sessions_per_cell.values() if int(count) > 0)
+    tracker = ProgressTracker("[generate]", total, phase="factorial-dynamic", enabled=progress)
+    tracker.banner(sessions=total, cells=len(cells))
+    split_offsets = {"train": 0, "validation": 1_000_000, "test": 2_000_000, "ood": 3_000_000}
+    sessions: dict[str, list[Session]] = {}
+    done = 0
+    for split, per_cell in sessions_per_cell.items():
+        per_cell = int(per_cell)
+        if per_cell <= 0:
+            continue
+        offset = split_offsets.get(split, 4_000_000)
+        split_sessions: list[Session] = []
+        index = 0
+        for scale_name, turn_count in cells:
+            low, high = _FACTORIAL_SCALES[scale_name]
+            cell_id = f"{scale_name}|turns_{turn_count}"
+            for cell_index in range(per_cell):
+                session_seed = seed + offset + index
+                rng = random.Random(session_seed)
+                node_count = rng.randint(low, high)
+                target_density = _FACTORIAL_DENSITIES[cell_index % len(_FACTORIAL_DENSITIES)]
+                split_sessions.append(
+                    generate_session_v2(
+                        split=split,
+                        index=index,
+                        seed=session_seed,
+                        node_count=node_count,
+                        turn_count=turn_count,
+                        topology=TopologyFamily.WATTS_STROGATZ,
+                        reasoning_types=session_tasks,
+                        ood=scale_name == "scale_large",
+                        scale_bin=scale_name,
+                        target_density=target_density,
+                        factorial_cell=cell_id,
+                        fallback_tasks=tuple(dynamic_tasks) if dynamic_tasks else None,
+                    )
+                )
+                index += 1
+                done += 1
+                tracker.tick(sessions=f"{done}/{total}", cell=cell_id)
+        sessions[split] = split_sessions
+    tracker.end()
+    if sessions:
+        assert_disjoint_splits({key: value for key, value in sessions.items() if key != "ood"})
+    return sessions
+
+
+def _exact_uniform_node_counts() -> list[tuple[str, int]]:
+    """(scale_bin, exact n) pairs with flat coverage inside each bin."""
+    pairs: list[tuple[str, int]] = []
+    for scale_name, (low, high) in _FACTORIAL_SCALES.items():
+        for node_count in range(low, high + 1):
+            pairs.append((scale_name, node_count))
+    return pairs
+
+
+def generate_exact_uniform_sessions(
+    *,
+    replicates_per_split: dict[str, int],
+    seed: int,
+    dynamic_tasks: Sequence[ReasoningType] | None = None,
+    progress: bool = True,
+) -> dict[str, list[Session]]:
+    """Cross exact n × session_length × density × task with fixed task per session.
+
+    Each split gets ``replicates`` full passes over the grid. Within a scale bin,
+    every integer node count appears equally often.
+    """
+    tasks = (
+        tuple(dynamic_tasks)
+        if dynamic_tasks
+        else (
+            ReasoningType.EDGE_EXISTS,
+            ReasoningType.REACHABILITY,
+            ReasoningType.CYCLE_MEMBERSHIP,
+        )
+    )
+    node_pairs = _exact_uniform_node_counts()
+    cells = [
+        (scale_name, node_count, turn_count, density, task)
+        for scale_name, node_count in node_pairs
+        for turn_count in _FACTORIAL_TURNS
+        for density in _FACTORIAL_DENSITIES
+        for task in tasks
+    ]
+    total = sum(
+        int(count) * len(cells) for count in replicates_per_split.values() if int(count) > 0
+    )
+    tracker = ProgressTracker("[generate]", total, phase="exact-uniform-dynamic", enabled=progress)
+    tracker.banner(sessions=total, cells=len(cells))
+    split_offsets = {"train": 0, "validation": 1_000_000, "test": 2_000_000, "ood": 3_000_000}
+    sessions: dict[str, list[Session]] = {}
+    done = 0
+    for split, replicates in replicates_per_split.items():
+        replicates = int(replicates)
+        if replicates <= 0:
+            continue
+        offset = split_offsets.get(split, 4_000_000)
+        split_sessions: list[Session] = []
+        index = 0
+        for replicate in range(replicates):
+            for scale_name, node_count, turn_count, density, task in cells:
+                session_seed = seed + offset + index
+                cell_id = (
+                    f"{scale_name}|n{node_count}|turns_{turn_count}|{density.value}|{task.value}"
+                )
+                split_sessions.append(
+                    generate_session_v2(
+                        split=split,
+                        index=index,
+                        seed=session_seed,
+                        node_count=node_count,
+                        turn_count=turn_count,
+                        topology=TopologyFamily.WATTS_STROGATZ,
+                        reasoning_types=(task,),
+                        ood=scale_name == "scale_large",
+                        scale_bin=scale_name,
+                        target_density=density,
+                        factorial_cell=cell_id,
+                        fallback_tasks=(task,),
+                    )
+                )
+                index += 1
+                done += 1
+                tracker.tick(sessions=f"{done}/{total}", cell=cell_id)
+        sessions[split] = split_sessions
+    tracker.end()
+    if sessions:
+        assert_disjoint_splits({key: value for key, value in sessions.items() if key != "ood"})
+    return sessions
+
+
+def generate_static_exact_uniform(
+    *,
+    replicates_per_split: dict[str, int],
+    seed: int,
+    tasks: Sequence[ReasoningType] | None = None,
+    progress: bool = True,
+) -> dict[str, list[StaticQATuple]]:
+    """Cross exact n x density x task once per split for static (G, Q, A) tuples.
+
+    Mirrors ``generate_exact_uniform_sessions`` (same exact-n grid and density
+    bins) but for independent static tuples instead of dynamic sessions: each
+    cell draws one fresh Watts-Strogatz graph at that exact size/density and
+    one query for that task, so static val/test coverage is balanced the same
+    way exact2x balances dynamic val/test.
+    """
+    static_tasks = tuple(tasks) if tasks else _STATIC_TASKS
+    node_pairs = _exact_uniform_node_counts()
+    cells = [
+        (scale_name, node_count, density, task)
+        for scale_name, node_count in node_pairs
+        for density in _FACTORIAL_DENSITIES
+        for task in static_tasks
+    ]
+    total = sum(
+        int(count) * len(cells) for count in replicates_per_split.values() if int(count) > 0
+    )
+    tracker = ProgressTracker("[generate]", total, phase="exact-uniform-static", enabled=progress)
+    tracker.banner(tuples=total, cells=len(cells))
+    split_offsets = {"train": 5_000_000, "validation": 6_000_000, "test": 7_000_000}
+    result: dict[str, list[StaticQATuple]] = {}
+    done = 0
+    for split, replicates in replicates_per_split.items():
+        replicates = int(replicates)
+        if replicates <= 0:
+            continue
+        offset = split_offsets.get(split, 8_000_000)
+        split_tuples: list[StaticQATuple] = []
+        index = 0
+        for _replicate in range(replicates):
+            for scale_name, node_count, density, task in cells:
+                graph_seed = seed + offset + index
+                rng = random.Random(graph_seed)
+                graph = make_graph(
+                    rng,
+                    split,
+                    index,
+                    node_count,
+                    TopologyFamily.WATTS_STROGATZ,
+                    target_density=density,
+                )
+                cell_id = f"{scale_name}|n{node_count}|{density.value}|{task.value}"
+                candidates = list(_static_queries(graph, task))
+                if candidates:
+                    rng.shuffle(candidates)
+                    query = candidates[0]
+                    answer = answer_query(graph, query)
+                    query = replace(query, question=render_question(query, graph))
+                    split_tuples.append(
+                        StaticQATuple(
+                            tuple_id=f"{split}-static-exact-{index:06d}",
+                            split=split,
+                            graph=graph,
+                            query=query,
+                            answer=answer,
+                            topology=TopologyFamily.WATTS_STROGATZ,
+                            density_bin=_graph_density(graph),
+                            hop_depth=_hop_depth(query, graph),
+                            scale_bin=scale_name,
+                            metadata={
+                                "reasoning_type": task.value,
+                                "factorial_cell": cell_id,
+                                "target_density": density.value,
+                            },
+                        )
+                    )
+                index += 1
+                done += 1
+                tracker.tick(tuples=f"{done}/{total}", cell=cell_id)
+        result[split] = split_tuples
+    tracker.end(tuples=sum(len(items) for items in result.values()))
+    return result
+
+
 def generate_dataset_v2(
     *,
     counts: dict[str, int],
     seed: int,
     static_graph_counts: dict[str, int] | None = None,
     static_tuples_per_graph: int = 12,
+    static_tasks: Sequence[ReasoningType] | None = None,
+    dynamic_tasks: Sequence[ReasoningType] | None = None,
+    counterfactual_static_train: bool = False,
     progress: bool = True,
 ) -> tuple[dict[str, list[Session]], dict[str, list[StaticQATuple]]]:
+    session_tasks = tuple(dynamic_tasks) if dynamic_tasks else _DYNAMIC_TASKS
     total_sessions = sum(counts.values())
     tracker = ProgressTracker("[generate]", total_sessions, phase="dynamic", enabled=progress)
     tracker.banner(sessions=total_sessions)
@@ -528,8 +1051,9 @@ def generate_dataset_v2(
                     node_count=node_count,
                     turn_count=turn_count,
                     topology=topology,
-                    reasoning_types=_DYNAMIC_TASKS,
+                    reasoning_types=session_tasks,
                     ood=ood,
+                    fallback_tasks=tuple(dynamic_tasks) if dynamic_tasks else None,
                 )
             )
             done += 1
@@ -537,23 +1061,57 @@ def generate_dataset_v2(
         sessions[split] = split_sessions
     tracker.end()
     assert_disjoint_splits({key: value for key, value in sessions.items() if key != "ood"})
-    static_counts = static_graph_counts or {
-        "train": 80,
-        "validation": 10,
-        "test": 20,
-    }
-    static = generate_static_corpus(
-        graph_counts=static_counts,
-        tuples_per_graph=static_tuples_per_graph,
-        seed=seed,
-        node_count_ranges={
-            "train": (16, 32),
-            "validation": (16, 32),
-            "test": (16, 48),
-        },
-        topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
-        progress=progress,
-    )
+    if static_graph_counts is None:
+        static_counts = {
+            "train": 80,
+            "validation": 10,
+            "test": 20,
+        }
+    else:
+        static_counts = {
+            key: int(value) for key, value in static_graph_counts.items() if int(value) > 0
+        }
+    if not static_counts:
+        return sessions, {}
+    if counterfactual_static_train and static_counts.get("train", 0) > 0:
+        eval_counts = {key: value for key, value in static_counts.items() if key != "train"}
+        static = (
+            generate_static_corpus(
+                graph_counts=eval_counts,
+                tuples_per_graph=static_tuples_per_graph,
+                seed=seed,
+                node_count_ranges={"validation": (16, 32), "test": (16, 48)},
+                topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
+                tasks=static_tasks,
+                progress=progress,
+            )
+            if eval_counts
+            else {}
+        )
+        static["train"] = generate_counterfactual_static_pairs(
+            graph_count=static_counts["train"],
+            pairs_per_graph=max(1, static_tuples_per_graph // 2),
+            seed=seed,
+            node_count_range=(16, 32),
+            topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
+            tasks=tuple(static_tasks) if static_tasks else _STATIC_TASKS,
+            split="train",
+            progress=progress,
+        )
+    else:
+        static = generate_static_corpus(
+            graph_counts=static_counts,
+            tuples_per_graph=static_tuples_per_graph,
+            seed=seed,
+            node_count_ranges={
+                "train": (16, 32),
+                "validation": (16, 32),
+                "test": (16, 48),
+            },
+            topologies=(TopologyFamily.WATTS_STROGATZ, TopologyFamily.SBM),
+            tasks=static_tasks,
+            progress=progress,
+        )
     return sessions, static
 
 

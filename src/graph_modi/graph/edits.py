@@ -43,41 +43,53 @@ def parse_edit(text: str, name_to_id: dict[str, str] | None = None) -> GraphEdit
         raise ValueError(f"Incomplete edit: {text!r}")
     target = EditTarget(parts[1].upper())
 
-    def resolve(value: str) -> str:
-        if name_to_id is None:
-            return value
-        return name_to_id.get(value.casefold(), value)
+    def take_name(words: list[str]) -> tuple[str, list[str]]:
+        """Consume a station name from the front of ``words``.
 
+        With a name table the longest known (possibly multi-word) name wins; otherwise, or when
+        nothing matches, a name is one word, as for plain station IDs."""
+        if name_to_id:
+            for length in range(len(words), 0, -1):
+                candidate = " ".join(words[:length]).casefold()
+                if candidate in name_to_id:
+                    return name_to_id[candidate], words[length:]
+        if not words:
+            raise ValueError(f"Missing station name: {text!r}")
+        return words[0], words[1:]
+
+    rest = parts[2:]
     if target is EditTarget.NODE:
-        node_id = resolve(parts[2])
+        node_id, rest = take_name(rest)
         if operation is EditOperation.SET:
-            if len(parts) < 5:
+            if len(rest) < 2:
                 raise ValueError("SET NODE requires an attribute and value")
             return GraphEdit(
                 operation=operation,
                 target=target,
                 node_id=node_id,
-                attribute=parts[3],
-                value=_parse_scalar(" ".join(parts[4:])),
+                attribute=rest[0],
+                value=_parse_scalar(" ".join(rest[1:])),
             )
         if operation in {EditOperation.ADD, EditOperation.DEL}:
             return GraphEdit(
                 operation=operation,
                 target=target,
                 node_id=node_id,
-                label=" ".join(parts[3:]) or None,
+                label=" ".join(rest) or None,
             )
     if target is EditTarget.EDGE:
         if operation is EditOperation.SET:
             raise ValueError("SET EDGE is not supported; delete and re-add the edge")
-        if len(parts) < 4:
+        if len(rest) < 2:
             raise ValueError(f"{operation.value} EDGE requires two node IDs")
+        source, rest = take_name(rest)
+        destination, rest = take_name(rest)
         return GraphEdit(
             operation=operation,
             target=target,
-            source=resolve(parts[2]),
-            destination=resolve(parts[3]),
-            relation=parts[4] if len(parts) > 4 else "connected",
+            source=source,
+            destination=destination,
+            relation=rest[0] if rest else "connected",
         )
     raise ValueError(f"Unsupported edit: {text!r}")
 

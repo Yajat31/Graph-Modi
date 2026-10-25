@@ -1,0 +1,851 @@
+{
+  "accuracy": {
+    "gt_e2e": {
+      "cached_no_reencode": {
+        "accuracy": 0.31402918069584734,
+        "session_bootstrap_ci95": [
+          0.29769935952690635,
+          0.3314204402685926
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.30056514786807753,
+          0.32781366693440395
+        ]
+      },
+      "frozen_graph_history": {
+        "accuracy": 0.3133557800224467,
+        "session_bootstrap_ci95": [
+          0.2967766031019088,
+          0.33073154038230057
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.29990025664542347,
+          0.3271329171726373
+        ]
+      },
+      "graph_once_then_text": {
+        "accuracy": 0.29292929292929293,
+        "session_bootstrap_ci95": [
+          0.27318211274041454,
+          0.31104131008987834
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.27974800187692495,
+          0.3064673954137077
+        ]
+      },
+      "oracle_updated_graph": {
+        "accuracy": 0.34074074074074073,
+        "session_bootstrap_ci95": [
+          0.3233276504977641,
+          0.3586974710435946
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.3269654169011783,
+          0.35479049028332454
+        ]
+      },
+      "question_only": {
+        "accuracy": 0.2765432098765432,
+        "session_bootstrap_ci95": [
+          0.2589095517535678,
+          0.29298463229158844
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.2636052855828506,
+          0.28986618108687817
+        ]
+      },
+      "shuffled_graph": {
+        "accuracy": 0.31425364758698093,
+        "session_bootstrap_ci95": [
+          0.29774918373783904,
+          0.3314778686447286
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.30078678566674744,
+          0.32804057613054105
+        ]
+      },
+      "stale_answer": {
+        "accuracy": 0.5934904601571268,
+        "session_bootstrap_ci95": [
+          0.5767727030922639,
+          0.6106499079494049
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.5789922752567637,
+          0.6078275480803111
+        ]
+      },
+      "structure_only": {
+        "accuracy": 0.3133557800224467,
+        "session_bootstrap_ci95": [
+          0.2960735743315209,
+          0.33068279009343327
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.29990025664542347,
+          0.3271329171726373
+        ]
+      },
+      "token_matched_history": {
+        "accuracy": 0.2895622895622896,
+        "session_bootstrap_ci95": [
+          0.2711943820590437,
+          0.3070524126223693
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.2764292659877494,
+          0.3030579263807798
+        ]
+      },
+      "tool_solver": {
+        "accuracy": 1.0,
+        "session_bootstrap_ci95": [
+          1.0,
+          1.0
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.9991384309323751,
+          1.0
+        ]
+      }
+    },
+    "soft_prompt": {
+      "soft_prompt": {
+        "accuracy": 0.3418630751964085,
+        "session_bootstrap_ci95": [
+          0.3229563761998307,
+          0.36021186848656495
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.3280757681952444,
+          0.3559228739632929
+        ]
+      }
+    },
+    "tea": {
+      "cached_no_reencode": {
+        "accuracy": 0.32413019079685745,
+        "session_bootstrap_ci95": [
+          0.3065422287980674,
+          0.341379368163001
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.31054247420687614,
+          0.33802095536191595
+        ]
+      },
+      "frozen_graph_history": {
+        "accuracy": 0.3245791245791246,
+        "session_bootstrap_ci95": [
+          0.307168766381454,
+          0.34180013115474783
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.3109860815776369,
+          0.338474441980769
+        ]
+      },
+      "graph_once_then_text": {
+        "accuracy": 0.2978675645342312,
+        "session_bootstrap_ci95": [
+          0.27879030379319975,
+          0.3151509510456584
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.2846170733650343,
+          0.31146635781135024
+        ]
+      },
+      "oracle_updated_graph": {
+        "accuracy": 0.35084175084175084,
+        "session_bootstrap_ci95": [
+          0.3339438318937366,
+          0.36834410781066823
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.33696167663488447,
+          0.364978845315929
+        ]
+      },
+      "question_only": {
+        "accuracy": 0.2765432098765432,
+        "session_bootstrap_ci95": [
+          0.2589095517535678,
+          0.29298463229158844
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.2636052855828506,
+          0.28986618108687817
+        ]
+      },
+      "shuffled_graph": {
+        "accuracy": 0.30190796857463525,
+        "session_bootstrap_ci95": [
+          0.28487787296463307,
+          0.31859017733623435
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.28860225049742155,
+          0.31555502658548723
+        ]
+      },
+      "stale_answer": {
+        "accuracy": 0.5934904601571268,
+        "session_bootstrap_ci95": [
+          0.5767727030922639,
+          0.6106499079494049
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.5789922752567637,
+          0.6078275480803111
+        ]
+      },
+      "structure_only": {
+        "accuracy": 0.3234567901234568,
+        "session_bootstrap_ci95": [
+          0.3062784488892699,
+          0.3405569083417239
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.3098770901717717,
+          0.3373406984125997
+        ]
+      },
+      "token_matched_history": {
+        "accuracy": 0.2895622895622896,
+        "session_bootstrap_ci95": [
+          0.2711943820590437,
+          0.3070524126223693
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.2764292659877494,
+          0.3030579263807798
+        ]
+      },
+      "tool_solver": {
+        "accuracy": 1.0,
+        "session_bootstrap_ci95": [
+          1.0,
+          1.0
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.9991384309323751,
+          1.0
+        ]
+      }
+    },
+    "tea_run2": {
+      "cached_no_reencode": {
+        "accuracy": 0.33153759820426487,
+        "session_bootstrap_ci95": [
+          0.31331784046937644,
+          0.3497179296578333
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.3178638269230869,
+          0.34550165347433304
+        ]
+      },
+      "frozen_graph_history": {
+        "accuracy": 0.3328843995510662,
+        "session_bootstrap_ci95": [
+          0.31470402493958577,
+          0.3513458497250542
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.31919539810931075,
+          0.34686136425695047
+        ]
+      },
+      "graph_once_then_text": {
+        "accuracy": 0.2962962962962963,
+        "session_bootstrap_ci95": [
+          0.276994990391801,
+          0.313875248411949
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.2830676193329365,
+          0.3098759828797997
+        ]
+      },
+      "oracle_updated_graph": {
+        "accuracy": 0.37890011223344555,
+        "session_bootstrap_ci95": [
+          0.3591415941807028,
+          0.3993572245165202
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.36476478224872944,
+          0.3932441140529468
+        ]
+      },
+      "question_only": {
+        "accuracy": 0.27744107744107743,
+        "session_bootstrap_ci95": [
+          0.2591858853224032,
+          0.2940780080354762
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.2644892590314464,
+          0.29077639561751
+        ]
+      },
+      "shuffled_graph": {
+        "accuracy": 0.30729517396184064,
+        "session_bootstrap_ci95": [
+          0.2903568002727337,
+          0.3250401735800039
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.2939177414801228,
+          0.32100466347815165
+        ]
+      },
+      "stale_answer": {
+        "accuracy": 0.5934904601571268,
+        "session_bootstrap_ci95": [
+          0.5767727030922639,
+          0.6106499079494049
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.5789922752567637,
+          0.6078275480803111
+        ]
+      },
+      "structure_only": {
+        "accuracy": 0.3308641975308642,
+        "session_bootstrap_ci95": [
+          0.31289638500869027,
+          0.349159755528588
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.3171980890984625,
+          0.34482175031453677
+        ]
+      },
+      "token_matched_history": {
+        "accuracy": 0.2877665544332211,
+        "session_bootstrap_ci95": [
+          0.2688014316400238,
+          0.3045764415654966
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.274659637086587,
+          0.30123917932348687
+        ]
+      },
+      "tool_solver": {
+        "accuracy": 1.0,
+        "session_bootstrap_ci95": [
+          1.0,
+          1.0
+        ],
+        "sessions": 1188,
+        "turns": 4455,
+        "wilson_ci95": [
+          0.9991384309323751,
+          1.0
+        ]
+      }
+    }
+  },
+  "across_models": {
+    "tea - gt_e2e": {
+      "frozen_graph_history": {
+        "ci95": [
+          -0.006977289718228504,
+          0.029113135877648383
+        ],
+        "loses": 929,
+        "mean_delta": 0.01122334455667789,
+        "n": 4455,
+        "p_value": 0.219,
+        "sessions": 1188,
+        "ties": 2547,
+        "wins": 979
+      },
+      "oracle_updated_graph": {
+        "ci95": [
+          -0.007277926344348009,
+          0.027940796082029786
+        ],
+        "loses": 941,
+        "mean_delta": 0.010101010101010102,
+        "n": 4455,
+        "p_value": 0.268,
+        "sessions": 1188,
+        "ties": 2528,
+        "wins": 986
+      },
+      "shuffled_graph": {
+        "ci95": [
+          -0.0296911919273346,
+          0.004966308336632935
+        ],
+        "loses": 948,
+        "mean_delta": -0.012345679012345678,
+        "n": 4455,
+        "p_value": 0.17,
+        "sessions": 1188,
+        "ties": 2614,
+        "wins": 893
+      },
+      "structure_only": {
+        "ci95": [
+          -0.006651138546330229,
+          0.026539211456850436
+        ],
+        "loses": 922,
+        "mean_delta": 0.010101010101010102,
+        "n": 4455,
+        "p_value": 0.26,
+        "sessions": 1188,
+        "ties": 2566,
+        "wins": 967
+      }
+    },
+    "tea - tea_run2": {
+      "frozen_graph_history": {
+        "ci95": [
+          -0.02151064034192996,
+          0.005309368284620353
+        ],
+        "loses": 587,
+        "mean_delta": -0.008305274971941638,
+        "n": 4455,
+        "p_value": 0.246,
+        "sessions": 1188,
+        "ties": 3318,
+        "wins": 550
+      },
+      "oracle_updated_graph": {
+        "ci95": [
+          -0.04255343492867228,
+          -0.013853871505848587
+        ],
+        "loses": 610,
+        "mean_delta": -0.028058361391694726,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 3360,
+        "wins": 485
+      },
+      "shuffled_graph": {
+        "ci95": [
+          -0.019633018395867233,
+          0.008472826033354476
+        ],
+        "loses": 617,
+        "mean_delta": -0.0053872053872053875,
+        "n": 4455,
+        "p_value": 0.471,
+        "sessions": 1188,
+        "ties": 3245,
+        "wins": 593
+      },
+      "structure_only": {
+        "ci95": [
+          -0.021430885345398294,
+          0.007221720416254856
+        ],
+        "loses": 612,
+        "mean_delta": -0.007407407407407408,
+        "n": 4455,
+        "p_value": 0.308,
+        "sessions": 1188,
+        "ties": 3264,
+        "wins": 579
+      }
+    },
+    "tea_run2 - gt_e2e": {
+      "frozen_graph_history": {
+        "ci95": [
+          0.0048263615179216955,
+          0.03367530576925065
+        ],
+        "loses": 447,
+        "mean_delta": 0.019528619528619527,
+        "n": 4455,
+        "p_value": 0.006,
+        "sessions": 1188,
+        "ties": 3474,
+        "wins": 534
+      },
+      "oracle_updated_graph": {
+        "ci95": [
+          0.023528481643391486,
+          0.05373528148798279
+        ],
+        "loses": 448,
+        "mean_delta": 0.038159371492704826,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 3389,
+        "wins": 618
+      },
+      "shuffled_graph": {
+        "ci95": [
+          -0.01967313793892708,
+          0.006167572136186107
+        ],
+        "loses": 426,
+        "mean_delta": -0.006958473625140292,
+        "n": 4455,
+        "p_value": 0.333,
+        "sessions": 1188,
+        "ties": 3634,
+        "wins": 395
+      },
+      "structure_only": {
+        "ci95": [
+          0.003892955702660946,
+          0.030991166619959553
+        ],
+        "loses": 418,
+        "mean_delta": 0.017508417508417508,
+        "n": 4455,
+        "p_value": 0.013,
+        "sessions": 1188,
+        "ties": 3541,
+        "wins": 496
+      }
+    }
+  },
+  "custom_pairs": {
+    "gt_e2e:oracle_updated_graph:soft_prompt:soft_prompt": {
+      "ci95": [
+        -0.016706760811177227,
+        0.01493232185374903
+      ],
+      "loses": 696,
+      "mean_delta": -0.001122334455667789,
+      "n": 4455,
+      "p_value": 0.908,
+      "sessions": 1188,
+      "ties": 3068,
+      "wins": 691
+    },
+    "tea:oracle_updated_graph:soft_prompt:soft_prompt": {
+      "ci95": [
+        -0.008085312032680455,
+        0.025942390138096846
+      ],
+      "loses": 770,
+      "mean_delta": 0.008978675645342313,
+      "n": 4455,
+      "p_value": 0.284,
+      "sessions": 1188,
+      "ties": 2875,
+      "wins": 810
+    }
+  },
+  "split": "test",
+  "within_model": {
+    "gt_e2e": {
+      "frozen_graph_history - question_only": {
+        "ci95": [
+          0.01787422757469731,
+          0.05645045811800944
+        ],
+        "loses": 1123,
+        "mean_delta": 0.03681257014590348,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 2045,
+        "wins": 1287
+      },
+      "frozen_graph_history - shuffled_graph": {
+        "ci95": [
+          -0.008243237577914385,
+          0.007374755962035199
+        ],
+        "loses": 186,
+        "mean_delta": -0.0008978675645342312,
+        "n": 4455,
+        "p_value": 0.872,
+        "sessions": 1188,
+        "ties": 4087,
+        "wins": 182
+      },
+      "oracle_updated_graph - frozen_graph_history": {
+        "ci95": [
+          0.017550393398156387,
+          0.03702972364136537
+        ],
+        "loses": 173,
+        "mean_delta": 0.027384960718294053,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 3987,
+        "wins": 295
+      },
+      "oracle_updated_graph - question_only": {
+        "ci95": [
+          0.045781587918709656,
+          0.08355045615753581
+        ],
+        "loses": 1054,
+        "mean_delta": 0.06419753086419754,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 2061,
+        "wins": 1340
+      },
+      "oracle_updated_graph - shuffled_graph": {
+        "ci95": [
+          0.018481056592744145,
+          0.03502877888057272
+        ],
+        "loses": 102,
+        "mean_delta": 0.02648709315375982,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 4133,
+        "wins": 220
+      },
+      "oracle_updated_graph - structure_only": {
+        "ci95": [
+          0.019317099691267887,
+          0.03577088676209656
+        ],
+        "loses": 87,
+        "mean_delta": 0.027384960718294053,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 4159,
+        "wins": 209
+      }
+    },
+    "soft_prompt": {},
+    "tea": {
+      "frozen_graph_history - question_only": {
+        "ci95": [
+          0.03305747915789897,
+          0.06383989448051947
+        ],
+        "loses": 523,
+        "mean_delta": 0.04803591470258137,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 3195,
+        "wins": 737
+      },
+      "frozen_graph_history - shuffled_graph": {
+        "ci95": [
+          0.010339699986431304,
+          0.035096808302439386
+        ],
+        "loses": 292,
+        "mean_delta": 0.022671156004489337,
+        "n": 4455,
+        "p_value": 0.002,
+        "sessions": 1188,
+        "ties": 3770,
+        "wins": 393
+      },
+      "oracle_updated_graph - frozen_graph_history": {
+        "ci95": [
+          0.01807487686946221,
+          0.03421395449277473
+        ],
+        "loses": 92,
+        "mean_delta": 0.026262626262626262,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 4154,
+        "wins": 209
+      },
+      "oracle_updated_graph - question_only": {
+        "ci95": [
+          0.05944355068281828,
+          0.08971255218438853
+        ],
+        "loses": 432,
+        "mean_delta": 0.07429854096520763,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 3260,
+        "wins": 763
+      },
+      "oracle_updated_graph - shuffled_graph": {
+        "ci95": [
+          0.03704535249214189,
+          0.061384902606369536
+        ],
+        "loses": 223,
+        "mean_delta": 0.0489337822671156,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 3791,
+        "wins": 441
+      },
+      "oracle_updated_graph - structure_only": {
+        "ci95": [
+          0.020389495514200273,
+          0.034631738822000546
+        ],
+        "loses": 58,
+        "mean_delta": 0.027384960718294053,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 4217,
+        "wins": 180
+      }
+    },
+    "tea_run2": {
+      "frozen_graph_history - question_only": {
+        "ci95": [
+          0.035293476008917996,
+          0.07597895189755076
+        ],
+        "loses": 959,
+        "mean_delta": 0.05544332210998878,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 2290,
+        "wins": 1206
+      },
+      "frozen_graph_history - shuffled_graph": {
+        "ci95": [
+          0.013271042610960494,
+          0.037890293537085264
+        ],
+        "loses": 320,
+        "mean_delta": 0.02558922558922559,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 3701,
+        "wins": 434
+      },
+      "oracle_updated_graph - frozen_graph_history": {
+        "ci95": [
+          0.03640833917629715,
+          0.056177490246690304
+        ],
+        "loses": 96,
+        "mean_delta": 0.04601571268237935,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 4058,
+        "wins": 301
+      },
+      "oracle_updated_graph - question_only": {
+        "ci95": [
+          0.08154091758594995,
+          0.12243711557494398
+        ],
+        "loses": 788,
+        "mean_delta": 0.10145903479236812,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 2427,
+        "wins": 1240
+      },
+      "oracle_updated_graph - shuffled_graph": {
+        "ci95": [
+          0.05835174636380697,
+          0.08566929878564641
+        ],
+        "loses": 286,
+        "mean_delta": 0.07160493827160494,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 3564,
+        "wins": 605
+      },
+      "oracle_updated_graph - structure_only": {
+        "ci95": [
+          0.03866431219813305,
+          0.05822168723401992
+        ],
+        "loses": 75,
+        "mean_delta": 0.04803591470258137,
+        "n": 4455,
+        "p_value": 0.0,
+        "sessions": 1188,
+        "ties": 4091,
+        "wins": 289
+      }
+    }
+  }
+}
