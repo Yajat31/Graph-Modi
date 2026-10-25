@@ -1,0 +1,370 @@
+{
+ "summary": {
+  "pass": 43,
+  "info": 10
+ },
+ "checks": [
+  {
+   "section": "labels",
+   "name": "static_train",
+   "status": "pass",
+   "detail": "0/24000 mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "static_train_unique_mode",
+   "status": "pass",
+   "detail": "0 tied modes"
+  },
+  {
+   "section": "labels",
+   "name": "static_train_counts",
+   "status": "info",
+   "detail": "{'edge_exists': 2544, 'reachability': 1992, 'constrained_reachability': 2258, 'cycle_membership': 2064, 'node_degree': 2726, 'filtered_neighbor_count': 2254, 'shortest_path': 2610, 'within_hops_count': 2321, 'most_common_attribute_within_hops': 1958, 'attribute_lookup': 1637, 'attribute_check': 1636}"
+  },
+  {
+   "section": "labels",
+   "name": "static_validation",
+   "status": "pass",
+   "detail": "0/2178 mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "static_validation_unique_mode",
+   "status": "pass",
+   "detail": "0 tied modes"
+  },
+  {
+   "section": "labels",
+   "name": "static_validation_counts",
+   "status": "info",
+   "detail": "{'edge_exists': 198, 'reachability': 198, 'constrained_reachability': 198, 'cycle_membership': 198, 'node_degree': 198, 'filtered_neighbor_count': 198, 'shortest_path': 198, 'within_hops_count': 198, 'most_common_attribute_within_hops': 198, 'attribute_lookup': 198, 'attribute_check': 198}"
+  },
+  {
+   "section": "labels",
+   "name": "static_test",
+   "status": "pass",
+   "detail": "0/4356 mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "static_test_unique_mode",
+   "status": "pass",
+   "detail": "0 tied modes"
+  },
+  {
+   "section": "labels",
+   "name": "static_test_counts",
+   "status": "info",
+   "detail": "{'edge_exists': 396, 'reachability': 396, 'constrained_reachability': 396, 'cycle_membership': 396, 'node_degree': 396, 'filtered_neighbor_count': 396, 'shortest_path': 396, 'within_hops_count': 396, 'most_common_attribute_within_hops': 396, 'attribute_lookup': 396, 'attribute_check': 396}"
+  },
+  {
+   "section": "labels",
+   "name": "test_full_grid",
+   "status": "pass",
+   "detail": "per-task counts {'attribute_check': 396, 'attribute_lookup': 396, 'constrained_reachability': 396, 'cycle_membership': 396, 'edge_exists': 396, 'filtered_neighbor_count': 396, 'most_common_attribute_within_hops': 396, 'node_degree': 396, 'reachability': 396, 'shortest_path': 396, 'within_hops_count': 396}"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_gold",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_stale",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_ties",
+   "status": "pass",
+   "detail": "0 tied modes across before/after"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_replay",
+   "status": "info",
+   "detail": "1316 fingerprint mismatches on non-ADD turns (informational)"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_gold",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_stale",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_ties",
+   "status": "pass",
+   "detail": "0 tied modes across before/after"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_replay",
+   "status": "info",
+   "detail": "1338 fingerprint mismatches on non-ADD turns (informational)"
+  },
+  {
+   "section": "structure",
+   "name": "train_closed_range",
+   "status": "pass",
+   "detail": "{'terminals_at_end': 10}"
+  },
+  {
+   "section": "structure",
+   "name": "train_edge_attrs",
+   "status": "pass",
+   "detail": "{'terminals_at_end': 10}"
+  },
+  {
+   "section": "structure",
+   "name": "train_node_order",
+   "status": "pass",
+   "detail": "10/3000 graphs park terminals at the end"
+  },
+  {
+   "section": "structure",
+   "name": "validation_closed_range",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "structure",
+   "name": "validation_edge_attrs",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "structure",
+   "name": "validation_node_order",
+   "status": "pass",
+   "detail": "0/198 graphs park terminals at the end"
+  },
+  {
+   "section": "structure",
+   "name": "test_closed_range",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "structure",
+   "name": "test_edge_attrs",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "structure",
+   "name": "test_node_order",
+   "status": "pass",
+   "detail": "0/396 graphs park terminals at the end"
+  },
+  {
+   "section": "structure",
+   "name": "sessions_validation_start_closed",
+   "status": "pass",
+   "detail": "0/1188 start outside 1-3"
+  },
+  {
+   "section": "structure",
+   "name": "sessions_test_start_closed",
+   "status": "pass",
+   "detail": "0/1188 start outside 1-3"
+  },
+  {
+   "section": "shortcuts",
+   "name": "cycle_degree_ceiling",
+   "status": "pass",
+   "detail": "50.0%"
+  },
+  {
+   "section": "shortcuts",
+   "name": "reach_status_ceiling",
+   "status": "pass",
+   "detail": "52.5%"
+  },
+  {
+   "section": "shortcuts",
+   "name": "seven_task_ceiling",
+   "status": "pass",
+   "detail": "44.4% (excludes node_degree; 8-task 51.3%)"
+  },
+  {
+   "section": "shortcuts",
+   "name": "eight_task_ceiling",
+   "status": "info",
+   "detail": "51.3% (includes node_degree at 100%)"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_noop_rate",
+   "status": "pass",
+   "detail": "0.182"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_net_noop",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_cancelling",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_reverts",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_always_connected",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_closed_fraction_mean",
+   "status": "info",
+   "detail": "0.138"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_mention_near_chance",
+   "status": "pass",
+   "detail": "mention 0.483 vs chance 0.264"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_edge_text_rule_fires",
+   "status": "info",
+   "detail": "7 (gate: <20% of edge_exists edit turns)"
+  },
+  {
+   "section": "sessions",
+   "name": "test_noop_rate",
+   "status": "pass",
+   "detail": "0.166"
+  },
+  {
+   "section": "sessions",
+   "name": "test_net_noop",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "test_cancelling",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "test_reverts",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "test_always_connected",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "sessions",
+   "name": "test_closed_fraction_mean",
+   "status": "info",
+   "detail": "0.137"
+  },
+  {
+   "section": "sessions",
+   "name": "test_mention_near_chance",
+   "status": "pass",
+   "detail": "mention 0.472 vs chance 0.262"
+  },
+  {
+   "section": "sessions",
+   "name": "test_edge_text_rule_fires",
+   "status": "info",
+   "detail": "15 (gate: <20% of edge_exists edit turns)"
+  },
+  {
+   "section": "prompt",
+   "name": "constrained_states_exemption",
+   "status": "pass",
+   "detail": "0 missing"
+  },
+  {
+   "section": "prompt",
+   "name": "text_leak_audit",
+   "status": "pass",
+   "detail": "flagged []"
+  },
+  {
+   "section": "splits",
+   "name": "train_test_overlap",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "splits",
+   "name": "train_sessions_overlap",
+   "status": "pass",
+   "detail": "0"
+  }
+ ],
+ "sections": {
+  "shortcuts": {
+   "status_only": {
+    "tasks": {
+     "edge_exists": 0.547979797979798,
+     "reachability": 0.5252525252525253,
+     "constrained_reachability": 0.48737373737373735,
+     "cycle_membership": 0.5227272727272727,
+     "node_degree": 0.1414141414141414,
+     "filtered_neighbor_count": 0.14646464646464646,
+     "shortest_path": 0.13383838383838384,
+     "within_hops_count": 0.11363636363636363
+    },
+    "eight": 0.32733585858585856
+   },
+   "degree_only": {
+    "tasks": {
+     "edge_exists": 0.5353535353535354,
+     "reachability": 0.6893939393939394,
+     "constrained_reachability": 0.5378787878787878,
+     "cycle_membership": 0.5,
+     "node_degree": 0.9974747474747475,
+     "filtered_neighbor_count": 0.29292929292929293,
+     "shortest_path": 0.32575757575757575,
+     "within_hops_count": 0.19444444444444445
+    },
+    "eight": 0.5091540404040404
+   },
+   "degree_status": {
+    "tasks": {
+     "edge_exists": 0.5606060606060606,
+     "reachability": 0.7146464646464646,
+     "constrained_reachability": 0.5025252525252525,
+     "cycle_membership": 0.5,
+     "node_degree": 0.9924242424242424,
+     "filtered_neighbor_count": 0.30303030303030304,
+     "shortest_path": 0.33585858585858586,
+     "within_hops_count": 0.1919191919191919
+    },
+    "eight": 0.5126262626262627,
+    "seven_ex_degree": 0.4440836940836941
+   }
+  }
+ }
+}

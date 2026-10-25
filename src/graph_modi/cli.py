@@ -33,6 +33,7 @@ from graph_modi.data.v2 import (
     save_static_tuples,
 )
 from graph_modi.data import v3 as data_v3
+from graph_modi.data import v4 as data_v4
 from graph_modi.data.validation import audit_sessions
 from graph_modi.evaluation.runner import CONDITIONS, evaluate_sessions
 from graph_modi.evaluation.static_eval import evaluate_static_oracle
@@ -101,6 +102,8 @@ def _generate(config: ExperimentConfig, *, progress: bool = True) -> dict[str, A
         return _generate_v2(config, progress=progress)
     if distribution == data_v3.DISTRIBUTION_V3:
         return _generate_v3(config, progress=progress)
+    if distribution == data_v4.DISTRIBUTION_V4:
+        return _generate_v4(config, progress=progress)
     counts = {
         "train": int(data.get("train_sessions", 0)),
         "validation": int(data.get("validation_sessions", 0)),
@@ -392,6 +395,82 @@ def _generate_v3(config: ExperimentConfig, *, progress: bool = True) -> dict[str
     return report
 
 
+def _generate_v4(config: ExperimentConfig, *, progress: bool = True) -> dict[str, Any]:
+    """Corrected metro_v4 benchmark (see data/v4.py and the 2026-10 audits)."""
+    data = config.section("data")
+    static_tasks = _reasoning_types(data, "static_tasks") or list(data_v4.STATIC_TASKS)
+    dynamic_tasks = _reasoning_types(data, "dynamic_tasks") or list(data_v4.DYNAMIC_TASKS)
+    cell_count = len(data_v4.NODE_COUNTS) * len(data_v4.DENSITIES)
+    seed = config.seed
+
+    static: dict[str, list[StaticQATuple]] = {}
+    static["train"] = data_v4.generate_static_v4(
+        split="train",
+        graph_count=int(data.get("static_train_graphs", 2000)),
+        tasks_per_graph=int(data.get("static_tuples_per_graph", 9)),
+        seed=seed,
+        sampler=data_v4.BalancedSampler(),
+        tasks=static_tasks,
+        progress=progress,
+    )
+    counterfactual_graphs = int(data.get("counterfactual_graphs", 0))
+    if counterfactual_graphs:
+        static["train"] += data_v4.generate_counterfactual_pairs_v4(
+            graph_count=counterfactual_graphs,
+            pairs_per_graph=int(data.get("counterfactual_pairs_per_graph", 3)),
+            seed=seed,
+            sampler=data_v4.BalancedSampler(),
+            tasks=[task for task in dynamic_tasks if task in data_v4.DYNAMIC_TASKS],
+            progress=progress,
+        )
+    for split in ("validation", "test"):
+        replicates = int(data.get(f"static_{split}_replicates", 0))
+        if replicates:
+            static[split] = data_v4.generate_static_v4(
+                split=split,
+                graph_count=cell_count * replicates,
+                tasks_per_graph=None,
+                seed=seed,
+                sampler=data_v4.BalancedSampler(),
+                tasks=static_tasks,
+                progress=progress,
+            )
+
+    session_cfg = data.get("sessions", {})
+    replicates = {
+        "validation": int(session_cfg.get("validation_replicates", 0)),
+        "test": int(session_cfg.get("test_replicates", 0)),
+    }
+    replicates = {key: value for key, value in replicates.items() if value > 0}
+    sessions = data_v4.generate_sessions_v4(
+        replicates_per_split=replicates, seed=seed, tasks=dynamic_tasks, progress=progress
+    )
+
+    report: dict[str, Any] = {"distribution": data_v4.DISTRIBUTION_V4}
+    for split, split_sessions in sessions.items():
+        save_sessions(_data_path(config, split), split_sessions)
+        report[split] = audit_sessions(split_sessions, allow_noop=True)
+        if not report[split]["valid"]:
+            raise RuntimeError(f"Generated invalid {split} data: {report[split]['failures'][:5]}")
+        report[split]["labels"] = data_v4.session_label_audit(split_sessions)
+        report[split]["graphs"] = data_v4.graph_audit(s.initial_graph for s in split_sessions)
+    for split, tuples in static.items():
+        save_static_tuples(_static_path(config, split), tuples)
+        report[f"static_{split}"] = {
+            "tuples": len(tuples),
+            "labels": data_v4.label_audit(tuples),
+            "graphs": data_v4.graph_audit(item.graph for item in tuples),
+        }
+    for split in ("validation", "test"):
+        if split in static and "train" in static:
+            report[f"static_{split}"]["text_leak_audit"] = data_v4.text_leak_audit(
+                static["train"], static[split]
+            )
+    _write_json(_audit_path(config), report)
+    _experiment_log(config, {"phase": "generate-v4", "distribution": data_v4.DISTRIBUTION_V4})
+    return report
+
+
 def _ensure_data(config: ExperimentConfig) -> None:
     if not _data_path(config, "test").exists():
         _generate(config)
@@ -454,7 +533,11 @@ def _optional_float(value: Any) -> float | None:
 def _validation_examples(config: ExperimentConfig) -> list[TrainingExample]:
     """Held-out examples (same construction as training) for the validation-loss curve."""
     data = config.section("data")
-    if str(data.get("distribution", DISTRIBUTION)) in (DISTRIBUTION_V2, data_v3.DISTRIBUTION_V3):
+    if str(data.get("distribution", DISTRIBUTION)) in (
+        DISTRIBUTION_V2,
+        data_v3.DISTRIBUTION_V3,
+        data_v4.DISTRIBUTION_V4,
+    ):
         static_path = _static_path(config, "validation")
         if static_path.exists():
             examples = _static_examples(load_static_tuples(static_path))
@@ -467,7 +550,11 @@ def _validation_examples(config: ExperimentConfig) -> list[TrainingExample]:
 
 def _training_examples(config: ExperimentConfig) -> list[TrainingExample]:
     data = config.section("data")
-    if str(data.get("distribution", DISTRIBUTION)) in (DISTRIBUTION_V2, data_v3.DISTRIBUTION_V3):
+    if str(data.get("distribution", DISTRIBUTION)) in (
+        DISTRIBUTION_V2,
+        data_v3.DISTRIBUTION_V3,
+        data_v4.DISTRIBUTION_V4,
+    ):
         static_path = _static_path(config, "train")
         if static_path.exists():
             return _static_examples(load_static_tuples(static_path))

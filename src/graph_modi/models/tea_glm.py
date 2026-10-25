@@ -1086,6 +1086,9 @@ class TEAGLMBackend:
         self.encode_calls += 1
         return self.model.tensorizer(graph)
 
+    # Few-shot revisions use the direct and service paraphrase families only.
+    # The notice family is held out so write-path accuracy is not a copy of the prompt
+    # (see data/v4.HELD_OUT_FAMILY).
     _EDIT_PROMPT_PREFIX = (
         "You maintain a metro graph. A revision may describe one or several changes "
         "at once, separated by \" ; \". Output every edit it describes, each in one "
@@ -1093,6 +1096,7 @@ class TEAGLMBackend:
         "  SET NODE <station> status open\n"
         "  SET NODE <station> status closed\n"
         "  ADD EDGE <station> <station> transfer\n"
+        "  ADD EDGE <station> <station> track\n"
         "  DEL EDGE <station> <station> track\n"
         "  DEL EDGE <station> <station> transfer\n"
         "  NOOP <reason>\n"
@@ -1103,18 +1107,20 @@ class TEAGLMBackend:
         "Edit: SET NODE Elm status closed ; END\n\n"
         "Revision: Service at Oak has resumed.\n"
         "Edit: SET NODE Oak status open ; END\n\n"
-        "Revision: Please mark Pine as closed.\n"
-        "Edit: SET NODE Pine status closed ; END\n\n"
-        "Revision: ADD EDGE Elm Cedar transfer\n"
+        "Revision: A new transfer link now connects Elm and Cedar.\n"
         "Edit: ADD EDGE Elm Cedar transfer ; END\n\n"
-        "Revision: DEL EDGE Oak Pine track\n"
+        "Revision: The track link between Oak and Pine is gone.\n"
         "Edit: DEL EDGE Oak Pine track ; END\n\n"
-        "Revision: NOOP: no graph update this turn.\n"
+        "Revision: A track connection between Elm and Ash has opened.\n"
+        "Edit: ADD EDGE Elm Ash track ; END\n\n"
+        "Revision: No change this turn.\n"
         "Edit: NOOP no change mentioned ; END\n\n"
-        "Revision: Elm is closed now. ; ADD EDGE Elm Cedar transfer\n"
+        "Revision: Operations report: no network changes.\n"
+        "Edit: NOOP no change mentioned ; END\n\n"
+        "Revision: Elm is closed now. ; A new transfer link now connects Elm and Cedar.\n"
         "Edit: SET NODE Elm status closed ; ADD EDGE Elm Cedar transfer ; END\n\n"
-        "Revision: Please mark Pine as closed. ; DEL EDGE Oak Pine track ; Service at Oak has resumed.\n"
-        "Edit: SET NODE Pine status closed ; DEL EDGE Oak Pine track ; SET NODE Oak status open ; END\n\n"
+        "Revision: Service at Oak has been suspended. ; The track connection between Oak and Pine has closed.\n"
+        "Edit: SET NODE Oak status closed ; DEL EDGE Oak Pine track ; END\n\n"
     )
 
     _EDIT_MAX_NEW_TOKENS = 64

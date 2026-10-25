@@ -1,0 +1,27 @@
+{
+ "seed": 42,
+ "distribution": "metro_v4",
+ "generator": "graph_modi.data.v4",
+ "files": {
+  "sessions_test.jsonl": {
+   "sha256": "6486dcb394f77770f3688acbd6574bb8518954dbc705a13d6ecc3d1ccf4bd988",
+   "bytes": 20829313
+  },
+  "sessions_validation.jsonl": {
+   "sha256": "c23748f346421755498873ebd6fb55f12273947d2c006f96570d3673bd1996a7",
+   "bytes": 20876950
+  },
+  "static_test.jsonl": {
+   "sha256": "2d5d74c87125954371f7a33fe9bd9c20eaf8a88c772490dc0c09e8ec27ca56c5",
+   "bytes": 43259848
+  },
+  "static_train.jsonl": {
+   "sha256": "b9c2c25c711693085f20f131a639d9a4074e38c75082a31b566f3503ec1833c9",
+   "bytes": 238421953
+  },
+  "static_validation.jsonl": {
+   "sha256": "3e81cd7dafcef68f7a925019d70a27bf92de3a9396ae2110f635c0a61cbb4603",
+   "bytes": 21762264
+  }
+ }
+}

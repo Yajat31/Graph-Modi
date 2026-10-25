@@ -25,6 +25,7 @@ No dataset files are committed. The v3 benchmark is generated deterministically 
 |---|---|---|
 | `metro_v3` | [`configs/v3_tea.yaml`](../configs/v3_tea.yaml) | v3 static + multi-turn benchmark (`graph-modi generate --config configs/v3_tea.yaml`) |
 | `metro_v3_big` | [`configs/v3x_data.yaml`](../configs/v3x_data.yaml) | 3x training data for the `v3x_data` variant |
+| `metro_v4` | [`configs/v4_data.yaml`](../configs/v4_data.yaml) | **Corrected** benchmark (`data/v4.py`); not comparable with v3. Gate: `scripts/audit_v4_gates.py` |
 
 ## Layout rules
 
