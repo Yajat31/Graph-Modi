@@ -65,7 +65,9 @@ def test_lr_multiplier_constant_warmup_and_decay() -> None:
     assert lr_multiplier(55, 100, schedule="cosine", warmup_steps=10) == pytest.approx(0.5)
     assert lr_multiplier(100, 100, schedule="cosine", warmup_steps=10) == pytest.approx(0.0)
     assert lr_multiplier(100, 100, schedule="linear", min_lr_ratio=0.1) == pytest.approx(0.1)
-    values = [lr_multiplier(step, 100, schedule="cosine", warmup_steps=10) for step in range(10, 101)]
+    values = [
+        lr_multiplier(step, 100, schedule="cosine", warmup_steps=10) for step in range(10, 101)
+    ]
     assert values == sorted(values, reverse=True)
 
 
@@ -127,8 +129,10 @@ def test_aggregate_rows_reports_session_bootstrap_ci() -> None:
 def test_paired_bootstrap_detects_a_real_gap_and_not_a_null_one() -> None:
     rng = random.Random(1)
     base = {f"s{i}": [rng.random() < 0.5 for _ in range(4)] for i in range(80)}
-    better = {session: [True if rng.random() < 0.3 else ok for ok in outcomes]
-              for session, outcomes in base.items()}
+    better = {
+        session: [True if rng.random() < 0.3 else ok for ok in outcomes]
+        for session, outcomes in base.items()
+    }
     gap = paired_cluster_bootstrap(_rows(better), _rows(base), resamples=1000)
     assert gap["mean_delta"] > 0.05
     assert gap["ci95"][0] > 0 and gap["p_value"] < 0.01
@@ -229,21 +233,35 @@ def _tiny_model(*, gnn_dropout: float = 0.0, seed: int = 0):
     )
 
     words = ["<pad>", "<bos>", "<eos>", "<unk>", "question", ":", "answer", "yes", "no", "is", "?"]
-    tok = tokenizers.Tokenizer(tokenizers.models.WordLevel({w: i for i, w in enumerate(words)}, "<unk>"))
+    tok = tokenizers.Tokenizer(
+        tokenizers.models.WordLevel({w: i for i, w in enumerate(words)}, "<unk>")
+    )
     tok.pre_tokenizer = tokenizers.pre_tokenizers.Whitespace()
     tokenizer = transformers.PreTrainedTokenizerFast(
-        tokenizer_object=tok, bos_token="<bos>", eos_token="<eos>", pad_token="<pad>", unk_token="<unk>"
+        tokenizer_object=tok,
+        bos_token="<bos>",
+        eos_token="<eos>",
+        pad_token="<pad>",
+        unk_token="<unk>",
     )
     torch.manual_seed(seed)
     lm = transformers.GPT2LMHeadModel(
         transformers.GPT2Config(
-            vocab_size=len(words), n_embd=16, n_layer=1, n_head=2, n_positions=64,
-            resid_pdrop=0.0, embd_pdrop=0.0, attn_pdrop=0.0,
+            vocab_size=len(words),
+            n_embd=16,
+            n_layer=1,
+            n_head=2,
+            n_positions=64,
+            resid_pdrop=0.0,
+            embd_pdrop=0.0,
+            attn_pdrop=0.0,
         )
     )
     return TEAGLM(
         gnn=GraphSAGEEncoder(
-            GraphSAGEConfig(input_dim=16, hidden_dim=8, output_dim=8, num_layers=2, dropout=gnn_dropout)
+            GraphSAGEConfig(
+                input_dim=16, hidden_dim=8, output_dim=8, num_layers=2, dropout=gnn_dropout
+            )
         ),
         projector=GraphPrefixProjector(
             PrefixProjectorConfig(
@@ -272,8 +290,11 @@ def _examples(count: int = 6):
                 answer="yes" if index % 2 else "no",
                 example_id=f"e{index}",
                 split="train",
-                metadata={"reasoning_type": "edge_exists", "source_id": graph.nodes[0].id,
-                          "target_id": graph.nodes[1].id},
+                metadata={
+                    "reasoning_type": "edge_exists",
+                    "source_id": graph.nodes[0].id,
+                    "target_id": graph.nodes[1].id,
+                },
             )
         )
     return out
@@ -287,13 +308,19 @@ def test_zero_gnn_ablation_hides_the_graph_but_keeps_the_task() -> None:
 
     def vector(graph, ablation, task="edge_exists"):
         model.graph_ablation = ablation
-        return model.encode_graphs([graph], source_ids=[graph.nodes[0].id],
-                                   target_ids=[graph.nodes[1].id], hops=[None],
-                                   reasoning_types=[task])
+        return model.encode_graphs(
+            [graph],
+            source_ids=[graph.nodes[0].id],
+            target_ids=[graph.nodes[1].id],
+            hops=[None],
+            reasoning_types=[task],
+        )
 
     assert not torch.equal(vector(graphs[0], "none"), vector(graphs[1], "none"))
     assert torch.equal(vector(graphs[0], "zero_gnn"), vector(graphs[1], "zero_gnn"))
-    assert not torch.equal(vector(graphs[0], "zero_gnn"), vector(graphs[0], "zero_gnn", "reachability"))
+    assert not torch.equal(
+        vector(graphs[0], "zero_gnn"), vector(graphs[0], "zero_gnn", "reachability")
+    )
     del kwargs
 
 
@@ -304,8 +331,15 @@ def test_joint_training_uses_two_groups_and_the_schedule(tmp_path) -> None:
     model = _tiny_model()
     before = {k: v.clone() for k, v in model.gnn.state_dict().items()}
     config = ProjectorTrainingConfig(
-        output_dir=tmp_path, epochs=2, batch_size=2, learning_rate=1e-2, gnn_learning_rate=1e-3,
-        lr_schedule="cosine", warmup_steps=2, train_gnn=True, eval_every_steps=3,
+        output_dir=tmp_path,
+        epochs=2,
+        batch_size=2,
+        learning_rate=1e-2,
+        gnn_learning_rate=1e-3,
+        lr_schedule="cosine",
+        warmup_steps=2,
+        train_gnn=True,
+        eval_every_steps=3,
         save_every_steps=100,
     )
     examples = _examples()
@@ -328,8 +362,16 @@ def test_graphtoken_resume_matches_an_uninterrupted_run(tmp_path) -> None:
 
     def config(out, **extra):
         return ProjectorTrainingConfig(
-            output_dir=out, epochs=3, batch_size=2, learning_rate=1e-2, gnn_learning_rate=1e-3,
-            lr_schedule="linear", warmup_steps=1, train_gnn=True, save_every_steps=4, **extra
+            output_dir=out,
+            epochs=3,
+            batch_size=2,
+            learning_rate=1e-2,
+            gnn_learning_rate=1e-3,
+            lr_schedule="linear",
+            warmup_steps=1,
+            train_gnn=True,
+            save_every_steps=4,
+            **extra,
         )
 
     full = _tiny_model()
@@ -337,7 +379,9 @@ def test_graphtoken_resume_matches_an_uninterrupted_run(tmp_path) -> None:
     # steps/epoch = 4, so checkpoint-00000004 is the end of epoch 1.
     resumed = _tiny_model()  # fresh random GNN: its hash differs from the checkpoint's
     train_projector(
-        resumed, examples, config(tmp_path / "resumed", resume_from=tmp_path / "full" / "checkpoint-00000004")
+        resumed,
+        examples,
+        config(tmp_path / "resumed", resume_from=tmp_path / "full" / "checkpoint-00000004"),
     )
     for name, value in full.projector.state_dict().items():
         assert torch.allclose(value, resumed.projector.state_dict()[name], atol=1e-6), name
@@ -351,15 +395,21 @@ def test_warm_start_loads_gnn_and_projector(tmp_path) -> None:
 
     source = _tiny_model(seed=1)
     train_projector(
-        source, _examples(),
+        source,
+        _examples(),
         ProjectorTrainingConfig(output_dir=tmp_path / "a", epochs=1, batch_size=2, train_gnn=True),
     )
     target = _tiny_model(seed=2)
     train_projector(
-        target, _examples(),
+        target,
+        _examples(),
         ProjectorTrainingConfig(
-            output_dir=tmp_path / "b", epochs=1, batch_size=2, learning_rate=1e-12,
-            train_gnn=True, init_checkpoint=tmp_path / "a" / "checkpoint-final",
+            output_dir=tmp_path / "b",
+            epochs=1,
+            batch_size=2,
+            learning_rate=1e-12,
+            train_gnn=True,
+            init_checkpoint=tmp_path / "a" / "checkpoint-final",
         ),
     )
     for name, value in source.gnn.state_dict().items():  # lr ~ 0: weights stay at the warm start
@@ -379,9 +429,19 @@ def test_contrastive_pretraining_actually_updates_the_gnn(tmp_path) -> None:
     graphs = [e.graph for e in _examples(6)]
     for target in ("mean", "attrs_only", "status_weighted"):
         pretrain_graph_encoder_contrastive(
-            model.gnn, model.tensorizer, graphs, model.language_model, model.tokenizer,
-            output_dir=tmp_path / target, epochs=2, graphs_per_batch=2, learning_rate=1e-2,
-            seed=0, target=target, dropout=0.0, eval_graphs=graphs[:4],
+            model.gnn,
+            model.tensorizer,
+            graphs,
+            model.language_model,
+            model.tokenizer,
+            output_dir=tmp_path / target,
+            epochs=2,
+            graphs_per_batch=2,
+            learning_rate=1e-2,
+            seed=0,
+            target=target,
+            dropout=0.0,
+            eval_graphs=graphs[:4],
         )
         saved = torch.load(tmp_path / target / "gnn.pt", map_location="cpu", weights_only=True)
         assert any(not torch.equal(before[k], saved[k]) for k in before)
@@ -400,8 +460,12 @@ def test_vector_standardisation_is_a_noop_option_that_runs() -> None:
     torch = pytest.importorskip("torch")
     model = _tiny_model()
     graphs = [e.graph for e in _examples(2)]
-    kwargs = {"reasoning_types": ["edge_exists"] * 2, "hops": [None, None],
-              "source_ids": [g.nodes[0].id for g in graphs], "target_ids": [g.nodes[1].id for g in graphs]}
+    kwargs = {
+        "reasoning_types": ["edge_exists"] * 2,
+        "hops": [None, None],
+        "source_ids": [g.nodes[0].id for g in graphs],
+        "target_ids": [g.nodes[1].id for g in graphs],
+    }
     plain = model.graph_prefix(graphs, **kwargs)
     model.graph_vector_norm = "standardize"
     standardized = model.graph_prefix(graphs, **kwargs)
@@ -415,7 +479,9 @@ def test_sum_mlp_aggregation_adds_modules_only_for_itself_and_keeps_degree() -> 
     def build(aggregation):
         torch.manual_seed(0)
         return GraphSAGEEncoder(
-            GraphSAGEConfig(input_dim=8, hidden_dim=8, output_dim=8, num_layers=2, aggregation=aggregation)
+            GraphSAGEConfig(
+                input_dim=8, hidden_dim=8, output_dim=8, num_layers=2, aggregation=aggregation
+            )
         )
 
     assert not any(k.startswith("message_mlps") for k in build("sum").state_dict())
@@ -438,8 +504,12 @@ def test_degree_balanced_generation_removes_the_degree_shortcut() -> None:
         v3.set_degree_balance(balanced)
         try:
             return v3.generate_static_v3(
-                split="validation", graph_count=33 * 12, tasks_per_graph=None, seed=7,
-                sampler=v3.BalancedSampler(), progress=False,
+                split="validation",
+                graph_count=33 * 12,
+                tasks_per_graph=None,
+                seed=7,
+                sampler=v3.BalancedSampler(),
+                progress=False,
             )
         finally:
             v3.set_degree_balance(False)
@@ -455,8 +525,10 @@ def test_degree_balanced_generation_removes_the_degree_shortcut() -> None:
                 degree[e.source] += 1
                 degree[e.target] += 1
             cap = 3 if item.query.target else 4  # the bins the sampler balances on
-            key = (min(degree[item.query.source], cap),
-                   min(degree[item.query.target], cap) if item.query.target else -1)
+            key = (
+                min(degree[item.query.source], cap),
+                min(degree[item.query.target], cap) if item.query.target else -1,
+            )
             table[key][item.answer] += 1
         total = sum(sum(c.values()) for c in table.values())
         return sum(c.most_common(1)[0][1] for c in table.values()) / total

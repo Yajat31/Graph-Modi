@@ -68,9 +68,7 @@ def evaluate_static_oracle(
                     "gold_answer": gold,
                     "predicted_answer": pred,
                     "raw_prediction": predicted,
-                    "correct": answers_match(
-                        item.answer, predicted, reasoning_type=reasoning_type
-                    ),
+                    "correct": answers_match(item.answer, predicted, reasoning_type=reasoning_type),
                 }
             )
         tracker.tick(batch=f"{min(offset + batch_size, total)}/{total}")

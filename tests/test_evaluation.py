@@ -49,7 +49,13 @@ def test_paired_conditions_expose_stale_graph_control() -> None:
 def test_new_baseline_conditions_exist() -> None:
     from graph_modi.evaluation.runner import CONDITIONS
 
-    for name in ("soft_prompt", "structure_only", "modify_and_print", "stale_answer", "majority_answer"):
+    for name in (
+        "soft_prompt",
+        "structure_only",
+        "modify_and_print",
+        "stale_answer",
+        "majority_answer",
+    ):
         assert name in CONDITIONS
 
 
@@ -67,12 +73,8 @@ def test_answers_match_is_exact_for_boolean_tasks() -> None:
 
 
 def test_answers_match_compares_lists_as_sets() -> None:
-    assert answers_match(
-        "Belmont, Crount", "Crount, Belmont", reasoning_type="within_hops_list"
-    )
-    assert not answers_match(
-        "Belmont, Crount", "Belmont", reasoning_type="within_hops_list"
-    )
+    assert answers_match("Belmont, Crount", "Crount, Belmont", reasoning_type="within_hops_list")
+    assert not answers_match("Belmont, Crount", "Belmont", reasoning_type="within_hops_list")
     assert answers_match("none", "none", reasoning_type="within_hops_list")
 
 

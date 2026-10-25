@@ -18,7 +18,7 @@ Builds on v3 but does not modify it. Changes vs v3:
 from __future__ import annotations
 
 import random
-from collections import Counter, defaultdict, deque
+from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
@@ -142,7 +142,8 @@ def _base_topology_chains(
     edges: set[tuple[int, int]] = set()
     if core >= 3:
         for index in range(core):
-            edges.add(tuple(sorted((index, (index + 1) % core))))
+            left, right = sorted((index, (index + 1) % core))
+            edges.add((left, right))
     else:
         for index in range(1, core):
             edges.add((0, index))
@@ -169,21 +170,24 @@ def _edge_record(
     left_id: str,
     right_id: str,
     lines: dict[str, str],
-    rng: random.Random,
+    rng: random.Random | None = None,
 ) -> Edge:
+    """Build a track/transfer edge with deterministic attributes.
+
+    See ``executor.metro_edge_attributes``. ``rng`` is accepted for call-site
+    compatibility but unused: replay via ``apply_edit`` must match generation,
+    which forbids stream-dependent attributes.
+    """
+    del rng  # deterministic; see metro_edge_attributes
+    from graph_modi.graph.executor import metro_edge_attributes
+
     same = lines[left_id] == lines[right_id]
-    line = lines[left_id]
     return Edge(
         source=left_id,
         target=right_id,
         relation="track" if same else "transfer",
         weight=1.0,
-        attributes={
-            "line_color": line if same else "transfer",
-            "line_stroke": V3.LINE_STROKES[line] if same else "solid",
-            "has_aircon": bool(rng.getrandbits(1)),
-            "built": rng.randint(1950, 2020),
-        },
+        attributes=dict(metro_edge_attributes(left_id, right_id, lines)),
     )
 
 
@@ -197,11 +201,15 @@ def make_metro_graph_v4(
     closed_count: int | None = None,
 ) -> AttributedGraph:
     # Dense / large graphs need shorter chains to stay under the diameter cap.
-    max_chain = 2 if density is DensityBin.DENSE or node_count >= 20 else 3 if density is DensityBin.MEDIUM else 4
+    max_chain = (
+        2
+        if density is DensityBin.DENSE or node_count >= 20
+        else 3
+        if density is DensityBin.MEDIUM
+        else 4
+    )
     for _ in range(2000):
-        edges = _base_topology_chains(
-            rng, node_count, MEAN_DEGREE[density], max_chain=max_chain
-        )
+        edges = _base_topology_chains(rng, node_count, MEAN_DEGREE[density], max_chain=max_chain)
         adjacency = V3._adjacency(node_count, edges)
         ecc = V3._eccentricities(adjacency)
         if ecc is not None and max(ecc) <= MAX_DIAMETER[density]:
@@ -277,7 +285,9 @@ def render_question_v4(query: GraphQuery, graph: AttributedGraph) -> str:
             f"station where {query.attribute} is {query.value}? "
             f"(The start and end stations are exempt.) Answer yes or no."
         )
-        return _prepend_wfi(body, graph, query.source, query.target, wfi_excluded_attributes(query, graph))
+        return _prepend_wfi(
+            body, graph, query.source, query.target, wfi_excluded_attributes(query, graph)
+        )
     from graph_modi.graph.solvers import render_question
 
     return render_question(query, graph)
@@ -285,7 +295,13 @@ def render_question_v4(query: GraphQuery, graph: AttributedGraph) -> str:
 
 def _hop_v4(query: GraphQuery, graph: AttributedGraph) -> HopDepth:
     kind = query.reasoning_type
-    if kind in (ReasoningType.ATTRIBUTE_LOOKUP, ReasoningType.ATTRIBUTE_CHECK, ReasoningType.NODE_DEGREE, ReasoningType.FILTERED_NEIGHBOR_COUNT, ReasoningType.EDGE_EXISTS):
+    if kind in (
+        ReasoningType.ATTRIBUTE_LOOKUP,
+        ReasoningType.ATTRIBUTE_CHECK,
+        ReasoningType.NODE_DEGREE,
+        ReasoningType.FILTERED_NEIGHBOR_COUNT,
+        ReasoningType.EDGE_EXISTS,
+    ):
         return HopDepth.LOCAL
     if kind in (ReasoningType.WITHIN_HOPS_COUNT, ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS):
         hops = query.hops or 2
@@ -381,16 +397,22 @@ def stratum_v4(graph: AttributedGraph, query: GraphQuery) -> str:
     nodes = graph.node_map()
     parts: list[str] = []
     if query.target is not None and query.target in nodes:
-        same = nodes[query.source].attributes.get("line") == nodes[query.target].attributes.get("line")
+        same = nodes[query.source].attributes.get("line") == nodes[query.target].attributes.get(
+            "line"
+        )
         parts.append("same_line" if same else "diff_line")
     if query.attribute:
         parts.append(str(query.attribute))
     if query.hops is not None:
         parts.append(f"h{query.hops}")
-    if query.reasoning_type in (
-        ReasoningType.REACHABILITY,
-        ReasoningType.SHORTEST_PATH,
-    ) and query.target is not None:
+    if (
+        query.reasoning_type
+        in (
+            ReasoningType.REACHABILITY,
+            ReasoningType.SHORTEST_PATH,
+        )
+        and query.target is not None
+    ):
         # Balance closed-endpoint vs both-open so status cannot dominate.
         closed_end = (not _is_open(graph, query.source)) or (not _is_open(graph, query.target))
         parts.append("end_closed" if closed_end else "both_open")
@@ -406,6 +428,12 @@ def stratum_v4(graph: AttributedGraph, query: GraphQuery) -> str:
         if query.target is not None and query.target in degree:
             bins.append(f"deg{min(degree[query.target], 3)}")
         parts.append("-".join(bins))
+    # Cycle queries only name the source; balance yes/no inside prompt-visible source
+    # attribute cells so W(f_i) text cannot pick up a spurious cleanliness/rail correlation.
+    if query.reasoning_type is ReasoningType.CYCLE_MEMBERSHIP:
+        src = nodes[query.source]
+        parts.append(f"cln={src.attributes.get('cleanliness')}")
+        parts.append(f"rail={src.attributes.get('has_rail')}")
     return "|".join(parts)
 
 
@@ -513,9 +541,7 @@ def _candidate_edit_v4(
         )
     if operation is EditOperation.DEL and graph.edges:
         bridges = _bridges_named(graph)
-        removable = [
-            e for e in graph.edges if frozenset((e.source, e.target)) not in bridges
-        ]
+        removable = [e for e in graph.edges if frozenset((e.source, e.target)) not in bridges]
         if not removable:
             return None
         edge = rng.choice(removable)
@@ -529,39 +555,30 @@ def _candidate_edit_v4(
     return None
 
 
-def _state_key(graph: AttributedGraph) -> tuple:
+def _state_key(graph: AttributedGraph) -> tuple[frozenset[str], frozenset[frozenset[str]]]:
     closed = frozenset(n.id for n in graph.nodes if n.attributes.get("status") == "closed")
     edges = frozenset(frozenset((e.source, e.target)) for e in graph.edges)
     return (closed, edges)
 
 
-def _touches(edit: GraphEdit) -> tuple:
+def _touches(edit: GraphEdit) -> tuple[str, str | frozenset[str] | None]:
     if edit.target is EditTarget.NODE:
         return ("n", edit.node_id)
-    return ("e", frozenset((edit.source, edit.destination)))
+    return ("e", frozenset((edit.source or "", edit.destination or "")))
 
 
-def apply_program_v4(graph: AttributedGraph, program: EditProgram, rng: random.Random) -> AttributedGraph:
-    """Apply edits, then give ADD edges the same attributes original edges carry."""
+def apply_program_v4(
+    graph: AttributedGraph, program: EditProgram, rng: random.Random
+) -> AttributedGraph:
+    """Apply edits. ADD edges get CLEGR-style attributes inside ``apply_edit`` (deterministic)."""
+    del rng  # attributes no longer depend on the session RNG stream
     current = graph
     for edit in program.edits:
         if edit.operation is EditOperation.NOOP:
             continue
-        before_edges = {frozenset((e.source, e.target)): e for e in current.edges}
         result = apply_edit(current, edit)
-        if not result.applied:
-            continue
-        current = result.graph
-        if edit.target is EditTarget.EDGE and edit.operation is EditOperation.ADD:
-            lines = {n.id: str(n.attributes["line"]) for n in current.nodes}
-            new_edges = []
-            for edge in current.edges:
-                key = frozenset((edge.source, edge.target))
-                if key not in before_edges:
-                    new_edges.append(_edge_record(edge.source, edge.target, lines, rng))
-                else:
-                    new_edges.append(edge)
-            current = replace(current, edges=tuple(new_edges))
+        if result.applied:
+            current = result.graph
     return current
 
 
@@ -570,7 +587,7 @@ def sample_edit_program_v4(
     rng: random.Random,
     *,
     force_noop: bool = False,
-    seen_states: set[tuple] | None = None,
+    seen_states: set[tuple[frozenset[str], frozenset[frozenset[str]]]] | None = None,
 ) -> EditProgram:
     if force_noop:
         return EditProgram(edits=(GraphEdit(operation=EditOperation.NOOP, reason="explicit"),))
@@ -579,7 +596,7 @@ def sample_edit_program_v4(
     for _attempt in range(48):
         edits: list[GraphEdit] = []
         current = graph
-        touched: set[tuple] = set()
+        touched: set[tuple[str, str | frozenset[str] | None]] = set()
         for _ in range(edit_count):
             placed = False
             for _try in range(32):
@@ -682,7 +699,7 @@ def _mentions_edit(query: GraphQuery, edits: Sequence[GraphEdit]) -> bool:
     return bool(named & touched)
 
 
-# --------------------------------------------------------------------------- static / counterfactual / sessions
+# -------------------------------------------------------- static / counterfactual / sessions
 def generate_static_v4(
     *,
     split: str,
@@ -695,7 +712,9 @@ def generate_static_v4(
 ) -> list[StaticQATuple]:
     offsets = {"train": 0, "validation": 5_000_000, "test": 6_000_000}
     cells = _cells()
-    tracker = ProgressTracker("[generate]", graph_count, phase=f"static-v4-{split}", enabled=progress)
+    tracker = ProgressTracker(
+        "[generate]", graph_count, phase=f"static-v4-{split}", enabled=progress
+    )
     tracker.banner(graphs=graph_count)
     result: list[StaticQATuple] = []
     for index in range(graph_count):
@@ -732,7 +751,15 @@ def generate_static_v4(
             answered = _two_sided_v4(task, answered) or answered
             query, answer = sampler.choose((split, task.value, density.value), answered, rng)
             result.append(
-                _static_tuple(split, graph, query, answer, f"{split}-static-{index:06d}-{j:02d}", density, task)
+                _static_tuple(
+                    split,
+                    graph,
+                    query,
+                    answer,
+                    f"{split}-static-{index:06d}-{j:02d}",
+                    density,
+                    task,
+                )
             )
         tracker.tick(graph_i=f"{index + 1}/{graph_count}")
     tracker.end(tuples=len(result))
@@ -750,7 +777,9 @@ def generate_counterfactual_pairs_v4(
 ) -> list[StaticQATuple]:
     cells = _cells()
     split = "train"
-    tracker = ProgressTracker("[generate]", graph_count, phase="counterfactual-v4", enabled=progress)
+    tracker = ProgressTracker(
+        "[generate]", graph_count, phase="counterfactual-v4", enabled=progress
+    )
     tracker.banner(graphs=graph_count)
     result: list[StaticQATuple] = []
     for index in range(graph_count):
@@ -793,8 +822,13 @@ def generate_counterfactual_pairs_v4(
             ):
                 result.append(
                     _static_tuple(
-                        split, item_graph, query, answer,
-                        f"train-cf-{index:06d}-{made:02d}-{label}", density, task,
+                        split,
+                        item_graph,
+                        query,
+                        answer,
+                        f"train-cf-{index:06d}-{made:02d}-{label}",
+                        density,
+                        task,
                         {"counterfactual": label},
                     )
                 )
@@ -822,7 +856,7 @@ def generate_session_v4(
     current = initial
     turns: list[Turn] = []
     family = PARAPHRASE_FAMILIES[index % len(PARAPHRASE_FAMILIES)]
-    seen_states: set[tuple] = {_state_key(initial)}
+    seen_states: set[tuple[frozenset[str], frozenset[frozenset[str]]]] = {_state_key(initial)}
     for turn_index in range(turn_count):
         force_noop = rng.random() < NOOP_RATE
         program = sample_edit_program_v4(

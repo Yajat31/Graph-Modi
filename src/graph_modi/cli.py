@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from graph_modi.config import ExperimentConfig, load_config
+from graph_modi.data import v3 as data_v3
+from graph_modi.data import v4 as data_v4
 from graph_modi.data.freeze_v1 import freeze_v1_manifest
 from graph_modi.data.multiturn import (
     DEFAULT_GRAPH_DEGREE,
@@ -32,8 +34,6 @@ from graph_modi.data.v2 import (
     load_static_tuples,
     save_static_tuples,
 )
-from graph_modi.data import v3 as data_v3
-from graph_modi.data import v4 as data_v4
 from graph_modi.data.validation import audit_sessions
 from graph_modi.evaluation.runner import CONDITIONS, evaluate_sessions
 from graph_modi.evaluation.static_eval import evaluate_static_oracle
@@ -310,13 +310,25 @@ def _generate_v2(config: ExperimentConfig, *, progress: bool = True) -> dict[str
         config,
         {
             "phase": "generate-v2",
-            "report": {key: (value if key.startswith("static_") else {"sessions": value.get("sessions"), "turns": value.get("turns"), "valid": value.get("valid")}) for key, value in report.items()},
+            "report": {
+                key: (
+                    value
+                    if key.startswith("static_")
+                    else {
+                        "sessions": value.get("sessions"),
+                        "turns": value.get("turns"),
+                        "valid": value.get("valid"),
+                    }
+                )
+                for key, value in report.items()
+            },
             "distribution": DISTRIBUTION_V2,
             "session_layout": session_layout,
             "dynamic_only": dynamic_only,
         },
     )
     return report
+
 
 def _generate_v3(config: ExperimentConfig, *, progress: bool = True) -> dict[str, Any]:
     """Compact CLEGR-style subway graphs, label-balanced (see data/v3.py)."""
@@ -819,7 +831,8 @@ def command_train(config: ExperimentConfig, _args: argparse.Namespace) -> None:
         return
     training = config.section("training")
     train_config = ProjectorTrainingConfig(
-        output_dir=config.output_dir / ("soft_prompt" if model_config.get("backend") == "soft_prompt" else "projector"),
+        output_dir=config.output_dir
+        / ("soft_prompt" if model_config.get("backend") == "soft_prompt" else "projector"),
         epochs=int(training.get("epochs", 5)),
         batch_size=int(training.get("batch_size", 1)),
         gradient_accumulation_steps=int(training.get("gradient_accumulation_steps", 1)),
@@ -942,7 +955,7 @@ def _backend(config: ExperimentConfig) -> GraphBackend:
             soft_model,
             max_new_tokens=int(config.section("evaluation").get("max_new_tokens", 32)),
         )
-    from graph_modi.models.tea_glm import TEAGLMBackend, load_checkpoint_metadata
+    from graph_modi.models.tea_glm import TEAGLMBackend
 
     model = _tea_model(config)
     checkpoint = Path(

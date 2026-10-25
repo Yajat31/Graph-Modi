@@ -107,10 +107,16 @@ class BertNodeTensorizer:
         directed_edges: list[tuple[int, int, float, str]] = []
         for edge in graph.edges:
             if edge.source not in index or edge.target not in index:
-                raise ValueError(f"Edge {edge.source!r}->{edge.target!r} references an unknown node")
-            directed_edges.append((index[edge.source], index[edge.target], float(edge.weight), edge.relation))
+                raise ValueError(
+                    f"Edge {edge.source!r}->{edge.target!r} references an unknown node"
+                )
+            directed_edges.append(
+                (index[edge.source], index[edge.target], float(edge.weight), edge.relation)
+            )
             if not graph.directed and edge.source != edge.target:
-                directed_edges.append((index[edge.target], index[edge.source], float(edge.weight), edge.relation))
+                directed_edges.append(
+                    (index[edge.target], index[edge.source], float(edge.weight), edge.relation)
+                )
         directed_edges.sort(key=lambda item: (item[0], item[1], item[3], item[2]))
         if directed_edges:
             edge_index = torch.tensor(

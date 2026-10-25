@@ -164,9 +164,7 @@ def _adjust_graph_density(
         edge_count = len(current.edges)
         max_edges = len(node_ids) * (len(node_ids) - 1) // 2
         ratio = edge_count / max(1, max_edges)
-        if target is DensityBin.SPARSE or (
-            target is DensityBin.MEDIUM and ratio >= 0.18
-        ):
+        if target is DensityBin.SPARSE or (target is DensityBin.MEDIUM and ratio >= 0.18):
             if edge_count <= len(node_ids) - 1:
                 break
             # Prefer deleting transfer edges; fall back to any non-bridge-ish pick.
@@ -221,10 +219,7 @@ def _adjust_graph_density(
         left, right = tuple(pair)
         current = replace(
             current,
-            edges=current.edges
-            + (
-                Edge(source=left, target=right, relation=TRANSFER_RELATION),
-            ),
+            edges=current.edges + (Edge(source=left, target=right, relation=TRANSFER_RELATION),),
         )
     return current
 
@@ -701,7 +696,9 @@ def generate_counterfactual_static_pairs(
     tuple (stale answer) and an after tuple (updated answer) sharing a
     pair_id, so both states of the same entities appear in training.
     """
-    tracker = ProgressTracker("[generate]", graph_count, phase="counterfactual-static", enabled=progress)
+    tracker = ProgressTracker(
+        "[generate]", graph_count, phase="counterfactual-static", enabled=progress
+    )
     tracker.banner(graphs=graph_count, pairs_per_graph=pairs_per_graph)
     tuples: list[StaticQATuple] = []
     offset = 8_000_000
@@ -862,10 +859,14 @@ def generate_exact_uniform_sessions(
     Each split gets ``replicates`` full passes over the grid. Within a scale bin,
     every integer node count appears equally often.
     """
-    tasks = tuple(dynamic_tasks) if dynamic_tasks else (
-        ReasoningType.EDGE_EXISTS,
-        ReasoningType.REACHABILITY,
-        ReasoningType.CYCLE_MEMBERSHIP,
+    tasks = (
+        tuple(dynamic_tasks)
+        if dynamic_tasks
+        else (
+            ReasoningType.EDGE_EXISTS,
+            ReasoningType.REACHABILITY,
+            ReasoningType.CYCLE_MEMBERSHIP,
+        )
     )
     node_pairs = _exact_uniform_node_counts()
     cells = [
@@ -875,7 +876,9 @@ def generate_exact_uniform_sessions(
         for density in _FACTORIAL_DENSITIES
         for task in tasks
     ]
-    total = sum(int(count) * len(cells) for count in replicates_per_split.values() if int(count) > 0)
+    total = sum(
+        int(count) * len(cells) for count in replicates_per_split.values() if int(count) > 0
+    )
     tracker = ProgressTracker("[generate]", total, phase="exact-uniform-dynamic", enabled=progress)
     tracker.banner(sessions=total, cells=len(cells))
     split_offsets = {"train": 0, "validation": 1_000_000, "test": 2_000_000, "ood": 3_000_000}
@@ -892,8 +895,7 @@ def generate_exact_uniform_sessions(
             for scale_name, node_count, turn_count, density, task in cells:
                 session_seed = seed + offset + index
                 cell_id = (
-                    f"{scale_name}|n{node_count}|turns_{turn_count}|"
-                    f"{density.value}|{task.value}"
+                    f"{scale_name}|n{node_count}|turns_{turn_count}|{density.value}|{task.value}"
                 )
                 split_sessions.append(
                     generate_session_v2(
@@ -1066,7 +1068,9 @@ def generate_dataset_v2(
             "test": 20,
         }
     else:
-        static_counts = {key: int(value) for key, value in static_graph_counts.items() if int(value) > 0}
+        static_counts = {
+            key: int(value) for key, value in static_graph_counts.items() if int(value) > 0
+        }
     if not static_counts:
         return sessions, {}
     if counterfactual_static_train and static_counts.get("train", 0) > 0:

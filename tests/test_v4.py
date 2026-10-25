@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import random
-from collections import Counter
 
 from graph_modi.data import v4
-from graph_modi.schema import DensityBin, EditOperation, EditTarget, ReasoningType
+from graph_modi.schema import DensityBin, EditOperation, ReasoningType
 
 
 def test_pendant_chains_produce_nonleaf_off_cycle_stations() -> None:
@@ -156,12 +155,48 @@ def test_utterances_are_paraphrased_not_canonical() -> None:
 
 def test_determinism() -> None:
     a = v4.generate_static_v4(
-        split="validation", graph_count=33, tasks_per_graph=None, seed=42,
-        sampler=v4.BalancedSampler(), progress=False,
+        split="validation",
+        graph_count=33,
+        tasks_per_graph=None,
+        seed=42,
+        sampler=v4.BalancedSampler(),
+        progress=False,
     )
     b = v4.generate_static_v4(
-        split="validation", graph_count=33, tasks_per_graph=None, seed=42,
-        sampler=v4.BalancedSampler(), progress=False,
+        split="validation",
+        graph_count=33,
+        tasks_per_graph=None,
+        seed=42,
+        sampler=v4.BalancedSampler(),
+        progress=False,
     )
     assert [x.tuple_id for x in a] == [x.tuple_id for x in b]
     assert [x.answer for x in a] == [x.answer for x in b]
+
+
+def test_materialize_states_replays_add_edge_fingerprints() -> None:
+    """ADD edges must replay with the same attributes the generator stored.
+
+    Regression for the final audit: rng-drawn ADD attributes made
+    ``materialize_states`` (and therefore ``evaluate_sessions``) reject every
+    v4 session that contained an ADD.
+    """
+    from graph_modi.pipeline.multiturn import materialize_states
+
+    session = v4.generate_session_v4(
+        split="test",
+        index=0,
+        seed=42,
+        node_count=14,
+        density=DensityBin.MEDIUM,
+        turn_count=8,
+        task=ReasoningType.EDGE_EXISTS,
+        sampler=v4.BalancedSampler(),
+    )
+    assert any(
+        edit.operation is EditOperation.ADD
+        for turn in session.turns
+        for edit in (turn.gold_edits or (turn.gold_edit,))
+    )
+    states = materialize_states(session)
+    assert len(states) == len(session.turns)

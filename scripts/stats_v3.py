@@ -62,7 +62,9 @@ def main() -> None:
     parser.add_argument("--out", required=True)
     parser.add_argument("--resamples", type=int, default=5000)
     parser.add_argument(
-        "--pair", action="append", default=[],
+        "--pair",
+        action="append",
+        default=[],
         help="extra comparison modelA:conditionA:modelB:conditionB (A minus B)",
     )
     parser.add_argument("models", nargs="+", help="label=path/to/evaluation.json")
@@ -97,8 +99,9 @@ def main() -> None:
         for condition in ACROSS_MODELS:
             if condition in rows_a and condition in rows_b:
                 report["across_models"].setdefault(f"{a} - {b}", {})[condition] = (
-                    paired_cluster_bootstrap(rows_a[condition], rows_b[condition],
-                                             resamples=args.resamples)
+                    paired_cluster_bootstrap(
+                        rows_a[condition], rows_b[condition], resamples=args.resamples
+                    )
                 )
     report["custom_pairs"] = {}
     for spec in args.pair:
@@ -114,20 +117,28 @@ def main() -> None:
         for condition, entry in conditions.items():
             low, high = entry["session_bootstrap_ci95"]
             wl, wh = entry["wilson_ci95"]
-            print(f"  {condition:26s} {pc(entry['accuracy'])}  session-CI [{pc(low)}, {pc(high)}]"
-                  f"  (per-turn Wilson [{pc(wl)}, {pc(wh)}])")
+            print(
+                f"  {condition:26s} {pc(entry['accuracy'])}  session-CI [{pc(low)}, {pc(high)}]"
+                f"  (per-turn Wilson [{pc(wl)}, {pc(wh)}])"
+            )
     print("\nPaired differences (left - right), accuracy points, session bootstrap:")
     for label, comparisons in report["within_model"].items():
         for name, result in comparisons.items():
-            print(f"  {label:12s} {name:52s} {100 * result['mean_delta']:+5.1f}  "
-                  f"CI [{100 * result['ci95'][0]:+.1f}, {100 * result['ci95'][1]:+.1f}]  p={result['p_value']:.3f}")
+            print(
+                f"  {label:12s} {name:52s} {100 * result['mean_delta']:+5.1f}  "
+                f"CI [{100 * result['ci95'][0]:+.1f}, {100 * result['ci95'][1]:+.1f}]  p={result['p_value']:.3f}"
+            )
     for pair, comparisons in report["across_models"].items():
         for condition, result in comparisons.items():
-            print(f"  {pair:24s} {condition:24s} {100 * result['mean_delta']:+5.1f}  "
-                  f"CI [{100 * result['ci95'][0]:+.1f}, {100 * result['ci95'][1]:+.1f}]  p={result['p_value']:.3f}")
+            print(
+                f"  {pair:24s} {condition:24s} {100 * result['mean_delta']:+5.1f}  "
+                f"CI [{100 * result['ci95'][0]:+.1f}, {100 * result['ci95'][1]:+.1f}]  p={result['p_value']:.3f}"
+            )
     for spec, result in report["custom_pairs"].items():
-        print(f"  {spec:60s} {100 * result['mean_delta']:+5.1f}  "
-              f"CI [{100 * result['ci95'][0]:+.1f}, {100 * result['ci95'][1]:+.1f}]  p={result['p_value']:.3f}")
+        print(
+            f"  {spec:60s} {100 * result['mean_delta']:+5.1f}  "
+            f"CI [{100 * result['ci95'][0]:+.1f}, {100 * result['ci95'][1]:+.1f}]  p={result['p_value']:.3f}"
+        )
     print(f"\nwrote {args.out}")
 
 

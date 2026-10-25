@@ -52,6 +52,7 @@ def _reasoning_type_onehot(reasoning_type: str | None, *, dtype: Any, device: An
         vector[index] = 1.0
     return vector
 
+
 _TEA_IMPORT_ERROR: ImportError | None = None
 try:
     import torch
@@ -603,7 +604,9 @@ class TEAGLM(_Module):
             else:
                 node_repr = self.gnn(tensor_graph)
             zeros = torch.zeros(node_repr.shape[-1], dtype=node_repr.dtype, device=node_repr.device)
-            node_index = {node_id: position for position, node_id in enumerate(tensor_graph.node_ids)}
+            node_index = {
+                node_id: position for position, node_id in enumerate(tensor_graph.node_ids)
+            }
             source_row = node_repr[node_index[source_id]] if source_id in node_index else zeros
             target_row = node_repr[node_index[target_id]] if target_id in node_index else zeros
             # Task-conditional pooling: the real CLEGR paper's own GLM baseline switches
@@ -1091,8 +1094,8 @@ class TEAGLMBackend:
     # (see data/v4.HELD_OUT_FAMILY).
     _EDIT_PROMPT_PREFIX = (
         "You maintain a metro graph. A revision may describe one or several changes "
-        "at once, separated by \" ; \". Output every edit it describes, each in one "
-        "of these formats, separated by \" ; \", and always finish with END:\n"
+        'at once, separated by " ; ". Output every edit it describes, each in one '
+        'of these formats, separated by " ; ", and always finish with END:\n'
         "  SET NODE <station> status open\n"
         "  SET NODE <station> status closed\n"
         "  ADD EDGE <station> <station> transfer\n"

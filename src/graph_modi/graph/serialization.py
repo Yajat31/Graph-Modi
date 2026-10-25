@@ -33,4 +33,3 @@ def token_budget_match(text: str, target_tokens: int) -> str:
     if len(words) <= target_tokens:
         return text
     return " ".join(words[-target_tokens:])
-

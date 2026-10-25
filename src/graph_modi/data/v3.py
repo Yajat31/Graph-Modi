@@ -57,10 +57,36 @@ CLEANLINESS = ("clean", "average", "dirty")
 MUSIC = ("none", "jazz", "classical", "pop")
 SIZES = ("small", "medium", "large")
 _NAME_A = (
-    "Astor", "Baywood", "Cedar", "Dunmore", "Elm", "Fairhaven", "Grove", "Harlow", "Ironwood",
-    "Juniper", "Kestrel", "Linden", "Marlow", "Norwood", "Oakley", "Pemberton", "Quill",
-    "Rowan", "Sable", "Thornbury", "Upland", "Vale", "Willow", "Yarrow", "Zephyr", "Ashby",
-    "Brook", "Crest", "Delmar", "Everly",
+    "Astor",
+    "Baywood",
+    "Cedar",
+    "Dunmore",
+    "Elm",
+    "Fairhaven",
+    "Grove",
+    "Harlow",
+    "Ironwood",
+    "Juniper",
+    "Kestrel",
+    "Linden",
+    "Marlow",
+    "Norwood",
+    "Oakley",
+    "Pemberton",
+    "Quill",
+    "Rowan",
+    "Sable",
+    "Thornbury",
+    "Upland",
+    "Vale",
+    "Willow",
+    "Yarrow",
+    "Zephyr",
+    "Ashby",
+    "Brook",
+    "Crest",
+    "Delmar",
+    "Everly",
 )
 _NAME_B = ("Square", "Junction", "Park", "Cross", "Gate", "Hill", "Court", "Market")
 
@@ -148,9 +174,7 @@ def _base_topology(
     return edges
 
 
-def _color_lines(
-    rng: random.Random, adjacency: list[set[int]], line_count: int
-) -> list[str]:
+def _color_lines(rng: random.Random, adjacency: list[set[int]], line_count: int) -> list[str]:
     seeds = rng.sample(range(len(adjacency)), line_count)
     color: dict[int, str] = {seed: LINES[i] for i, seed in enumerate(seeds)}
     queue = deque(seeds)
@@ -373,7 +397,9 @@ def candidate_queries(
         checks: list[tuple[str, Any]] = [(a, v) for a in _BOOL_ATTRS for v in (True, False)]
         checks += [(a, v) for a, values in _CATEGORICAL.items() for v in values]
         checks += [("line", v) for v in _values_present(graph, "line")]
-        return _cap(rng, [GraphQuery(task, s, attribute=a, value=v) for s in ids for a, v in checks])
+        return _cap(
+            rng, [GraphQuery(task, s, attribute=a, value=v) for s in ids for a, v in checks]
+        )
     raise ValueError(f"unsupported v3 task {task}")
 
 
@@ -383,7 +409,9 @@ def stratum(graph: AttributedGraph, query: GraphQuery) -> str:
     nodes = graph.node_map()
     parts: list[str] = []
     if query.target is not None and query.target in nodes:
-        same = nodes[query.source].attributes.get("line") == nodes[query.target].attributes.get("line")
+        same = nodes[query.source].attributes.get("line") == nodes[query.target].attributes.get(
+            "line"
+        )
         parts.append("same_line" if same else "diff_line")
     if query.attribute:
         parts.append(str(query.attribute))
@@ -420,7 +448,9 @@ class BalancedSampler:
         return rng.choice(by_cell[cell])
 
 
-def _two_sided(task: ReasoningType, answered: Sequence[tuple[Any, Any, str]]) -> list[tuple[Any, Any, str]]:
+def _two_sided(
+    task: ReasoningType, answered: Sequence[tuple[Any, Any, str]]
+) -> list[tuple[Any, Any, str]]:
     """With degree balancing, keep only strata that offer *both* answers in this graph.
 
     A degree cell that can only ever hold one answer (e.g. two terminal stations are never
@@ -486,7 +516,9 @@ def generate_static_v3(
     cycled so each graph gets that many (training)."""
     offsets = {"train": 0, "validation": 5_000_000, "test": 6_000_000}
     cells = _cells()
-    tracker = ProgressTracker("[generate]", graph_count, phase=f"static-v3-{split}", enabled=progress)
+    tracker = ProgressTracker(
+        "[generate]", graph_count, phase=f"static-v3-{split}", enabled=progress
+    )
     tracker.banner(graphs=graph_count)
     result: list[StaticQATuple] = []
     for index in range(graph_count):
@@ -510,7 +542,15 @@ def generate_static_v3(
                 continue
             query, answer = sampler.choose((split, task.value, density.value), answered, rng)
             result.append(
-                _static_tuple(split, graph, query, answer, f"{split}-static-{index:06d}-{j:02d}", density, task)
+                _static_tuple(
+                    split,
+                    graph,
+                    query,
+                    answer,
+                    f"{split}-static-{index:06d}-{j:02d}",
+                    density,
+                    task,
+                )
             )
         tracker.tick(graph_i=f"{index + 1}/{graph_count}")
     tracker.end(tuples=len(result))
@@ -532,7 +572,9 @@ def generate_counterfactual_pairs_v3(
     the graph itself, which is what trains the graph channel to track state."""
     cells = _cells()
     split = "train"
-    tracker = ProgressTracker("[generate]", graph_count, phase="counterfactual-v3", enabled=progress)
+    tracker = ProgressTracker(
+        "[generate]", graph_count, phase="counterfactual-v3", enabled=progress
+    )
     tracker.banner(graphs=graph_count)
     result: list[StaticQATuple] = []
     for index in range(graph_count):
@@ -567,8 +609,13 @@ def generate_counterfactual_pairs_v3(
             ):
                 result.append(
                     _static_tuple(
-                        split, item_graph, query, answer,
-                        f"train-cf-{index:06d}-{made:02d}-{label}", density, task,
+                        split,
+                        item_graph,
+                        query,
+                        answer,
+                        f"train-cf-{index:06d}-{made:02d}-{label}",
+                        density,
+                        task,
                         {"counterfactual": label},
                     )
                 )
@@ -591,7 +638,9 @@ def generate_session_v3(
     sampler: BalancedSampler,
 ) -> Session:
     rng = random.Random(seed)
-    initial = make_metro_graph(rng, split, index, node_count, density, closed_count=rng.choice((0, 1, 2)))
+    initial = make_metro_graph(
+        rng, split, index, node_count, density, closed_count=rng.choice((0, 1, 2))
+    )
     current = initial
     turns: list[Turn] = []
     for turn_index in range(turn_count):
@@ -754,7 +803,9 @@ def graph_audit(graphs: Iterable[AttributedGraph]) -> dict[str, Any]:
             continue
         seen.add(graph.graph_id)
         sizes[len(graph.nodes)] += 1
-        diameters[str(graph.metadata.get("density"))].append(int(graph.metadata.get("diameter", -1)))
+        diameters[str(graph.metadata.get("density"))].append(
+            int(graph.metadata.get("diameter", -1))
+        )
     return {
         "graphs": len(seen),
         "node_count_histogram": dict(sorted(sizes.items())),
@@ -795,7 +846,9 @@ def _rule_accuracy(
     for feats, answer in fit:
         table[tuple(feats.get(name) for name in combo)][answer] += 1
     rule = {key: counts.most_common(1)[0][0] for key, counts in table.items()}
-    hits = sum(rule.get(tuple(feats.get(name) for name in combo)) == answer for feats, answer in score)
+    hits = sum(
+        rule.get(tuple(feats.get(name) for name in combo)) == answer for feats, answer in score
+    )
     return hits / max(1, len(score))
 
 
@@ -808,6 +861,7 @@ def text_leak_audit(
     cross-validation on ``train`` (no peeking at ``evaluate``) and then scored once on
     ``evaluate``. It is compared with the best rule that uses only the question's own fields
     (attribute / value / hops), i.e. the prior a model gets from reading the question."""
+
     def group(items: Sequence[StaticQATuple]) -> dict[str, list[tuple[dict[str, Any], str]]]:
         out: dict[str, list[tuple[dict[str, Any], str]]] = defaultdict(list)
         for item in items:
@@ -834,7 +888,9 @@ def text_leak_audit(
         if len(question_names) > 1:
             question_combos.append(tuple(question_names))
         node_combos = [tuple(question_names) + (n,) for n in node_names] + [
-            tuple(question_names) + (a, b) for i, a in enumerate(node_names) for b in node_names[i + 1 :]
+            tuple(question_names) + (a, b)
+            for i, a in enumerate(node_names)
+            for b in node_names[i + 1 :]
         ]
         q_combo = best_combo(question_combos)
         n_combo = best_combo(node_combos) if node_combos else q_combo

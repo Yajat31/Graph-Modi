@@ -71,7 +71,9 @@ def _tensor_sha256(tensor: Any) -> str:
 class SoftPromptGLM(_Module):
     """Frozen causal LM conditioned on one learned, graph-independent prefix."""
 
-    def __init__(self, *, language_model: Any, tokenizer: Any, config: SoftPromptConfig | None = None) -> None:
+    def __init__(
+        self, *, language_model: Any, tokenizer: Any, config: SoftPromptConfig | None = None
+    ) -> None:
         require_tea_dependencies()
         super().__init__()
         self.language_model = language_model
@@ -156,7 +158,9 @@ class SoftPromptGLM(_Module):
         parts = [embedding(prompt_tensor), prefix]
         return [part for part in parts if part.shape[0] > 0]
 
-    def _truncate(self, prompt_ids: list[int], answer_ids: list[int]) -> tuple[list[int], list[int]]:
+    def _truncate(
+        self, prompt_ids: list[int], answer_ids: list[int]
+    ) -> tuple[list[int], list[int]]:
         available = self.config.max_sequence_length - self.config.prefix_tokens
         if available <= 0:
             raise ValueError("max_sequence_length must exceed prefix_tokens")
@@ -198,8 +202,12 @@ class SoftPromptGLM(_Module):
         inputs_embeds = torch.zeros(
             (len(sequences), max_length, hidden_dim), dtype=sequences[0].dtype, device=self.device
         )
-        attention_mask = torch.zeros((len(sequences), max_length), dtype=torch.long, device=self.device)
-        labels = torch.full((len(sequences), max_length), -100, dtype=torch.long, device=self.device)
+        attention_mask = torch.zeros(
+            (len(sequences), max_length), dtype=torch.long, device=self.device
+        )
+        labels = torch.full(
+            (len(sequences), max_length), -100, dtype=torch.long, device=self.device
+        )
         for index, (sequence, row_labels) in enumerate(zip(sequences, label_rows, strict=True)):
             length = sequence.shape[0]
             inputs_embeds[index, :length] = sequence
@@ -237,7 +245,9 @@ class SoftPromptGLM(_Module):
     def _left_pad_embeds(sequences: list[Any], device: Any) -> tuple[Any, Any]:
         max_length = max(sequence.shape[0] for sequence in sequences)
         hidden_dim = sequences[0].shape[-1]
-        batch = torch.zeros((len(sequences), max_length, hidden_dim), dtype=sequences[0].dtype, device=device)
+        batch = torch.zeros(
+            (len(sequences), max_length, hidden_dim), dtype=sequences[0].dtype, device=device
+        )
         mask = torch.zeros((len(sequences), max_length), dtype=torch.long, device=device)
         for index, sequence in enumerate(sequences):
             length = sequence.shape[0]
@@ -300,7 +310,9 @@ def soft_prompt_checkpoint_metadata(
     }
 
 
-def save_soft_prompt_checkpoint(checkpoint_dir: str | Path, model: SoftPromptGLM, metadata: dict[str, Any]) -> None:
+def save_soft_prompt_checkpoint(
+    checkpoint_dir: str | Path, model: SoftPromptGLM, metadata: dict[str, Any]
+) -> None:
     destination = Path(checkpoint_dir)
     destination.mkdir(parents=True, exist_ok=True)
     torch.save(model.soft_prompt.detach().cpu(), destination / "soft_prompt.pt")

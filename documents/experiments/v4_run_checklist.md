@@ -38,4 +38,4 @@ Alongside overall accuracy, report:
 
 - Compare v4 numbers to v3 / September tables as if they were the same benchmark.
 - Run `bal_*` configs on v3 data.
-- Claim graph reasoning if the model is within a few points of the 7-task shortcut ceiling (~44%) or the soft prompt.
+- Claim graph reasoning if the model is within a few points of the 7-task shortcut ceiling (~44.1%) or the soft prompt.

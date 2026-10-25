@@ -85,6 +85,7 @@ evaluation:
     - structure_only
     - frozen_graph_history
     - oracle_updated_graph
+    - predicted_updated_graph
     - shuffled_graph
     - cached_no_reencode
     - graph_once_then_text

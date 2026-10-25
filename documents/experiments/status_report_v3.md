@@ -446,6 +446,6 @@ python scripts/analyze_exact2x.py <evaluation.json> datasets/metro_v3 <analysis.
 python scripts/make_figures_v3.py && python scripts/build_report_v3.py
 ```
 
-Variant configs are `configs/v3x_*.yaml`. Code changed for this benchmark: `data/v3.py` (new), `graph/solvers.py`
+Variant configs are `archive/configs/v3x_*.yaml`. Code changed for this benchmark: `data/v3.py` (new), `graph/solvers.py`
 (W(f_i) masking, Facts tasks), `graph/edits.py` (multi-word station names),
 `models/tea_glm.py` and `models/soft_prompt.py` (greedy decoding), `cli.py`.

@@ -122,7 +122,7 @@ Midterm / `summarize_v3_exact2x.py` use turn-level Wilson / binomial SE. Session
 37% NOOP (100% correct); edge revisions are the edit command itself; few-shot uses single-word names vs two-word v3 names. 95.2% exec-equivalent is not free-form edit competence.
 
 **M5. Shared `output_dir` overwrite risk.**  
-`v3_tea` / `v3_tea_b2` and GraphToken b1/b2 share directories; later runs can replace `checkpoint-final` without a new run id.
+`v3_tea` / `archive/configs/v3_tea_b2` and GraphToken b1/b2 share directories; later runs can replace `checkpoint-final` without a new run id.
 
 **M6. Invalid GraphToken and broken pretrain contaminate v3x conclusions.**  
 Depth, MLP projector, and 3× data variants are not informative about capacity given random GNN / collapse.
@@ -149,7 +149,7 @@ Depth, MLP projector, and 3× data variants are not informative about capacity g
 
 | Artifact | Present? | Role |
 |---|---|---|
-| Configs `configs/v3_*.yaml`, `configs/audit/*.yaml` | Yes | Recipe |
+| Configs `configs/v3_*.yaml`, `archive/configs/audit/*.yaml` | Yes | Recipe |
 | `documents/experiments/results/v3-20260929/` static **with rows** | Yes | Recompute static accuracy |
 | Multi-turn `exact2x_*_analysis.json` aggregates | Yes | Headline check only |
 | `stats_test_existing_runs.json`, `stats_test_final.json` | Yes | Stored paired tests (not re-derivable) |
@@ -259,7 +259,7 @@ Decisive controls only; retain artifacts listed under each.
 | # | Run | Config / script | Why decisive | Retain |
 |---|---|---|---|---|
 | R1 | Regenerate `metro_v3` @ seed 42 on a **pinned commit** | `configs/v3_tea.yaml` `generate` | Hash vs `80b1df47…` / freeze manifest | `*.jsonl`, `audit.json`, `data_sha256` |
-| R2 | Degree+status balanced data | `configs/audit/bal_*.yaml` | Break shortcut ceiling | Full JSONL + shortcut_audit redo |
+| R2 | Degree+status balanced data | `archive/configs/audit/bal_*.yaml` (superseded by metro_v4) | Break shortcut ceiling | Full JSONL + shortcut_audit redo |
 | R3 | TEA fixed pretrain ×3 seeds (sum agg, lr from pilots) | `tea_fixed_s42/43/44` + sum twin | Separates pretrain from aggregation | `gnn.pt`, projector ckpt, static rows, eval rows |
 | R4 | GraphToken sum ×3 seeds | `gt_sum`, `gt_sum_s43`, `gt_sum_s44` | Already partially done; needs commit pin + rows | Same |
 | R5 | Warm start ×3 seeds | `gt_warm_full` | Currently single-seed | Same |
@@ -276,7 +276,7 @@ Decisive controls only; retain artifacts listed under each.
 - `documents/experiments/{log.md,status_report_v3.md,README.md}`  
 - `documents/experiments/results/{v3-20260929,v3x-20260929,audit-20261016}/`  
 - `src/graph_modi/{cli.py,training.py,evaluation/runner.py,evaluation/static_eval.py,evaluation/metrics.py,data/v3.py,models/tea_glm.py}`  
-- `configs/v3_*.yaml`, `configs/audit/` (via `scripts/make_audit_configs.py`)  
+- `configs/v3_*.yaml`, `archive/configs/audit/` (via `archive/scripts/make_audit_configs.py`)  
 - `.gitignore`, `pyproject.toml` / `uv.lock` (presence only)
 
 ---

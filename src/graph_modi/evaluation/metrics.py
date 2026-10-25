@@ -8,7 +8,6 @@ from collections import defaultdict
 from math import sqrt
 from typing import Any
 
-
 _ALIASES = {
     "true": "yes",
     "false": "no",
@@ -147,7 +146,9 @@ def wilson_interval(successes: int, total: int, z: float = 1.96) -> tuple[float,
     return max(0.0, center - margin), min(1.0, center + margin)
 
 
-def _session_totals(rows: list[dict[str, Any]], key: str = "answer_correct") -> dict[str, list[int]]:
+def _session_totals(
+    rows: list[dict[str, Any]], key: str = "answer_correct"
+) -> dict[str, list[int]]:
     """Per-session [number correct, number of turns]; turns of one session are not independent."""
     totals: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     for row in rows:
@@ -264,7 +265,11 @@ def stratified_accuracy(
                 / max(1, sum(row.get("stale") is not None for row in bucket))
             ),
             "execution_equivalent_edit_accuracy": (
-                sum(bool(row.get("edit_correct")) for row in bucket if row.get("edit_correct") is not None)
+                sum(
+                    bool(row.get("edit_correct"))
+                    for row in bucket
+                    if row.get("edit_correct") is not None
+                )
                 / max(1, sum(row.get("edit_correct") is not None for row in bucket))
             ),
         }
@@ -278,10 +283,7 @@ def paired_accuracy_delta(
     key_fields: tuple[str, ...] = ("session_id", "turn_index"),
 ) -> dict[str, Any]:
     """Mean paired Δ (left − right) on aligned turns, with Wilson-free summary."""
-    right_map = {
-        tuple(row[field] for field in key_fields): row
-        for row in right_rows
-    }
+    right_map = {tuple(row[field] for field in key_fields): row for row in right_rows}
     deltas: list[float] = []
     wins = loses = ties = 0
     for row in left_rows:

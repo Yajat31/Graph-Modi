@@ -23,6 +23,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import audit_benchmark as A  # noqa: E402
+
 from graph_modi.graph.executor import graph_fingerprint  # noqa: E402
 
 RES: dict[str, Any] = {}
@@ -43,15 +44,34 @@ def x1_constrained(static: dict[str, list]) -> None:
             if not ends:
                 continue
             exempt_relevant += 1
+
             # strict reading: no station on the route, endpoints included, may have the value
             def allowed(node: str) -> bool:
                 return st.attrs[node].get(q.attribute) != q.value
-            strict = "yes" if (allowed(q.source) and allowed(q.target) and q.target in A.bfs(st.adj(), q.source, allowed=allowed)) else "no"
+
+            strict = (
+                "yes"
+                if (
+                    allowed(q.source)
+                    and allowed(q.target)
+                    and q.target in A.bfs(st.adj(), q.source, allowed=allowed)
+                )
+                else "no"
+            )
             changes += strict != item.answer
-        out[split] = {"items": total, "endpoint_has_avoided_value": exempt_relevant, "answer_differs_under_strict_reading": changes}
-        A.check("x1", f"{split}_endpoint_exemption", changes == 0,
-                f"{exempt_relevant}/{total} items have an endpoint with the avoided value; "
-                f"{changes} of them flip to 'no' if endpoints are not exempt (the question text never says endpoints are exempt)", "warn")
+        out[split] = {
+            "items": total,
+            "endpoint_has_avoided_value": exempt_relevant,
+            "answer_differs_under_strict_reading": changes,
+        }
+        A.check(
+            "x1",
+            f"{split}_endpoint_exemption",
+            changes == 0,
+            f"{exempt_relevant}/{total} items have an endpoint with the avoided value; "
+            f"{changes} of them flip to 'no' if endpoints are not exempt (the question text never says endpoints are exempt)",
+            "warn",
+        )
     RES["x1"] = out
 
 
@@ -67,7 +87,12 @@ def x2_x3_x4(static: dict[str, list], sessions: dict[str, list]) -> None:
             for t in s.turns:
                 if t.query.target is not None and t.query.target == t.query.source:
                     self_pairs += 1
-    A.check("x2", "no_self_pairs", self_pairs == 0, f"{self_pairs} queries ask about a station and itself")
+    A.check(
+        "x2",
+        "no_self_pairs",
+        self_pairs == 0,
+        f"{self_pairs} queries ask about a station and itself",
+    )
 
     conflicts = dup = 0
     for split, items in static.items():
@@ -79,14 +104,33 @@ def x2_x3_x4(static: dict[str, list], sessions: dict[str, list]) -> None:
             count[key] += 1
         conflicts += sum(len(v) > 1 for v in seen.values())
         dup += sum(c - 1 for c in count.values() if c > 1)
-        A.info("x3", f"{split}_repeated_items", f"{sum(c - 1 for c in count.values() if c > 1)} repeated (graph, question) items of {len(items)}")
-    A.check("x3", "no_conflicting_duplicates", conflicts == 0, f"{conflicts} (graph, question) keys with more than one answer")
+        A.info(
+            "x3",
+            f"{split}_repeated_items",
+            f"{sum(c - 1 for c in count.values() if c > 1)} repeated (graph, question) items of {len(items)}",
+        )
+    A.check(
+        "x3",
+        "no_conflicting_duplicates",
+        conflicts == 0,
+        f"{conflicts} (graph, question) keys with more than one answer",
+    )
 
     names = sorted({f"{a} {b}" for a in A.V3._NAME_A for b in A.V3._NAME_B})
     contained = [(x, y) for x in names for y in names if x != y and x in y]
-    first_words = Counter(n.split()[0] for n in names)
-    A.check("x4", "no_name_is_a_substring_of_another", not contained, f"{len(names)} names; {len(contained)} containment pairs")
-    RES["x2_x3_x4"] = {"self_pairs": self_pairs, "conflicts": conflicts, "repeats": dup, "containment_pairs": len(contained)}
+    Counter(n.split()[0] for n in names)
+    A.check(
+        "x4",
+        "no_name_is_a_substring_of_another",
+        not contained,
+        f"{len(names)} names; {len(contained)} containment pairs",
+    )
+    RES["x2_x3_x4"] = {
+        "self_pairs": self_pairs,
+        "conflicts": conflicts,
+        "repeats": dup,
+        "containment_pairs": len(contained),
+    }
 
 
 def x5_hops(static: dict[str, list], sessions: dict[str, list]) -> None:
@@ -97,15 +141,28 @@ def x5_hops(static: dict[str, list], sessions: dict[str, list]) -> None:
     for task, c in sorted(tag.items()):
         A.info("x5", task, f"{dict(c)}")
     constant = [t for t, c in tag.items() if len(c) == 1]
-    A.check("x5", "hop_depth_varies_within_task", len(constant) <= 2,
-            f"{len(constant)} of {len(tag)} tasks always get the same tag {constant}: hop_depth is mostly a task label, not a difficulty measure", "warn")
+    A.check(
+        "x5",
+        "hop_depth_varies_within_task",
+        len(constant) <= 2,
+        f"{len(constant)} of {len(tag)} tasks always get the same tag {constant}: hop_depth is mostly a task label, not a difficulty measure",
+        "warn",
+    )
     # for shortest_path the tag should follow the answer
     mismatches = 0
     for item in static["test"]:
         if item.query.reasoning_type.value != "shortest_path":
             continue
         a = item.answer
-        expect = "global" if a == "unreachable" else "local" if int(a) <= 2 else "mid" if int(a) <= 4 else "global"
+        expect = (
+            "global"
+            if a == "unreachable"
+            else "local"
+            if int(a) <= 2
+            else "mid"
+            if int(a) <= 4
+            else "global"
+        )
         mismatches += expect != item.hop_depth.value
     A.check("x5", "shortest_path_tag_follows_answer", mismatches == 0, f"{mismatches} mismatches")
     RES["x5"] = {t: dict(c) for t, c in tag.items()}
@@ -137,10 +194,20 @@ def x6_x7_sessions(sessions: dict[str, list]) -> None:
                             tie_changes_flag += 1
                 state = after
         A.check("x6", f"{split}_metadata_consistent", not any(bad.values()), f"{dict(bad)}")
-        A.check("x7", f"{split}_stale_mode_ties", ties == 0,
-                f"{ties}/{most_common_turns} most_common turns have a tied mode in the stale graph (stale answer is an alphabetical tie-break); "
-                f"{tie_changes_flag} of them are counted as 'answer changed'", "warn")
-        RES[f"x6_x7_{split}"] = {"bad": dict(bad), "stale_ties": ties, "turns": most_common_turns, "tie_flagged_changed": tie_changes_flag}
+        A.check(
+            "x7",
+            f"{split}_stale_mode_ties",
+            ties == 0,
+            f"{ties}/{most_common_turns} most_common turns have a tied mode in the stale graph (stale answer is an alphabetical tie-break); "
+            f"{tie_changes_flag} of them are counted as 'answer changed'",
+            "warn",
+        )
+        RES[f"x6_x7_{split}"] = {
+            "bad": dict(bad),
+            "stale_ties": ties,
+            "turns": most_common_turns,
+            "tie_flagged_changed": tie_changes_flag,
+        }
 
 
 def main() -> None:
@@ -151,7 +218,9 @@ def main() -> None:
     args = parser.parse_args()
     work = Path(args.work)
     A.V3.set_degree_balance(args.degree_balance)
-    static = {s: A.load_static_tuples(work / f"static_{s}.jsonl") for s in ("train", "validation", "test")}
+    static = {
+        s: A.load_static_tuples(work / f"static_{s}.jsonl") for s in ("train", "validation", "test")
+    }
     sessions = {s: A.load_sessions(work / f"sessions_{s}.jsonl") for s in ("validation", "test")}
     x1_constrained(static)
     x2_x3_x4(static, sessions)
@@ -160,7 +229,11 @@ def main() -> None:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     summary = Counter(c["status"] for c in A.CHECKS)
-    (out / "extra_results.json").write_text(json.dumps({"summary": dict(summary), "checks": A.CHECKS, "sections": RES}, indent=1, default=str))
+    (out / "extra_results.json").write_text(
+        json.dumps(
+            {"summary": dict(summary), "checks": A.CHECKS, "sections": RES}, indent=1, default=str
+        )
+    )
     print(f"\nSUMMARY {dict(summary)}\nwrote {out}/extra_results.json")
 
 

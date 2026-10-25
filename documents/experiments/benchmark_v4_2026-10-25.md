@@ -5,12 +5,13 @@ Replaces metro_v3 for new runs. Fixes the data problems found in the October aud
 ## Generator (`src/graph_modi/data/v4.py`)
 
 - Ring core with hub-restricted chords + pendant chains of length 1–4 (shorter on dense/large graphs so diameter caps hold).
-- Cycle queries only at degree 2 (both answers exist; degree-only lookup = majority ≈ 50%).
+- Cycle queries only at degree 2 (both answers exist; degree-only lookup ≈ majority).
 - Reachability / shortest_path only with open endpoints (status-only lookup ≈ 52%).
 - Constrained reachability question states that start and end stations are exempt.
 - Unique mode required on both before and after for `most_common_attribute_within_hops`.
 - Hop tags vary with distance / hop radius in {1,2,3}.
 - Node and edge order shuffled; closed count always 1–3.
+- ADD edge attributes are **deterministic** (`executor.metro_edge_attributes`), so `materialize_states` / `evaluate_sessions` replay the stored fingerprints.
 
 ## Sessions and write path
 
@@ -28,10 +29,10 @@ SUMMARY: **43 pass, 0 fail, 0 warn.**
 |---|---|
 | Labels (static + sessions gold/stale) | 0 mismatches, 0 ties |
 | Test grid | 396 items × 11 tasks |
-| Cycle degree-only ceiling | 50.0% |
+| Cycle degree-only ceiling | 50.5% |
 | Reachability status-only ceiling | 52.5% |
-| 7-task shortcut ceiling (ex node_degree) | 44.4% (8-task 51.3% with node_degree at 100%) |
-| Session NOOP | 0.182 val / 0.166 test |
+| 7-task shortcut ceiling (ex node_degree) | 44.1% (8-task 51.1% with node_degree at 100%) |
+| Session NOOP | 0.169 val / 0.168 test |
 | Net-noop / cancel / disconnect | 0 |
 | Text leak audit | clean |
 | Split overlap | 0 |
@@ -40,7 +41,7 @@ Manifest hashes: `documents/experiments/results/benchmark-audit-v4-20261025/mani
 
 ## Configs
 
-`configs/v4_data.yaml`, `v4_tea.yaml`, `v4_graphtoken.yaml`, `v4_soft_prompt.yaml` — all set `distribution: metro_v4`, `data_dir: datasets/metro_v4`.
+`configs/v4_data.yaml`, `v4_tea.yaml`, `v4_graphtoken.yaml`, `v4_soft_prompt.yaml` — all set `distribution: metro_v4`, `data_dir: datasets/metro_v4`. Graph-model configs include `predicted_updated_graph`.
 
 ## Run checklist
 

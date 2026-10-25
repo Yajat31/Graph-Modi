@@ -22,7 +22,16 @@ def test_graph_is_connected_compact_and_semantic(density: DensityBin, n: int) ->
     assert graph.metadata["diameter"] <= v3.MAX_DIAMETER[density]
     assert len({node.label for node in graph.nodes}) == n
     attrs = graph.nodes[0].attributes
-    for key in ("disabled_access", "has_rail", "architecture", "cleanliness", "music", "size", "line", "status"):
+    for key in (
+        "disabled_access",
+        "has_rail",
+        "architecture",
+        "cleanliness",
+        "music",
+        "size",
+        "line",
+        "status",
+    ):
         assert key in attrs
     assert {"line_color", "line_stroke", "has_aircon", "built"} <= set(graph.edges[0].attributes)
     degrees = {node.id: 0 for node in graph.nodes}
@@ -48,7 +57,12 @@ def test_facts_questions_hide_the_queried_attribute() -> None:
     assert "architecture=" not in text.split("\n")[0]
     assert "cleanliness=" in text.split("\n")[0]
     assert answer_query(graph, lookup) == node.attributes["architecture"]
-    check = GraphQuery(ReasoningType.ATTRIBUTE_CHECK, node.id, attribute="has_rail", value=node.attributes["has_rail"])
+    check = GraphQuery(
+        ReasoningType.ATTRIBUTE_CHECK,
+        node.id,
+        attribute="has_rail",
+        value=node.attributes["has_rail"],
+    )
     assert answer_query(graph, check) == "yes"
     assert "has_rail=" not in render_question(check, graph).split("\n")[0]
 
@@ -56,8 +70,12 @@ def test_facts_questions_hide_the_queried_attribute() -> None:
 def test_static_labels_are_balanced_and_deterministic() -> None:
     def make():
         return v3.generate_static_v3(
-            split="validation", graph_count=33 * 6, tasks_per_graph=None, seed=7,
-            sampler=v3.BalancedSampler(), progress=False,
+            split="validation",
+            graph_count=33 * 6,
+            tasks_per_graph=None,
+            seed=7,
+            sampler=v3.BalancedSampler(),
+            progress=False,
         )
 
     first, second = make(), make()
@@ -76,7 +94,9 @@ def test_sessions_are_valid_balanced_and_use_the_exact_grid() -> None:
     sessions = v3.generate_sessions_v3(
         replicates_per_split={"validation": 1}, seed=3, progress=False
     )["validation"]
-    assert len(sessions) == len(v3.NODE_COUNTS) * 3 * len(v3.SESSION_LENGTHS) * len(v3.DYNAMIC_TASKS)
+    assert len(sessions) == len(v3.NODE_COUNTS) * 3 * len(v3.SESSION_LENGTHS) * len(
+        v3.DYNAMIC_TASKS
+    )
     assert audit_sessions(sessions, allow_noop=True)["valid"]
     audit = v3.session_label_audit(sessions)
     for task in v3.YES_NO_TASKS & set(v3.DYNAMIC_TASKS):
@@ -101,11 +121,20 @@ def test_counterfactual_pairs_share_text_but_differ_in_graph_and_answer() -> Non
 
 def test_no_text_leak_beyond_question_prior() -> None:
     train = v3.generate_static_v3(
-        split="train", graph_count=600, tasks_per_graph=9, seed=11, sampler=v3.BalancedSampler(), progress=False
+        split="train",
+        graph_count=600,
+        tasks_per_graph=9,
+        seed=11,
+        sampler=v3.BalancedSampler(),
+        progress=False,
     )
     evaluate = v3.generate_static_v3(
-        split="validation", graph_count=33 * 4, tasks_per_graph=None, seed=11,
-        sampler=v3.BalancedSampler(), progress=False,
+        split="validation",
+        graph_count=33 * 4,
+        tasks_per_graph=None,
+        seed=11,
+        sampler=v3.BalancedSampler(),
+        progress=False,
     )
     report = v3.text_leak_audit(train, evaluate)
     for task in v3.YES_NO_TASKS:
@@ -175,7 +204,7 @@ def test_unfrozen_gnn_receives_gradients_through_graph_encoding() -> None:
 
 def test_edit_parser_resolves_multi_word_station_names() -> None:
     from graph_modi.graph.edits import parse_edit_program
-    from graph_modi.schema import EditOperation, EditTarget
+    from graph_modi.schema import EditOperation
 
     names = {"vale hill": "n3", "quill cross": "n7", "elm": "n1"}
     program = parse_edit_program(
@@ -185,10 +214,16 @@ def test_edit_parser_resolves_multi_word_station_names() -> None:
     node_edit, delete, add = program.edits
     assert (node_edit.node_id, node_edit.attribute, node_edit.value) == ("n3", "status", "closed")
     assert (delete.operation, delete.source, delete.destination, delete.relation) == (
-        EditOperation.DEL, "n7", "n3", "transfer",
+        EditOperation.DEL,
+        "n7",
+        "n3",
+        "transfer",
     )
     assert (add.source, add.destination) == ("n1", "n3")
     # plain single-token IDs and unknown names keep the old one-word behaviour
     plain = parse_edit_program("SET NODE n3 status closed ; DEL EDGE n7 n3 track ; END", None).edits
     assert plain[0].node_id == "n3" and plain[1].source == "n7" and plain[1].destination == "n3"
-    assert parse_edit_program("SET NODE Nowhere status open ; END", names).edits[0].node_id == "Nowhere"
+    assert (
+        parse_edit_program("SET NODE Nowhere status open ; END", names).edits[0].node_id
+        == "Nowhere"
+    )

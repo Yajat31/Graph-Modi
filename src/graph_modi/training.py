@@ -10,6 +10,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from graph_modi.models.soft_prompt import (
+    SoftPromptGLM,
+    load_soft_prompt_checkpoint_metadata,
+    save_soft_prompt_checkpoint,
+    soft_prompt_checkpoint_metadata,
+)
 from graph_modi.models.tea_glm import (
     TEA_CHECKPOINT_FORMAT,
     TEAGLM,
@@ -22,12 +28,6 @@ from graph_modi.models.tea_glm import (
     model_checkpoint_metadata,
     require_tea_dependencies,
     save_checkpoint_metadata,
-)
-from graph_modi.models.soft_prompt import (
-    SoftPromptGLM,
-    load_soft_prompt_checkpoint_metadata,
-    save_soft_prompt_checkpoint,
-    soft_prompt_checkpoint_metadata,
 )
 from graph_modi.schema import AttributedGraph
 from graph_modi.utils.progress import ProgressTracker
@@ -491,9 +491,7 @@ def pretrain_graph_encoder_contrastive(
         return text_cache[key]
 
     def _node_targets(batch_graphs: Sequence[AttributedGraph]) -> Any:
-        nodes = [
-            node for graph in batch_graphs for node in sorted(graph.nodes, key=lambda n: n.id)
-        ]
+        nodes = [node for graph in batch_graphs for node in sorted(graph.nodes, key=lambda n: n.id)]
         return nn.functional.normalize(
             torch.stack([_text_embedding(_node_text(node), node) for node in nodes]).to(device),
             dim=-1,
@@ -518,7 +516,10 @@ def pretrain_graph_encoder_contrastive(
     total_batches = batches_per_epoch * epochs
     tracker = ProgressTracker("[pretrain-gnn-contrastive]", total_batches, phase="gnn_contrastive")
     tracker.banner(
-        graphs=len(ordered_graphs), epochs=epochs, graphs_per_batch=graphs_per_batch, device=str(device)
+        graphs=len(ordered_graphs),
+        epochs=epochs,
+        graphs_per_batch=graphs_per_batch,
+        device=str(device),
     )
 
     class _GraphExample:
@@ -557,7 +558,9 @@ def pretrain_graph_encoder_contrastive(
 
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
-            nn.utils.clip_grad_norm_([*gnn.parameters(), *alignment_head.parameters()], max_norm=1.0)
+            nn.utils.clip_grad_norm_(
+                [*gnn.parameters(), *alignment_head.parameters()], max_norm=1.0
+            )
             optimizer.step()
             epoch_loss += float(loss.item())
             epoch_batches += 1
@@ -586,7 +589,9 @@ def pretrain_graph_encoder_contrastive(
                 projected = nn.functional.normalize(alignment_head(gnn(merged)), dim=-1)
                 targets = _node_targets(batch_graphs)
                 scores = projected @ targets.T
-                in_batch += int((scores.argmax(dim=1) == torch.arange(len(scores), device=device)).sum())
+                in_batch += int(
+                    (scores.argmax(dim=1) == torch.arange(len(scores), device=device)).sum()
+                )
                 total += len(scores)
                 offset = 0
                 for graph in batch_graphs:
@@ -910,9 +915,7 @@ def train_projector(
                     source_ids=[example.metadata.get("source_id") for example in batch],
                     target_ids=[example.metadata.get("target_id") for example in batch],
                     hops=[example.metadata.get("hops") for example in batch],
-                    reasoning_types=[
-                        example.metadata.get("reasoning_type") for example in batch
-                    ],
+                    reasoning_types=[example.metadata.get("reasoning_type") for example in batch],
                 )
                 loss = output.loss
                 accelerator.backward(loss)
@@ -1130,7 +1133,9 @@ def train_soft_prompt(
         collate_fn=lambda batch: batch,
         generator=generator,
     )
-    optimizer = torch.optim.AdamW([model.soft_prompt], lr=config.learning_rate, weight_decay=config.weight_decay)
+    optimizer = torch.optim.AdamW(
+        [model.soft_prompt], lr=config.learning_rate, weight_decay=config.weight_decay
+    )
     model, optimizer, loader = accelerator.prepare(model, optimizer, loader)
 
     global_step = 0

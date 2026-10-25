@@ -59,9 +59,7 @@ def test_factorial_sessions_cross_scale_and_turns() -> None:
     assert len(cells) == 12
     assert all(count == 2 for count in cells.values())
     all_targets = {
-        turn.complexity.get("target_density")
-        for s in sessions["validation"]
-        for turn in s.turns
+        turn.complexity.get("target_density") for s in sessions["validation"] for turn in s.turns
     }
     assert all_targets == {"sparse", "medium"}  # 2 sessions/cell → first two bins
     # Across the full grid, realized densities should include sparse (large/small) and medium.
@@ -91,7 +89,11 @@ def test_exact_uniform_sessions_grid() -> None:
     assert report["valid"], report["failures"][:3]
 
     cells = Counter()
-    n_by_bin: dict[str, Counter] = {"scale_small": Counter(), "scale_medium": Counter(), "scale_large": Counter()}
+    n_by_bin: dict[str, Counter] = {
+        "scale_small": Counter(),
+        "scale_medium": Counter(),
+        "scale_large": Counter(),
+    }
     for session in sessions["validation"]:
         types = {turn.query.reasoning_type.value for turn in session.turns}
         assert len(types) == 1

@@ -59,7 +59,9 @@ def main() -> None:
                 "session_length": str(info["session_length"]),
                 "n_nodes": str(info["n_nodes"]),
                 "turn_index": str(info["turn_index"]),
-                "changed": "answer_changed" if row["gold_answer"] != row["stale_answer"] else "answer_unchanged",
+                "changed": "answer_changed"
+                if row["gold_answer"] != row["stale_answer"]
+                else "answer_unchanged",
                 "task|density": f"{info['task']}|{info['density']}",
                 "density|scale": f"{info['density']}|{info['scale']}",
                 "task|scale": f"{info['task']}|{info['scale']}",

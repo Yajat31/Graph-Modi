@@ -1,6 +1,6 @@
 # Audit addendum: second pass on `results/audit-20261016`
 
-Builds on [`experimental_audit_2026-10-21.md`](experimental_audit_2026-10-21.md). That audit established that the October results exist and match the write-ups. This addendum asks a narrower question: **do the October results support the interpretation the status report gives them?** Everything here is recomputed from committed JSON by [`scripts/audit_second_pass.py`](../../scripts/audit_second_pass.py); no GPU, no new runs.
+Builds on [`experimental_audit_2026-10-21.md`](experimental_audit_2026-10-21.md). That audit established that the October results exist and match the write-ups. This addendum asks a narrower question: **do the October results support the interpretation the status report gives them?** Everything here is recomputed from committed JSON by [`archive/scripts/audit_second_pass.py`](../../archive/scripts/audit_second_pass.py); no GPU, no new runs.
 
 ## Summary
 
@@ -107,13 +107,13 @@ Ordered by cost.
 1. **Resolve the warm-start gap (minutes of GPU).** Re-run `static-eval` on `gt_warm_full` validation at `checkpoint-final` and `checkpoint-best`; re-run the sweep without `--limit`. Record the exact command, the checkpoint path and the tuple count in the log row. If the sweep and `static-eval` still disagree, the discrepancy is a checkpoint-loading bug.
 2. **Commit per-item rows for the audit runs.** Static `rows` and multi-turn `evaluation.json` rows for `gt_sum*`, `gt_warm`, `tea_sum*`. With them, Sections 2 and 3 become paired tests with confidence intervals, and the hard-turn gain can be tested directly.
 3. **Pre-register the primary metric for any new run.** Accuracy on shortcut-wrong items (hard slice), per task, with a session-cluster bootstrap, compared with each task's chance level. Report agreement-with-shortcut next to it.
-4. **Degree and status balanced data (`configs/audit/bal_*.yaml`).** Already specified, not run. It removes the shortcut by construction; the hard-slice metric above then becomes the whole test set.
+4. **Degree and status balanced data (`archive/configs/audit/bal_*.yaml`).** Already specified, not run. It removes the shortcut by construction; the hard-slice metric above then becomes the whole test set. Superseded by metro_v4.
 5. **Replicate warm start and its pretraining over seeds 42-44, and over two dataset seeds.** This closes Section 5.
 
 ## 10. Reproducing the numbers
 
 ```bash
-python scripts/audit_second_pass.py
+python archive/scripts/audit_second_pass.py
 ```
 
 reads `documents/experiments/results/audit-20261016/{shortcut_audit,stats_test_final}.json` and prints the tables in Sections 1-3 and 5-6. Sections 4 and 7 were read from `sweep_gt_warm.log`, `static_gt_warm_full_validation.json` and the `pretrain_*_metadata.json` files directly.

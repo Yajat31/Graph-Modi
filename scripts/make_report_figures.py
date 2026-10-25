@@ -41,7 +41,15 @@ SPLITS = ("validation", "test")
 # every figure. Adjacent pairs pass the CVD (>=8) and normal-vision (>=15) checks per panel;
 # every series also has its own marker and dash so identity never rests on colour alone.
 BLUE, ORANGE, AQUA, YELLOW, MAGENTA, GREEN, VIOLET, RED = (
-    "#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948")
+    "#2a78d6",
+    "#eb6834",
+    "#1baf7a",
+    "#eda100",
+    "#e87ba4",
+    "#008300",
+    "#4a3aa7",
+    "#e34948",
+)
 
 # Per-model figure sets. "{M}" is the model's display name; source "model" / "model_predfix" are
 # the model's own exact2x analysis files, the soft prompt and the two reference points are
@@ -51,18 +59,60 @@ MODELS = {"tea": "TEA", "graphtoken": "GraphToken"}
 # key: (label, source, condition, colour, dash, marker)
 SERIES_TEMPLATE = {
     "oracle": ("{M} updated graph (gold edits)", "model", "oracle_updated_graph", BLUE, "-", "o"),
-    "predicted": ("{M} predicted graph (model-written edits)", "model_predfix", "predicted_updated_graph", BLUE, (0, (4, 2)), "s"),
+    "predicted": (
+        "{M} predicted graph (model-written edits)",
+        "model_predfix",
+        "predicted_updated_graph",
+        BLUE,
+        (0, (4, 2)),
+        "s",
+    ),
     "frozen": ("{M} frozen graph + history", "model", "frozen_graph_history", VIOLET, "-", "v"),
     "shuffled": ("{M} shuffled graph", "model", "shuffled_graph", YELLOW, "-.", "X"),
     "question": ("{M} question only", "model", "question_only", MUTED, (0, (3, 2)), "D"),
     "soft": ("soft prompt (history text)", "soft_prompt", "soft_prompt", AQUA, "-", "P"),
     # appendix-only conditions (Table 1)
-    "structure": ("{M} structure only (stale G0, no history)", "model", "structure_only", GREEN, (0, (6, 2)), "h"),
-    "frozen_cached": ("{M} frozen graph history / cached no re-encode", "model", "frozen_graph_history", VIOLET, "-", "v"),
+    "structure": (
+        "{M} structure only (stale G0, no history)",
+        "model",
+        "structure_only",
+        GREEN,
+        (0, (6, 2)),
+        "h",
+    ),
+    "frozen_cached": (
+        "{M} frozen graph history / cached no re-encode",
+        "model",
+        "frozen_graph_history",
+        VIOLET,
+        "-",
+        "v",
+    ),
     "once": ("{M} graph once, then text", "model", "graph_once_then_text", RED, (0, (1, 1.5)), "<"),
-    "token_matched": ("{M} token-matched history (no graph)", "model", "token_matched_history", MAGENTA, (0, (5, 1, 1, 1)), ">"),
-    "oracle_context": ("{M} updated graph (for reference)", "model", "oracle_updated_graph", BLUE, "-", None),
-    "stale": ("stale answer (no model; named majority_prior in old result files)", "model", "majority_prior", INK, (0, (1, 1)), None),
+    "token_matched": (
+        "{M} token-matched history (no graph)",
+        "model",
+        "token_matched_history",
+        MAGENTA,
+        (0, (5, 1, 1, 1)),
+        ">",
+    ),
+    "oracle_context": (
+        "{M} updated graph (for reference)",
+        "model",
+        "oracle_updated_graph",
+        BLUE,
+        "-",
+        None,
+    ),
+    "stale": (
+        "stale answer (no model; named majority_prior in old result files)",
+        "model",
+        "majority_prior",
+        INK,
+        (0, (1, 1)),
+        None,
+    ),
     "majority": ("per-task majority (no model)", "majority", None, INK2, (0, (6, 3)), None),
 }
 SERIES: dict = {}
@@ -82,15 +132,35 @@ MAIN_LINES = ("oracle", "predicted", "frozen", "shuffled", "question", "soft")
 MAIN_BARS = ("oracle", "predicted", "frozen", "question", "soft")
 APPX_GRAPH = ("oracle", "structure", "frozen_cached", "shuffled", "once")
 APPX_TEXT = ("oracle_context", "soft", "token_matched", "question", "stale", "majority")
-APPX_BARS = ("oracle", "structure", "frozen_cached", "once", "shuffled", "question", "token_matched", "soft", "majority", "stale")
+APPX_BARS = (
+    "oracle",
+    "structure",
+    "frozen_cached",
+    "once",
+    "shuffled",
+    "question",
+    "token_matched",
+    "soft",
+    "majority",
+    "stale",
+)
 
 DIMS = {
-    "session_length": (["1", "2", "4", "8"], "session length (number of turns)", "accuracy by session length"),
-    "turn_index": ([str(i) for i in range(8)], "turn index within the session (turn 0 = first question)",
-                   "accuracy by turn index (later turns only exist in 8-turn sessions)"),
+    "session_length": (
+        ["1", "2", "4", "8"],
+        "session length (number of turns)",
+        "accuracy by session length",
+    ),
+    "turn_index": (
+        [str(i) for i in range(8)],
+        "turn index within the session (turn 0 = first question)",
+        "accuracy by turn index (later turns only exist in 8-turn sessions)",
+    ),
 }
-TURN_NOTE = ("Sessions reaching each turn: turn 0 = 1,188; turn 1 = 891; turns 2-3 = 594; turns 4-7 = 297 "
-             "(about +/-5 points at the 95% level, so late-turn wiggles are mostly noise).")
+TURN_NOTE = (
+    "Sessions reaching each turn: turn 0 = 1,188; turn 1 = 891; turns 2-3 = 594; turns 4-7 = 297 "
+    "(about +/-5 points at the 95% level, so late-turn wiggles are mostly noise)."
+)
 
 
 # ------------------------------------------------------------------ data
@@ -100,15 +170,24 @@ def build_majority_cache() -> dict:
     from graph_modi.data import v3
     from graph_modi.evaluation.metrics import normalize_answer
 
-    sessions = v3.generate_sessions_v3(replicates_per_split={"validation": 1, "test": 1}, seed=42,
-                                       tasks=list(v3.DYNAMIC_TASKS), progress=False)
+    sessions = v3.generate_sessions_v3(
+        replicates_per_split={"validation": 1, "test": 1},
+        seed=42,
+        tasks=list(v3.DYNAMIC_TASKS),
+        progress=False,
+    )
     result = {}
     for split in SPLITS:
         rows = [
-            {"task": turn.query.reasoning_type.value, "gold": normalize_answer(turn.gold_answer),
-             "stale": normalize_answer(turn.stale_answer), "session_length": str(len(session.turns)),
-             "turn_index": str(turn.turn_index)}
-            for session in sessions[split] for turn in session.turns
+            {
+                "task": turn.query.reasoning_type.value,
+                "gold": normalize_answer(turn.gold_answer),
+                "stale": normalize_answer(turn.stale_answer),
+                "session_length": str(len(session.turns)),
+                "turn_index": str(turn.turn_index),
+            }
+            for session in sessions[split]
+            for turn in session.turns
         ]
         counts: dict[str, Counter] = defaultdict(Counter)
         for row in rows:
@@ -122,8 +201,14 @@ def build_majority_cache() -> dict:
             groups: dict[str, list[bool]] = defaultdict(list)
             for row in rows:
                 groups[row[dim]].append(row["correct"])
-            cuts[f"majority::{dim}"] = {k: {"acc": sum(v) / len(v), "n": len(v)} for k, v in sorted(groups.items())}
-        result[split] = {"overall": sum(r["correct"] for r in rows) / len(rows), "turns": len(rows), "cuts": cuts}
+            cuts[f"majority::{dim}"] = {
+                k: {"acc": sum(v) / len(v), "n": len(v)} for k, v in sorted(groups.items())
+            }
+        result[split] = {
+            "overall": sum(r["correct"] for r in rows) / len(rows),
+            "turns": len(rows),
+            "cuts": cuts,
+        }
     MAJORITY_CACHE.write_text(json.dumps(result, indent=1, sort_keys=True) + "\n")
     return result
 
@@ -136,7 +221,7 @@ def _rename_condition(node, new: str, old: str) -> None:
             if key == new:
                 key = old
             elif isinstance(key, str) and key.startswith(new + "::"):
-                key = old + key[len(new):]
+                key = old + key[len(new) :]
             if value == new:
                 value = old
             node[key] = value
@@ -147,14 +232,20 @@ def _rename_condition(node, new: str, old: str) -> None:
 
 
 def load_all(rebuild_majority: bool) -> dict:
-    files = {key: RES / f"exact2x_{key}_analysis.json"
-             for key in ("tea", "tea_predfix", "graphtoken", "graphtoken_predfix", "soft_prompt")}
+    files = {
+        key: RES / f"exact2x_{key}_analysis.json"
+        for key in ("tea", "tea_predfix", "graphtoken", "graphtoken_predfix", "soft_prompt")
+    }
     data = {key: json.loads(path.read_text()) for key, path in files.items()}
     # Result files written after 2026-10-14 call this baseline "stale_answer"; older ones
     # "majority_prior". The series below use the old name, so map the new one onto it.
     for blob in data.values():
         _rename_condition(blob, "stale_answer", "majority_prior")
-    data["majority"] = build_majority_cache() if rebuild_majority or not MAJORITY_CACHE.exists() else json.loads(MAJORITY_CACHE.read_text())
+    data["majority"] = (
+        build_majority_cache()
+        if rebuild_majority or not MAJORITY_CACHE.exists()
+        else json.loads(MAJORITY_CACHE.read_text())
+    )
     return data
 
 
@@ -179,8 +270,19 @@ def style(ax, grid_axis: str = "both") -> None:
 def handle(key: str) -> Line2D:
     label, _, _, color, dash, marker = SERIES[key]
     context = key == "oracle_context"
-    return Line2D([], [], color=color, linestyle=dash, marker=marker, markersize=5, linewidth=1.2 if context else 2,
-                  alpha=0.45 if context else 1.0, markeredgecolor=SURFACE, markeredgewidth=0.8, label=label)
+    return Line2D(
+        [],
+        [],
+        color=color,
+        linestyle=dash,
+        marker=marker,
+        markersize=5,
+        linewidth=1.2 if context else 2,
+        alpha=0.45 if context else 1.0,
+        markeredgecolor=SURFACE,
+        markeredgewidth=0.8,
+        label=label,
+    )
 
 
 def draw_lines(ax, data: dict, keys, split: str, dim: str) -> None:
@@ -191,9 +293,19 @@ def draw_lines(ax, data: dict, keys, split: str, dim: str) -> None:
         xs = [int(k) for k in order if k in values]
         ys = [100 * values[k]["acc"] for k in order if k in values]
         context = key == "oracle_context"
-        ax.plot(xs, ys, color=color, linestyle=dash, linewidth=1.2 if context else 2,
-                alpha=0.45 if context else 1.0, marker=marker, markersize=5,
-                markeredgecolor=SURFACE, markeredgewidth=0.8, zorder=2 if context else 3)
+        ax.plot(
+            xs,
+            ys,
+            color=color,
+            linestyle=dash,
+            linewidth=1.2 if context else 2,
+            alpha=0.45 if context else 1.0,
+            marker=marker,
+            markersize=5,
+            markeredgecolor=SURFACE,
+            markeredgewidth=0.8,
+            zorder=2 if context else 3,
+        )
     ax.set_xticks([int(k) for k in order])
 
 
@@ -221,8 +333,14 @@ def fig_main_lines(data: dict, dim: str, stem: str) -> None:
     axes[0].set_ylabel("accuracy (%)", color=INK2, fontsize=9)
     fig.suptitle(f"{prefix()}Exact2x: {title}", color=INK, fontsize=11, x=0.01, ha="left")
     note = dim == "turn_index"
-    fig.legend(handles=[handle(k) for k in MAIN_LINES], loc="lower center", ncol=4, frameon=False, fontsize=8,
-               bbox_to_anchor=(0.5, 0.045 if note else 0.0))
+    fig.legend(
+        handles=[handle(k) for k in MAIN_LINES],
+        loc="lower center",
+        ncol=4,
+        frameon=False,
+        fontsize=8,
+        bbox_to_anchor=(0.5, 0.045 if note else 0.0),
+    )
     if note:
         fig.text(0.01, 0.008, TURN_NOTE, fontsize=7.5, color=INK2)
     fig.tight_layout(rect=(0, 0.15 if note else 0.11, 1, 0.95))
@@ -231,10 +349,18 @@ def fig_main_lines(data: dict, dim: str, stem: str) -> None:
 
 def fig_appendix_lines(data: dict, dim: str, stem: str) -> None:
     order, xlabel, title = DIMS[dim]
-    fig, axes = plt.subplots(2, 2, figsize=(11, 8.6), facecolor=SURFACE, sharex=True,
-                             gridspec_kw={"height_ratios": [1, 1.25]})
-    rows = (("graph-token conditions (TEA)", APPX_GRAPH, (20, 42)),
-            ("text-only conditions and reference points", APPX_TEXT, (0, 66)))
+    fig, axes = plt.subplots(
+        2,
+        2,
+        figsize=(11, 8.6),
+        facecolor=SURFACE,
+        sharex=True,
+        gridspec_kw={"height_ratios": [1, 1.25]},
+    )
+    rows = (
+        ("graph-token conditions (TEA)", APPX_GRAPH, (20, 42)),
+        ("text-only conditions and reference points", APPX_TEXT, (0, 66)),
+    )
     for r, (row_title, keys, ylim) in enumerate(rows):
         for c, split in enumerate(SPLITS):
             ax = axes[r, c]
@@ -250,11 +376,23 @@ def fig_appendix_lines(data: dict, dim: str, stem: str) -> None:
                 ax.tick_params(labelbottom=True)
         axes[r, 1].sharey(axes[r, 0])
         axes[r, 1].tick_params(labelleft=False)
-    fig.suptitle(f"{prefix()}Exact2x, all Table 1 conditions: {title}", color=INK, fontsize=11, x=0.01, ha="left")
+    fig.suptitle(
+        f"{prefix()}Exact2x, all Table 1 conditions: {title}",
+        color=INK,
+        fontsize=11,
+        x=0.01,
+        ha="left",
+    )
     graph_handles = [handle(k) for k in APPX_GRAPH]
     text_handles = [handle(k) for k in APPX_TEXT]
-    fig.legend(handles=graph_handles + text_handles, loc="lower center", ncol=3, frameon=False, fontsize=8,
-               bbox_to_anchor=(0.5, 0.018 if dim == "turn_index" else 0.0))
+    fig.legend(
+        handles=graph_handles + text_handles,
+        loc="lower center",
+        ncol=3,
+        frameon=False,
+        fontsize=8,
+        bbox_to_anchor=(0.5, 0.018 if dim == "turn_index" else 0.0),
+    )
     bottom = 0.105
     if dim == "turn_index":
         fig.text(0.01, 0.003, TURN_NOTE, fontsize=7.5, color=INK2)
@@ -267,15 +405,22 @@ def se(p: float, n: int) -> float:
     return 100 * math.sqrt(max(p * (1 - p), 1e-9) / max(n, 1))
 
 
-GROUPS = (("answer_changed", "turns where the edit changed the answer"),
-          ("answer_unchanged", "turns where the answer did not change"))
+GROUPS = (
+    ("answer_changed", "turns where the edit changed the answer"),
+    ("answer_unchanged", "turns where the answer did not change"),
+)
 
 
 def bar_handle(key: str) -> Patch:
     label, _, _, color, *_ = SERIES[key]
     hatched, hollow = key == "predicted", key == "majority"
-    return Patch(facecolor=SURFACE if hatched or hollow else color, edgecolor=color, hatch="////" if hatched else None,
-                 linewidth=1.2, label=label)
+    return Patch(
+        facecolor=SURFACE if hatched or hollow else color,
+        edgecolor=color,
+        hatch="////" if hatched else None,
+        linewidth=1.2,
+        label=label,
+    )
 
 
 def draw_bars(ax, data: dict, keys, split: str, ymax: float) -> None:
@@ -289,23 +434,48 @@ def draw_bars(ax, data: dict, keys, split: str, ymax: float) -> None:
             x = i + (j - (len(keys) - 1) / 2) * width
             hatched, hollow = key == "predicted", key == "majority"
             reference = key in ("stale", "majority")
-            ax.bar(x, min(value, ymax), width=width - 0.02, color=SURFACE if hatched or hollow else color,
-                   edgecolor=color if hatched or hollow else SURFACE, hatch="////" if hatched else None,
-                   linewidth=1.2 if hatched or hollow else 0.5,
-                   yerr=None if reference else 1.96 * se(share["acc"], share["n"]),
-                   error_kw={"ecolor": INK2, "elinewidth": 0.7, "capsize": 1.5})
+            ax.bar(
+                x,
+                min(value, ymax),
+                width=width - 0.02,
+                color=SURFACE if hatched or hollow else color,
+                edgecolor=color if hatched or hollow else SURFACE,
+                hatch="////" if hatched else None,
+                linewidth=1.2 if hatched or hollow else 0.5,
+                yerr=None if reference else 1.96 * se(share["acc"], share["n"]),
+                error_kw={"ecolor": INK2, "elinewidth": 0.7, "capsize": 1.5},
+            )
             if key == "stale":
                 if value > ymax:  # truncated bar: mark the break and print the true value
-                    ax.plot([x - width * 0.45, x + width * 0.45], [ymax - 1.2, ymax - 0.4], color=SURFACE, linewidth=2.2)
-                ax.text(x, min(value, ymax) + 0.6, f"{value:.0f}", ha="center", va="bottom", fontsize=7, color=INK)
+                    ax.plot(
+                        [x - width * 0.45, x + width * 0.45],
+                        [ymax - 1.2, ymax - 0.4],
+                        color=SURFACE,
+                        linewidth=2.2,
+                    )
+                ax.text(
+                    x,
+                    min(value, ymax) + 0.6,
+                    f"{value:.0f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=7,
+                    color=INK,
+                )
 
 
 def group_labels(ax, data: dict, split: str) -> None:
     counts = cut(data, "oracle", split, "changed")
     total = sum(v["n"] for v in counts.values())
     ax.set_xticks([0, 1])
-    ax.set_xticklabels([f"{name}\n({100 * counts[g]['n'] / total:.0f}% of turns, n={counts[g]['n']:,})" for g, name in GROUPS],
-                       fontsize=8, color=INK)
+    ax.set_xticklabels(
+        [
+            f"{name}\n({100 * counts[g]['n'] / total:.0f}% of turns, n={counts[g]['n']:,})"
+            for g, name in GROUPS
+        ],
+        fontsize=8,
+        color=INK,
+    )
 
 
 def fig_main_bars(data: dict, stem: str) -> None:
@@ -316,7 +486,13 @@ def fig_main_bars(data: dict, stem: str) -> None:
     ax.set_ylim(0, 45)
     ax.set_ylabel("accuracy (%), test split, 95% CI", color=INK2, fontsize=9)
     ax.set_title(f"{prefix()}Exact2x: edit tracking", color=INK, fontsize=11, loc="left")
-    ax.legend(handles=[bar_handle(k) for k in MAIN_BARS], frameon=False, fontsize=8, loc="upper left", bbox_to_anchor=(1.01, 1.0))
+    ax.legend(
+        handles=[bar_handle(k) for k in MAIN_BARS],
+        frameon=False,
+        fontsize=8,
+        loc="upper left",
+        bbox_to_anchor=(1.01, 1.0),
+    )
     fig.tight_layout()
     save(fig, "main", stem)
 
@@ -330,9 +506,20 @@ def fig_appendix_bars(data: dict, stem: str) -> None:
         ax.set_ylim(0, 47)
         ax.set_title(split, color=INK, fontsize=10, loc="left")
     axes[0].set_ylabel("accuracy (%), 95% CI for model conditions", color=INK2, fontsize=9)
-    fig.suptitle(f"{prefix()}Exact2x, all Table 1 conditions: edit tracking  (stale-answer bar is 0 / 100 by definition; truncated)",
-                 color=INK, fontsize=11, x=0.01, ha="left")
-    fig.legend(handles=[bar_handle(k) for k in APPX_BARS], loc="lower center", ncol=4, frameon=False, fontsize=8)
+    fig.suptitle(
+        f"{prefix()}Exact2x, all Table 1 conditions: edit tracking  (stale-answer bar is 0 / 100 by definition; truncated)",
+        color=INK,
+        fontsize=11,
+        x=0.01,
+        ha="left",
+    )
+    fig.legend(
+        handles=[bar_handle(k) for k in APPX_BARS],
+        loc="lower center",
+        ncol=4,
+        frameon=False,
+        fontsize=8,
+    )
     fig.tight_layout(rect=(0, 0.13, 1, 0.94))
     save(fig, "appendix", stem)
 
