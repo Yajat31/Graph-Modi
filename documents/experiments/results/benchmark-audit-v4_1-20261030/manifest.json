@@ -1,0 +1,26 @@
+{
+ "seed": 42,
+ "distribution": "metro_v4",
+ "files": {
+  "static_train": {
+   "sha256": "868cc282dffa201bc8ab7d2edc2ea97a6e852080ee4ed017d6c862d65b38c31b",
+   "bytes": 239403882
+  },
+  "static_validation": {
+   "sha256": "a1799f23834e0ea80ee50c9a471ceaaccd181f5f3e9148cd9b98a26eed0b9eae",
+   "bytes": 21795560
+  },
+  "static_test": {
+   "sha256": "b500abfb57d571dcd814b12d28f528a2ab56d306d5ecedeff4f382213a7d2e15",
+   "bytes": 43618202
+  },
+  "sessions_validation": {
+   "sha256": "0eb7ed918a76c1a0a8c3379574e9042340f4a7e4eb79cfa843a669e987e08896",
+   "bytes": 20883637
+  },
+  "sessions_test": {
+   "sha256": "bf946aa7cd500bc33bf5bf449625e8fc78c3f82768c98b3eaea7ace0a3fd1276",
+   "bytes": 20881622
+  }
+ }
+}

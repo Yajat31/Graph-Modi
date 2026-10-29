@@ -1222,7 +1222,8 @@ def step_evaluation(sessions: dict) -> None:
 
     # predicted_updated_graph must be in graph-model v4 configs (soft_prompt is graph-blind).
     missing = []
-    for name in ("v4_tea.yaml", "v4_graphtoken.yaml"):
+    graph_configs = ("v4_graphtoken_s42.yaml", "v4_graphtoken_warm_s42.yaml", "v4_tea_random_sum.yaml")
+    for name in graph_configs:
         path = Path("configs") / name
         if not path.exists() or "predicted_updated_graph" not in path.read_text():
             missing.append(name)
@@ -1230,7 +1231,7 @@ def step_evaluation(sessions: dict) -> None:
         "evaluation",
         "predicted_updated_graph_in_configs",
         not missing,
-        f"missing in {missing}" if missing else "v4_tea + v4_graphtoken",
+        f"missing in {missing}" if missing else " + ".join(graph_configs),
     )
     check(
         "evaluation",
@@ -1259,7 +1260,7 @@ def step_docs(gate_results: Path, bench_note: Path, checklist: Path) -> None:
         return match.group(1) if match else ""
 
     claims = [
-        ("pass_43", "43 pass" in note and summary.get("pass") == 43),
+        ("pass_count", f"{summary.get('pass')} pass" in note),
         ("fail_0", summary.get("fail", 0) == 0),
         ("grid_396", "396" in note),
     ]
@@ -1307,6 +1308,11 @@ def main() -> None:
         "--gate-results",
         default="documents/experiments/results/benchmark-audit-v4-20261025/results.json",
     )
+    parser.add_argument(
+        "--note",
+        default="documents/experiments/benchmark_v4_2026-10-25.md",
+        help="benchmark note whose cited gate numbers are checked against --gate-results",
+    )
     args = parser.parse_args()
     data = Path(args.data)
     out = Path(args.out)
@@ -1338,7 +1344,7 @@ def main() -> None:
     step_evaluation(sessions)
     step_docs(
         Path(args.gate_results),
-        Path("documents/experiments/benchmark_v4_2026-10-25.md"),
+        Path(args.note),
         Path("documents/experiments/v4_run_checklist.md"),
     )
 

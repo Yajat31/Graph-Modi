@@ -338,6 +338,40 @@ def gate_shortcuts(static):
         "eight_task_ceiling",
         f"{100 * summary['degree_status']['eight']:.1f}% (includes node_degree at 100%)",
     )
+    # v4.1: 2-hop cycle rule. A degree-2 station next to a leaf is on a pendant chain.
+    def neighbours(graph, node_id):
+        return {e.target for e in graph.edges if e.source == node_id} | {
+            e.source for e in graph.edges if e.target == node_id
+        }
+
+    def leaf_rule(item):
+        deg = V4.V3._degrees(item.graph)
+        near_leaf = any(deg[n] == 1 for n in neighbours(item.graph, item.query.source))
+        return "no" if near_leaf else "yes"
+
+    cycle = [i for i in test if i.query.reasoning_type is ReasoningType.CYCLE_MEMBERSHIP]
+    leaf_acc = sum(leaf_rule(i) == i.answer for i in cycle) / len(cycle)
+    summary["cycle_leaf_neighbour_rule"] = leaf_acc
+    check(
+        "shortcuts",
+        "cycle_leaf_neighbour_ceiling",
+        leaf_acc <= 0.85,
+        f"{100 * leaf_acc:.1f}% (v4.0: ~95%)",
+        "warn",
+    )
+    # Counterfactual items must obey the same filters as test items.
+    violations = Counter()
+    for item in train:
+        if item.metadata.get("counterfactual") is None:
+            continue
+        if not V4._v4_eligible(item.graph, item.query):
+            violations[item.query.reasoning_type.value] += 1
+    check(
+        "shortcuts",
+        "counterfactual_filters",
+        not violations,
+        f"{dict(violations)} items break the v4 test filters",
+    )
     RESULTS["shortcuts"] = summary
 
 
@@ -348,6 +382,23 @@ def gate_sessions(sessions):
         noop = sum(1 for t in turns if "noop" in t.tags)
         rate = noop / len(turns)
         check("sessions", f"{split}_noop_rate", 0.15 <= rate <= 0.20, f"{rate:.3f}")
+        changed_rate = sum(t.gold_answer != t.stale_answer for t in turns) / len(turns)
+        check(
+            "sessions",
+            f"{split}_answer_changing_share",
+            changed_rate >= 0.35,
+            f"{changed_rate:.3f} (stale-answer baseline {1 - changed_rate:.3f}; v4.0: 0.146)",
+        )
+        by_length = defaultdict(lambda: [0, 0])
+        for s in sess:
+            for t in s.turns:
+                by_length[len(s.turns)][0] += t.gold_answer != t.stale_answer
+                by_length[len(s.turns)][1] += 1
+        info(
+            "sessions",
+            f"{split}_answer_changing_by_length",
+            f"{ {k: round(a / b, 3) for k, (a, b) in sorted(by_length.items())} }",
+        )
         net_noop = cancel = revert = 0
         disconnected = 0
         closed_drift = []

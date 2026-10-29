@@ -18,7 +18,7 @@ Builds on v3 but does not modify it. Changes vs v3:
 from __future__ import annotations
 
 import random
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
@@ -51,12 +51,19 @@ from graph_modi.schema import (
 from graph_modi.utils.progress import ProgressTracker
 
 DISTRIBUTION_V4 = "metro_v4"
+# v4.1: answer-changing quota in sessions, triangle-ended chains, fixed cycle hop tag,
+# counterfactual "before" items filtered like test items. Data is not comparable with v4.0.
+GENERATOR_VERSION = "v4.1"
 NODE_COUNTS = V3.NODE_COUNTS
 DENSITIES = V3.DENSITIES
 MEAN_DEGREE = V3.MEAN_DEGREE
 MAX_DIAMETER = V3.MAX_DIAMETER
 SESSION_LENGTHS = V3.SESSION_LENGTHS
 NOOP_RATE = 0.17
+# v4.1: per-task share of session turns whose answer differs from the pre-edit answer.
+# Without it the sampler drew ~15% (stale answer 85%), so re-encoding barely mattered.
+TARGET_CHANGED_SHARE = 0.45
+LOOP_CHAIN_PROB = 0.6
 MAX_EDITS_PER_TURN = 3
 MAX_CLOSED = 3
 STATIC_TASKS = V3.STATIC_TASKS
@@ -136,7 +143,17 @@ def _base_topology_chains(
         lengths.append(rng.randint(lo, hi))
     if not lengths:
         lengths = [1, 1]
-    chain_nodes = sum(lengths)
+    # v4.1: some chains of length >= 2 end in a triangle instead of a leaf, so a bridge-chain
+    # station ("no" for cycle) need not sit next to a degree-1 station, and degree-2 "yes"
+    # stations exist off the ring. Without this, "has a degree-1 neighbour" decided ~95% of
+    # cycle items.
+    loops: list[bool] = []
+    spare = budget - sum(lengths)
+    for length in lengths:
+        loop = length >= 2 and spare >= 2 and rng.random() < LOOP_CHAIN_PROB
+        loops.append(loop)
+        spare -= 2 if loop else 0
+    chain_nodes = sum(lengths) + 2 * sum(loops)
     core = node_count - chain_nodes
     assert core >= 5
     edges: set[tuple[int, int]] = set()
@@ -155,13 +172,17 @@ def _base_topology_chains(
         left, right = sorted(rng.sample(hub, 2))
         edges.add((left, right))
     next_id = core
-    for length in lengths:
+    for length, loop in zip(lengths, loops, strict=True):
         attach = rng.choice(hub)
         prev = attach
         for _ in range(length):
             edges.add((prev, next_id))
             prev = next_id
             next_id += 1
+        if loop:
+            first, second = next_id, next_id + 1
+            edges.update({(prev, first), (prev, second), (first, second)})
+            next_id += 2
     assert next_id == node_count
     return edges
 
@@ -259,6 +280,7 @@ def make_metro_graph_v4(
         edges=tuple(edge_records),
         metadata={
             "distribution": DISTRIBUTION_V4,
+            "generator_version": GENERATOR_VERSION,
             "split": split,
             "node_count": node_count,
             "density": density.value,
@@ -333,7 +355,8 @@ def _hop_v4(query: GraphQuery, graph: AttributedGraph) -> HopDepth:
     if kind is ReasoningType.CONSTRAINED_REACHABILITY:
         return HopDepth.GLOBAL
     if kind is ReasoningType.CYCLE_MEMBERSHIP:
-        return HopDepth.MID if answer_query(graph, query) == "yes" else HopDepth.LOCAL
+        # Fixed tag: v4 tagged MID iff the answer was "yes", so the hop slice was the label.
+        return HopDepth.GLOBAL
     return HopDepth.MID
 
 
@@ -766,6 +789,16 @@ def generate_static_v4(
     return result
 
 
+def _v4_eligible(graph: AttributedGraph, query: GraphQuery) -> bool:
+    """The per-graph filters of ``candidate_queries_v4``, checked on another graph."""
+    kind = query.reasoning_type
+    if kind in (ReasoningType.REACHABILITY, ReasoningType.SHORTEST_PATH) and query.target:
+        return _is_open(graph, query.source) and _is_open(graph, query.target)
+    if kind is ReasoningType.CYCLE_MEMBERSHIP:
+        return V3._degrees(graph).get(query.source) == 2
+    return True
+
+
 def generate_counterfactual_pairs_v4(
     *,
     graph_count: int,
@@ -797,6 +830,10 @@ def generate_counterfactual_pairs_v4(
             after = apply_program_v4(graph, program, rng)
             changed = []
             for query in candidate_queries_v4(after, task, rng):
+                # The "before" item must satisfy the v4 filters too, or it re-teaches the v3
+                # shortcuts (closed endpoint => "no", non-degree-2 cycle station).
+                if not _v4_eligible(graph, query):
+                    continue
                 before_answer = answer_query(graph, query)
                 after_answer = answer_query(after, query)
                 if before_answer == after_answer:
@@ -838,6 +875,36 @@ def generate_counterfactual_pairs_v4(
     return result
 
 
+def _query_key(query: GraphQuery) -> tuple[Any, ...]:
+    return (query.source, query.target, query.attribute, str(query.value), query.hops)
+
+
+def _session_pool_v4(
+    before: AttributedGraph,
+    updated: AttributedGraph,
+    task: ReasoningType,
+    rng: random.Random,
+    *,
+    widen: bool,
+    draws: int = 6,
+) -> list[GraphQuery]:
+    """Candidate queries for one session turn.
+
+    ``candidate_queries_v4`` returns a random capped subset, which rarely contains the few
+    queries an edit actually changes (e.g. the edited pair for edge_exists). On edit turns,
+    union further draws until an answer-changing candidate appears.
+    """
+    pool = {_query_key(q): q for q in candidate_queries_v4(updated, task, rng)}
+    if not widen:
+        return list(pool.values())
+    for _ in range(draws):
+        if any(answer_query(updated, q) != answer_query(before, q) for q in pool.values()):
+            break
+        for query in candidate_queries_v4(updated, task, rng):
+            pool.setdefault(_query_key(query), query)
+    return list(pool.values())
+
+
 def generate_session_v4(
     *,
     split: str,
@@ -848,6 +915,7 @@ def generate_session_v4(
     turn_count: int,
     task: ReasoningType,
     sampler: BalancedSampler,
+    changed_quota: dict[str, Counter[str]] | None = None,
 ) -> Session:
     rng = random.Random(seed)
     initial = make_metro_graph_v4(
@@ -866,7 +934,7 @@ def generate_session_v4(
         updated = apply_program_v4(before, program, rng)
         is_noop = program.edits[0].operation is EditOperation.NOOP
         candidates = []
-        for query in candidate_queries_v4(updated, task, rng):
+        for query in _session_pool_v4(before, updated, task, rng, widen=not is_noop):
             gold = answer_query(updated, query)
             stale = answer_query(before, query)
             if task is ReasoningType.MOST_COMMON_ATTRIBUTE_WITHIN_HOPS:
@@ -877,8 +945,12 @@ def generate_session_v4(
                 ):
                     continue
             mention = _mentions_edit(query, program.edits)
-            # Stratum includes mention so the sampler balances mention x answer.
-            cell = f"{stratum_v4(updated, query)}|{'m' if mention else 'u'}"
+            # Stratum includes mention and answer-change so the sampler balances
+            # mention x changed x answer (v4 drew only ~15% answer-changing turns).
+            cell = (
+                f"{stratum_v4(updated, query)}|{'m' if mention else 'u'}"
+                f"|{'c' if gold != stale else 's'}"
+            )
             candidates.append((query, gold, cell, stale, mention))
         if not candidates:
             # Fall back without the unique-mode / open-endpoint filters so the session can finish.
@@ -886,8 +958,20 @@ def generate_session_v4(
                 gold = answer_query(updated, query)
                 stale = answer_query(before, query)
                 mention = _mentions_edit(query, program.edits)
-                cell = f"{stratum_v4(updated, query)}|{'m' if mention else 'u'}"
+                cell = (
+                    f"{stratum_v4(updated, query)}|{'m' if mention else 'u'}"
+                    f"|{'c' if gold != stale else 's'}"
+                )
                 candidates.append((query, gold, cell, stale, mention))
+        quota = changed_quota[task.value] if changed_quota is not None else None
+        if quota is not None:
+            changing = [item for item in candidates if item[1] != item[3]]
+            if task in YES_NO_TASKS and changing:
+                # Forcing changed turns must not skew yes/no: take only the rarer answer.
+                rarer = "yes" if quota["ans:yes"] <= quota["ans:no"] else "no"
+                changing = [item for item in changing if item[1] == rarer]
+            if changing and quota["changed"] < TARGET_CHANGED_SHARE * (quota["turns"] + 1):
+                candidates = changing
         scored = [(q, a, c) for q, a, c, _, _ in candidates]
         query, answer = sampler.choose(
             (split, task.value, density.value, "dyn"),
@@ -896,6 +980,10 @@ def generate_session_v4(
         )
         meta = next((m, s) for q, a, c, s, m in candidates if q == query and a == answer)
         mention, stale_answer = meta
+        if quota is not None:
+            quota["turns"] += 1
+            quota["changed"] += answer != stale_answer
+            quota[f"ans:{answer}"] += 1
         query = replace(query, question=render_question_v4(query, updated))
         utterance = (
             _noop_utterance(rng, family)
@@ -971,6 +1059,7 @@ def generate_sessions_v4(
     result: dict[str, list[Session]] = {}
     for split, replicates in replicates_per_split.items():
         sampler = BalancedSampler()
+        changed_quota: dict[str, Counter[str]] = defaultdict(Counter)
         sessions: list[Session] = []
         index = 0
         for _ in range(replicates):
@@ -985,6 +1074,7 @@ def generate_sessions_v4(
                         turn_count=length,
                         task=task,
                         sampler=sampler,
+                        changed_quota=changed_quota,
                     )
                 )
                 index += 1

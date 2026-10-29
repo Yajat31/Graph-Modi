@@ -27,7 +27,6 @@ CONDITIONS = (
     "graph_once_then_text",
     "shuffled_graph",
     "oracle_updated_graph",
-    "cached_no_reencode",
     "predicted_updated_graph",
     "serialized_initial_history",
     "token_matched_history",
@@ -48,7 +47,12 @@ CONDITIONS = (
 )
 
 # Names used by earlier result files / configs, mapped to the current condition.
-LEGACY_CONDITION_NAMES = {"majority_prior": "stale_answer"}
+LEGACY_CONDITION_NAMES = {
+    "majority_prior": "stale_answer",
+    # Gave the model exactly the inputs of frozen_graph_history (initial-graph tokens plus
+    # history text), so it was a duplicate condition, not a separate cache ablation.
+    "cached_no_reencode": "frozen_graph_history",
+}
 
 _REENCODE_CONDITIONS = {"oracle_updated_graph", "predicted_updated_graph"}
 
@@ -70,7 +74,7 @@ def _prompt(
     if condition == "token_matched_history":
         matched = token_budget_match(history_text, target_tokens=64)
         return f"{matched}\n{question}"
-    if condition in {"frozen_graph_history", "cached_no_reencode", "graph_once_then_text"}:
+    if condition in {"frozen_graph_history", "graph_once_then_text"}:
         return f"{history_text}\n{question}"
     if condition == "soft_prompt":
         return f"{history_text}\n{question}"
@@ -241,7 +245,9 @@ def evaluate_sessions(
     progress: bool = False,
     answer_prior: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
-    conditions = [LEGACY_CONDITION_NAMES.get(condition, condition) for condition in conditions]
+    conditions = list(
+        dict.fromkeys(LEGACY_CONDITION_NAMES.get(condition, condition) for condition in conditions)
+    )
     unknown = set(conditions) - set(CONDITIONS)
     if unknown:
         raise ValueError(f"Unknown evaluation conditions: {sorted(unknown)}")

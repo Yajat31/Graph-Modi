@@ -9,7 +9,8 @@ stations, label skew and a text shortcut).
 
 ## 0. Corrections (read first; found by the 2026-10-14 audits)
 
-The first version of this report was wrong in four ways that change what the numbers mean.
+The first version of this report was wrong in four ways that change what the numbers mean (items 1–4); items 5–6 were added
+after the 2026-10-21/22 audits.
 
 1. **"TEA run 2" is not GraphToken.** The column earlier labelled GraphToken has a frozen GNN (training re-froze it) and
    differs from TEA only in the projector's random initialisation. It is a second TEA run, so the TEA / TEA run 2 gap is
@@ -33,6 +34,16 @@ The first version of this report was wrong in four ways that change what the num
    The condition called `majority_prior` is the **stale (pre-edit) answer** (59.3%), not a majority baseline (about 29.4%); it is now
    `stale_answer`. The answer parser used to take the first number anywhere in a generation, which under-scores free-form text-only
    baselines; old result rows were scored with it, and re-runs under the leading-token parser are in `outputs/audit/`.
+5. **Cycle labels were wrong and labels are not balanced 50/50 (2026-10-22 audit).** The cycle solver tried only a station's first
+   neighbour, so 29/396 static test and 16/198 validation `cycle_membership` labels say "no" where the answer is "yes" (fixed in
+   `47a6eab`). Rescoring the September rows moves overall static accuracy by at most 0.7 points and multi-turn by at most 0.6; the
+   corrected question-only prior is 33.5, not 32.8. Every `cycle_membership` number in this report is scored against the faulty labels,
+   and even with correct labels a degree-only lookup scores 98.7% on v3 cycle items, so the task does not test cycle reasoning on v3.
+6. **Section 0a recipe and the warm-start number.** Not all runs in 0a used a cosine schedule with warmup (the TEA sum runs did not).
+   The warm start's 67.0% static validation comes from `static_gt_warm_full_validation.json`; the checkpoint sweep of the same run
+   scores 62.6% (final) and 63.1% (best). The 4.4-point gap is unexplained and the per-turn rows are on the old server only, so treat
+   **67.0 as disputed** and the warm-start validation number as 62.6–67.0. None of this is re-run on v3: the frozen paper runs use
+   metro_v4 generator v4.1 ([benchmark_v4_1_2026-10-30.md](benchmark_v4_1_2026-10-30.md)).
 
 ## 0a. Results after the fixes (sum aggregation; single GPU runs, audit of 2026-10-14 to 16)
 

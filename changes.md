@@ -1,5 +1,16 @@
 # What changed since the mid-submission (GraphModi.pdf)
 
+> **Update 2026-10-30: code freeze for the paper runs.** §5 items 1–8, 10, 12, 14 (checkpoint
+> default, encoder precision, metadata), 20 and 22 are addressed. Benchmark: metro_v4 generator
+> **v4.1** ([benchmark_v4_1_2026-10-30.md](documents/experiments/benchmark_v4_1_2026-10-30.md)):
+> 36% answer-changing turns (was 14.6%), cycle hop leak removed, cycle leaf-neighbour rule 79%
+> (was ~95%), counterfactual items filtered. Item 6 is **not** fixed: a learned one-hop shortcut
+> still scores 87% on reachability, so the shortcut-wrong slice is pre-registered. Configs come from
+> `scripts/make_v4_configs.py` (sum recipe, 3 GraphToken seeds, warm start, random-GNN control);
+> the GPU ladder is `scripts/run_v4_ladder.sh`, and the post-run analysis is `scripts/analyze_v4.py`.
+> Plan and go/no-go: [v4_run_checklist.md](documents/experiments/v4_run_checklist.md). Still open:
+> items 9, 11, 13, 14 (resume RNG, soft-prompt schedule), 16–19, 21, 23.
+
 *Written 2026-10-28 against branch `graphtoken-e2e` (merged into `graphmodi-experiments` as
 `5f39caf`). The mid-submission report (`GraphModi.pdf`, 2026-10-02) used the September v3 runs.
 Numbers come from committed files under `documents/experiments/results/`, except §3.5, §3.7 and

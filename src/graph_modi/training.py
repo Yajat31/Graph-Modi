@@ -6,7 +6,7 @@ import json
 import math
 import random
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -87,6 +87,9 @@ class ProjectorTrainingConfig:
     val_max_examples: int = 1000
     # Warm start: load GNN + projector weights from this checkpoint before training.
     init_checkpoint: str | Path | None = None
+    # Wrap each training prompt in the model's ``prompt_template`` (``Question: ...\nAnswer:``),
+    # which inference always applies. False reproduces the pre-v4.1 bare-question training.
+    wrap_prompts: bool = False
 
     def __post_init__(self) -> None:
         if (
@@ -724,6 +727,13 @@ def _validate_resume(
     return int(state["global_step"]), int(state["epoch"]), int(state["next_batch"])
 
 
+def wrap_prompts(examples: Sequence[TrainingExample], template: str) -> list[TrainingExample]:
+    """Apply an inference prompt template to every example's prompt."""
+    return [
+        replace(example, prompt=template.format(question=example.prompt)) for example in examples
+    ]
+
+
 def _validation_loss(
     model: Any,
     val_examples: Sequence[TrainingExample],
@@ -772,6 +782,10 @@ def train_projector(
     require_tea_dependencies()
     if not examples:
         raise ValueError("At least one training example is required")
+    if config.wrap_prompts:
+        examples = wrap_prompts(examples, model.config.prompt_template)
+        if val_examples:
+            val_examples = wrap_prompts(val_examples, model.config.prompt_template)
     try:
         import torch
         from accelerate import Accelerator
@@ -1101,6 +1115,8 @@ def train_soft_prompt(
     require_tea_dependencies()
     if not examples:
         raise ValueError("At least one training example is required")
+    if config.wrap_prompts:
+        examples = wrap_prompts(examples, model.config.prompt_template)
     try:
         import torch
         from accelerate import Accelerator

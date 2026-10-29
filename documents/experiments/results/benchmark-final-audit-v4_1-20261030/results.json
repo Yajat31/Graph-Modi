@@ -1,0 +1,582 @@
+{
+ "summary": {
+  "pass": 75,
+  "info": 10
+ },
+ "checks": [
+  {
+   "section": "determinism",
+   "name": "manifest_match",
+   "status": "pass",
+   "detail": "all files match"
+  },
+  {
+   "section": "determinism",
+   "name": "regenerate_twice",
+   "status": "pass",
+   "detail": "static_validation.jsonl:08934648c1==08934648c1; sessions_validation.jsonl:0eb7ed918a==0eb7ed918a"
+  },
+  {
+   "section": "determinism",
+   "name": "make_metro_graph_v4",
+   "status": "pass",
+   "detail": "graph_id=train-v4-graph-000001"
+  },
+  {
+   "section": "graph_generation",
+   "name": "connected",
+   "status": "pass",
+   "detail": "0/5376"
+  },
+  {
+   "section": "graph_generation",
+   "name": "size_and_diameter",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "graph_generation",
+   "name": "closed_1_to_3",
+   "status": "pass",
+   "detail": "0/5376"
+  },
+  {
+   "section": "graph_generation",
+   "name": "unique_names_ids",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "graph_generation",
+   "name": "no_loops_or_dup_edges",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "graph_generation",
+   "name": "attribute_domains",
+   "status": "pass",
+   "detail": "{}"
+  },
+  {
+   "section": "graph_generation",
+   "name": "graph_count",
+   "status": "info",
+   "detail": "5376 unique graphs audited"
+  },
+  {
+   "section": "questions",
+   "name": "renders",
+   "status": "pass",
+   "detail": "0/30534 empty or missing exemption"
+  },
+  {
+   "section": "questions",
+   "name": "label_roundtrip",
+   "status": "pass",
+   "detail": "0/30534"
+  },
+  {
+   "section": "questions",
+   "name": "no_status_in_text",
+   "status": "pass",
+   "detail": "0/30534"
+  },
+  {
+   "section": "questions",
+   "name": "facts_attr_withheld",
+   "status": "pass",
+   "detail": "0/30534"
+  },
+  {
+   "section": "labels",
+   "name": "static_train",
+   "status": "pass",
+   "detail": "0/24000 mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "static_train_unique_mode",
+   "status": "pass",
+   "detail": "0 ties"
+  },
+  {
+   "section": "labels",
+   "name": "static_train_counts",
+   "status": "info",
+   "detail": "{'attribute_check': 1636, 'attribute_lookup': 1637, 'constrained_reachability': 2358, 'cycle_membership': 1968, 'edge_exists': 2622, 'filtered_neighbor_count': 2220, 'most_common_attribute_within_hops': 1950, 'node_degree': 2806, 'reachability': 1890, 'shortest_path': 2548, 'within_hops_count': 2365}"
+  },
+  {
+   "section": "labels",
+   "name": "static_validation",
+   "status": "pass",
+   "detail": "0/2178 mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "static_validation_unique_mode",
+   "status": "pass",
+   "detail": "0 ties"
+  },
+  {
+   "section": "labels",
+   "name": "static_validation_counts",
+   "status": "info",
+   "detail": "{'attribute_check': 198, 'attribute_lookup': 198, 'constrained_reachability': 198, 'cycle_membership': 198, 'edge_exists': 198, 'filtered_neighbor_count': 198, 'most_common_attribute_within_hops': 198, 'node_degree': 198, 'reachability': 198, 'shortest_path': 198, 'within_hops_count': 198}"
+  },
+  {
+   "section": "labels",
+   "name": "static_test",
+   "status": "pass",
+   "detail": "0/4356 mismatches"
+  },
+  {
+   "section": "labels",
+   "name": "static_test_unique_mode",
+   "status": "pass",
+   "detail": "0 ties"
+  },
+  {
+   "section": "labels",
+   "name": "test_full_grid",
+   "status": "pass",
+   "detail": "{'attribute_check': 396, 'attribute_lookup': 396, 'constrained_reachability': 396, 'cycle_membership': 396, 'edge_exists': 396, 'filtered_neighbor_count': 396, 'most_common_attribute_within_hops': 396, 'node_degree': 396, 'reachability': 396, 'shortest_path': 396, 'within_hops_count': 396}"
+  },
+  {
+   "section": "labels",
+   "name": "static_test_counts",
+   "status": "info",
+   "detail": "{'attribute_check': 396, 'attribute_lookup': 396, 'constrained_reachability': 396, 'cycle_membership': 396, 'edge_exists': 396, 'filtered_neighbor_count': 396, 'most_common_attribute_within_hops': 396, 'node_degree': 396, 'reachability': 396, 'shortest_path': 396, 'within_hops_count': 396}"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_gold",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_stale",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_validation_ties",
+   "status": "pass",
+   "detail": "0 ties"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_gold",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_stale",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "labels",
+   "name": "sessions_test_ties",
+   "status": "pass",
+   "detail": "0 ties"
+  },
+  {
+   "section": "edits",
+   "name": "parse_roundtrip",
+   "status": "pass",
+   "detail": "0/8910"
+  },
+  {
+   "section": "edits",
+   "name": "independent_apply_matches_v4",
+   "status": "pass",
+   "detail": "0/8910"
+  },
+  {
+   "section": "edits",
+   "name": "utterance_names_labels",
+   "status": "pass",
+   "detail": "0/8910"
+  },
+  {
+   "section": "edits",
+   "name": "paraphrase_families",
+   "status": "info",
+   "detail": "{'direct': 792, 'service': 792, 'notice': 792}"
+  },
+  {
+   "section": "edits",
+   "name": "notice_held_out_of_fewshot",
+   "status": "pass",
+   "detail": "found []"
+  },
+  {
+   "section": "edits",
+   "name": "direct_service_in_fewshot",
+   "status": "pass",
+   "detail": "direct=True service=True"
+  },
+  {
+   "section": "edits",
+   "name": "invalid_skipped",
+   "status": "pass",
+   "detail": "DEL unknown edge"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_replay",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_answer_changed",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_turn_index",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_noop_rate",
+   "status": "pass",
+   "detail": "0.175"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_net_noop",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_cancelling",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_reverts",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "validation_connected",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "sessions",
+   "name": "test_replay",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "sessions",
+   "name": "test_answer_changed",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "sessions",
+   "name": "test_turn_index",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "sessions",
+   "name": "test_noop_rate",
+   "status": "pass",
+   "detail": "0.167"
+  },
+  {
+   "section": "sessions",
+   "name": "test_net_noop",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "test_cancelling",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "test_reverts",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "sessions",
+   "name": "test_connected",
+   "status": "pass",
+   "detail": "0/4455"
+  },
+  {
+   "section": "sessions",
+   "name": "test_session_count",
+   "status": "pass",
+   "detail": "1188"
+  },
+  {
+   "section": "sessions",
+   "name": "test_turns_per_task",
+   "status": "pass",
+   "detail": "expected 495/task; got {'constrained_reachability': 495, 'cycle_membership': 495, 'edge_exists': 495, 'filtered_neighbor_count': 495, 'most_common_attribute_within_hops': 495, 'node_degree': 495, 'reachability': 495, 'shortest_path': 495, 'within_hops_count': 495}; lengths={1: 297, 2: 297, 4: 297, 8: 297}"
+  },
+  {
+   "section": "shortcuts",
+   "name": "cycle_degree_ceiling",
+   "status": "pass",
+   "detail": "50.5%"
+  },
+  {
+   "section": "shortcuts",
+   "name": "reach_status_ceiling",
+   "status": "pass",
+   "detail": "54.0%"
+  },
+  {
+   "section": "shortcuts",
+   "name": "seven_task_ceiling",
+   "status": "pass",
+   "detail": "41.0%"
+  },
+  {
+   "section": "shortcuts",
+   "name": "majority_prior_sessions_test",
+   "status": "info",
+   "detail": "32.3%"
+  },
+  {
+   "section": "shortcuts",
+   "name": "stale_answer_sessions_test",
+   "status": "info",
+   "detail": "63.6%"
+  },
+  {
+   "section": "shortcuts",
+   "name": "yes_no_stratum_balance",
+   "status": "pass",
+   "detail": "2/87 coarse cells outside 25-75"
+  },
+  {
+   "section": "splits",
+   "name": "train_test",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "splits",
+   "name": "train_validation",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "splits",
+   "name": "train_sessions_test",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "splits",
+   "name": "validation_test",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "splits",
+   "name": "sessions_val_test",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "splits",
+   "name": "station_name_reuse",
+   "status": "info",
+   "detail": "{'train\u2229test': 240, 'train_only': 0, 'test_only': 0}"
+  },
+  {
+   "section": "plumbing",
+   "name": "source_ids",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "plumbing",
+   "name": "target_ids",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "plumbing",
+   "name": "reasoning_type_metadata",
+   "status": "pass",
+   "detail": "0"
+  },
+  {
+   "section": "plumbing",
+   "name": "hops_metadata",
+   "status": "pass",
+   "detail": "query.hops mirrored into TrainingExample"
+  },
+  {
+   "section": "plumbing",
+   "name": "eleven_tasks",
+   "status": "pass",
+   "detail": "['attribute_check', 'attribute_lookup', 'constrained_reachability', 'cycle_membership', 'edge_exists', 'filtered_neighbor_count', 'most_common_attribute_within_hops', 'node_degree', 'reachability', 'shortest_path', 'within_hops_count']"
+  },
+  {
+   "section": "plumbing",
+   "name": "bert_includes_status_by_design",
+   "status": "pass",
+   "detail": "BERT node features include status so the GNN can encode open/closed; status is withheld only from W(f_i) question text"
+  },
+  {
+   "section": "plumbing",
+   "name": "wfi_exclude_status",
+   "status": "pass",
+   "detail": "{'status'}"
+  },
+  {
+   "section": "plumbing",
+   "name": "prompt_formats",
+   "status": "info",
+   "detail": "train_starts='Linden Court: architecture=art_deco, cleanliness=average, di'; train_len=33 words"
+  },
+  {
+   "section": "plumbing",
+   "name": "eval_wraps_question",
+   "status": "pass",
+   "detail": "runner._prompt documented; training uses bare render_question"
+  },
+  {
+   "section": "evaluation",
+   "name": "normalize_and_match",
+   "status": "pass",
+   "detail": "7 cases"
+  },
+  {
+   "section": "evaluation",
+   "name": "tool_solver_100",
+   "status": "pass",
+   "detail": "100.0% on 51 turns"
+  },
+  {
+   "section": "evaluation",
+   "name": "stale_matches_analytic",
+   "status": "pass",
+   "detail": "runner=0.6667 analytic=0.6667"
+  },
+  {
+   "section": "evaluation",
+   "name": "cluster_bootstrap_by_session",
+   "status": "pass",
+   "detail": "cluster_bootstrap_ci resamples whole sessions"
+  },
+  {
+   "section": "evaluation",
+   "name": "predicted_updated_graph_in_configs",
+   "status": "pass",
+   "detail": "v4_graphtoken_s42.yaml + v4_graphtoken_warm_s42.yaml + v4_tea_random_sum.yaml"
+  },
+  {
+   "section": "evaluation",
+   "name": "condition_in_runner",
+   "status": "pass",
+   "detail": "16 conditions registered"
+  },
+  {
+   "section": "docs",
+   "name": "benchmark_note_numbers",
+   "status": "pass",
+   "detail": "all cited numbers match ('pass_count, fail_0, grid_396, cycle, reach, seven, noop_val, noop_test')"
+  },
+  {
+   "section": "docs",
+   "name": "checklist_present",
+   "status": "pass",
+   "detail": "v4_run_checklist.md"
+  },
+  {
+   "section": "docs",
+   "name": "gate_summary",
+   "status": "info",
+   "detail": "{'pass': 45, 'info': 12, 'warn': 2}"
+  }
+ ],
+ "sections": {
+  "shortcuts": {
+   "status_only": {
+    "edge_exists": 0.553,
+    "reachability": 0.5404,
+    "constrained_reachability": 0.4975,
+    "cycle_membership": 0.5051,
+    "node_degree": 0.1136,
+    "filtered_neighbor_count": 0.1692,
+    "shortest_path": 0.1364,
+    "within_hops_count": 0.1162
+   },
+   "degree_only": {
+    "edge_exists": 0.5758,
+    "reachability": 0.6869,
+    "constrained_reachability": 0.5152,
+    "cycle_membership": 0.5051,
+    "node_degree": 1.0,
+    "filtered_neighbor_count": 0.3081,
+    "shortest_path": 0.2475,
+    "within_hops_count": 0.1717
+   },
+   "degree_status": {
+    "edge_exists": 0.5328,
+    "reachability": 0.6566,
+    "constrained_reachability": 0.5152,
+    "cycle_membership": 0.5051,
+    "node_degree": 0.9924,
+    "filtered_neighbor_count": 0.2955,
+    "shortest_path": 0.2121,
+    "within_hops_count": 0.1515
+   },
+   "text_hops_len": {
+    "edge_exists": 0.553,
+    "reachability": 0.5404,
+    "constrained_reachability": 0.5,
+    "cycle_membership": 0.5051,
+    "node_degree": 0.1136,
+    "filtered_neighbor_count": 0.1566,
+    "shortest_path": 0.1364,
+    "within_hops_count": 0.1187
+   },
+   "seven_ex_degree": 0.4098
+  },
+  "baselines": {
+   "majority": 0.3232,
+   "stale": 0.6359
+  },
+  "name_reuse": {
+   "train\u2229test": 240,
+   "train_only": 0,
+   "test_only": 0
+  },
+  "prompt_note": "Training prompts are bare render_question / stored query.question (with W(f_i)). Evaluation conditions that send text through the LM wrap via runner._prompt; history conditions prepend revision text. No training example contains revision history."
+ },
+ "conventions": {
+  "reachability": "open endpoints and open intermediates; unweighted BFS",
+  "constrained_reachability": "endpoints exempt from avoided class; open/closed not filtered",
+  "within_hops_count": "excludes start node",
+  "most_common_attribute_within_hops": "includes start node; unique mode required",
+  "cycle_membership": "two neighbours connected after node removal",
+  "shortest_path_answer": "path length including endpoints, or unreachable",
+  "bert_status": "included in BERT node text by design; withheld from W(f_i)"
+ }
+}

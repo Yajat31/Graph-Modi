@@ -59,6 +59,10 @@ def _write_json(path: Path, value: Any) -> None:
 
 
 def _data_path(config: ExperimentConfig, split: str) -> Path:
+    # metro_v4 sessions use the names in datasets/metro_v4/manifest.json; older
+    # distributions keep their original <split>.jsonl layout.
+    if str(config.section("data").get("distribution", DISTRIBUTION)) == data_v4.DISTRIBUTION_V4:
+        return config.data_dir / f"sessions_{split}.jsonl"
     return config.data_dir / f"{split}.jsonl"
 
 
@@ -70,28 +74,54 @@ def _static_path(config: ExperimentConfig, split: str) -> Path:
     return config.data_dir / f"static_{split}.jsonl"
 
 
-def _git_sha() -> str:
+def _git(*args: str) -> str:
     try:
-        return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+        return subprocess.check_output(["git", *args], text=True).strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         return "unknown"
 
 
-def _experiment_log(config: ExperimentConfig, payload: dict[str, Any]) -> None:
-    log_dir = Path("documents/experiments")
-    log_dir.mkdir(parents=True, exist_ok=True)
-    entry = {
+def _git_sha() -> str:
+    return _git("rev-parse", "HEAD")
+
+
+def _sha256_file(path: Path) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _provenance(
+    config: ExperimentConfig,
+    *,
+    data_files: list[Path],
+    checkpoint: Path | None = None,
+    **extra: Any,
+) -> dict[str, Any]:
+    """Identity of a result: code, config, data files and checkpoint it came from."""
+    return {
         "git_sha": _git_sha(),
-        "branch": "test",
+        "git_dirty": _git("status", "--porcelain", "--untracked-files=no") not in ("", "unknown"),
+        "branch": _git("rev-parse", "--abbrev-ref", "HEAD"),
         "config": str(config.path),
         "output_dir": str(config.output_dir),
-        **payload,
+        "data_sha256": {str(path): _sha256_file(path) for path in data_files if path.exists()},
+        "checkpoint": str(checkpoint) if checkpoint is not None else None,
+        **extra,
     }
-    log_path = log_dir / "log.md"
+
+
+def _experiment_log(config: ExperimentConfig, payload: dict[str, Any]) -> None:
+    """Append one line per phase to ``<output_dir>/experiment_log.md`` (not the tracked log)."""
+    config.output_dir.mkdir(parents=True, exist_ok=True)
     phase = payload.get("phase", "run")
-    payload_json = json.dumps(payload, sort_keys=True)
-    line = f"- `{entry['git_sha'][:8]}` {phase}: {payload_json}\n"
-    with log_path.open("a", encoding="utf-8") as handle:
+    payload_json = json.dumps(payload, sort_keys=True, default=str)
+    line = f"- `{_git_sha()[:8]}` {phase} ({config.path}): {payload_json}\n"
+    with (config.output_dir / "experiment_log.md").open("a", encoding="utf-8") as handle:
         handle.write(line)
 
 
@@ -484,8 +514,17 @@ def _generate_v4(config: ExperimentConfig, *, progress: bool = True) -> dict[str
 
 
 def _ensure_data(config: ExperimentConfig) -> None:
-    if not _data_path(config, "test").exists():
+    if _data_path(config, "test").exists():
+        return
+    if config.section("model").get("backend", "mock") == "mock":
         _generate(config)
+        return
+    # Real runs must never regenerate silently: a regenerated set need not match the manifest.
+    raise FileNotFoundError(
+        f"{_data_path(config, 'test')} is missing. Generate it explicitly "
+        f"(`graph-modi generate --config {config.path}`) or copy the dataset and verify "
+        f"its sha256 against {config.data_dir / 'manifest.json'}."
+    )
 
 
 def _static_examples(tuples: list[StaticQATuple]) -> list[TrainingExample]:
@@ -850,6 +889,7 @@ def command_train(config: ExperimentConfig, _args: argparse.Namespace) -> None:
         eval_every_steps=int(training.get("eval_every_steps", 0)),
         val_max_examples=int(training.get("val_max_examples", 1000)),
         init_checkpoint=training.get("init_checkpoint"),
+        wrap_prompts=bool(training.get("wrap_prompts", False)),
     )
     examples = _training_examples(config)
     # Every model is built after seeding, so the projector (and a GraphToken GNN) start from a
@@ -907,7 +947,8 @@ def _encoder_autocast_dtype(config: ExperimentConfig, checkpoint: Path) -> Any:
 
     from graph_modi.models.tea_glm import load_checkpoint_metadata
 
-    mode = str(config.section("evaluation").get("encoder_autocast", "fp32"))
+    # Default: evaluate the GNN + projector under the dtype they were trained in.
+    mode = str(config.section("evaluation").get("encoder_autocast", "match_training"))
     if mode == "fp32":
         return None
     if mode == "bf16":
@@ -938,18 +979,45 @@ def _answer_prior(config: ExperimentConfig, conditions: list[str]) -> dict[str, 
     return {task: counter.most_common(1)[0][0] for task, counter in counts.items()}
 
 
-def _backend(config: ExperimentConfig) -> GraphBackend:
+def _checkpoint_path(config: ExperimentConfig, selection: str | None = None) -> Path | None:
+    """Checkpoint to evaluate: ``model.checkpoint`` if set, else ``checkpoint-<selection>``.
+
+    ``selection`` (CLI ``--checkpoint``) overrides ``evaluation.checkpoint``; both default to
+    ``final``. ``best`` is the lowest validation-loss checkpoint (needs ``eval_every_steps``).
+    """
+    model_config = config.section("model")
+    backend_name = str(model_config.get("backend", "mock"))
+    if backend_name == "mock":
+        return None
+    if model_config.get("checkpoint") and selection is None:
+        return Path(model_config["checkpoint"])
+    selection = selection or str(config.section("evaluation").get("checkpoint", "final"))
+    if "/" in selection:
+        return Path(selection)
+    folder = "soft_prompt" if backend_name == "soft_prompt" else "projector"
+    path = config.output_dir / folder / f"checkpoint-{selection}"
+    if not path.exists():
+        raise FileNotFoundError(f"checkpoint {path} does not exist")
+    return path
+
+
+def _checkpoint_tag(checkpoint: Path | None) -> str:
+    if checkpoint is None:
+        return "mock"
+    return checkpoint.name.removeprefix("checkpoint-")
+
+
+def _backend(config: ExperimentConfig, checkpoint: Path | None = None) -> GraphBackend:
     model_config = config.section("model")
     backend_name = str(model_config.get("backend", "mock"))
     if backend_name == "mock":
         return SymbolicMockBackend()
+    checkpoint = checkpoint or _checkpoint_path(config)
+    assert checkpoint is not None
     if backend_name == "soft_prompt":
         from graph_modi.models.soft_prompt import SoftPromptBackend, load_soft_prompt_checkpoint
 
         soft_model = _soft_prompt_model(config)
-        checkpoint = Path(
-            model_config.get("checkpoint", config.output_dir / "soft_prompt" / "checkpoint-final")
-        )
         load_soft_prompt_checkpoint(soft_model, checkpoint_dir=checkpoint)
         return SoftPromptBackend(
             soft_model,
@@ -958,12 +1026,6 @@ def _backend(config: ExperimentConfig) -> GraphBackend:
     from graph_modi.models.tea_glm import TEAGLMBackend
 
     model = _tea_model(config)
-    checkpoint = Path(
-        model_config.get(
-            "checkpoint",
-            config.output_dir / "projector" / "checkpoint-final",
-        )
-    )
     _load_tea_checkpoint(model, checkpoint)
     model.encoder_autocast_dtype = _encoder_autocast_dtype(config, checkpoint)
     backend_cls = TEAGLMBackend
@@ -985,17 +1047,35 @@ def command_freeze_v1(_config: ExperimentConfig, _args: argparse.Namespace) -> N
 def command_static_eval(config: ExperimentConfig, args: argparse.Namespace) -> None:
     evaluation = config.section("evaluation")
     split = str(getattr(args, "split", evaluation.get("static_split", "test")))
-    tuples = load_static_tuples(_static_path(config, split))
+    data_file = _static_path(config, split)
+    tuples = load_static_tuples(data_file)
+    checkpoint = _checkpoint_path(config, getattr(args, "checkpoint", None))
+    backend = _backend(config, checkpoint)
     result = evaluate_static_oracle(
         tuples,
-        _backend(config),
+        backend,
         batch_size=int(evaluation.get("batch_size", 16)),
         progress=not getattr(args, "no_progress", False),
     )
-    path = config.output_dir / f"static_eval_{split}.json"
+    result["provenance"] = _provenance(
+        config,
+        data_files=[data_file],
+        checkpoint=checkpoint,
+        split=split,
+        tuples=len(tuples),
+        encoder_autocast=str(
+            getattr(getattr(backend, "model", None), "encoder_autocast_dtype", None)
+        ),
+    )
+    tag = _checkpoint_tag(checkpoint)
+    path = config.output_dir / f"static_eval_{split}_{tag}.json"
     _write_json(path, result)
-    _experiment_log(config, {"phase": "static-eval", "split": split, "passed": result["passed"]})
+    _experiment_log(
+        config,
+        {"phase": "static-eval", "split": split, "checkpoint": str(checkpoint), "path": str(path)},
+    )
     summary = {key: result[key] for key in ("overall_accuracy", "passed", "failing_tasks")}
+    summary["written"] = str(path)
     print(json.dumps(summary, indent=2))
 
 
@@ -1124,10 +1204,12 @@ def command_evaluate(config: ExperimentConfig, args: argparse.Namespace) -> None
     conditions = [str(value) for value in evaluation.get("conditions", CONDITIONS)]
     batch_size = int(evaluation.get("batch_size", 16))
     result: dict[str, Any] = {}
-    backend = _backend(config)
-    for split in evaluation.get("splits", ["test"]):
-        sessions = load_sessions(_data_path(config, str(split)))
-        result[str(split)] = evaluate_sessions(
+    checkpoint = _checkpoint_path(config, getattr(args, "checkpoint", None))
+    backend = _backend(config, checkpoint)
+    splits = [str(split) for split in evaluation.get("splits", ["test"])]
+    for split in splits:
+        sessions = load_sessions(_data_path(config, split))
+        result[split] = evaluate_sessions(
             sessions,
             backend,
             conditions=conditions,
@@ -1135,7 +1217,18 @@ def command_evaluate(config: ExperimentConfig, args: argparse.Namespace) -> None
             progress=not getattr(args, "no_progress", False),
             answer_prior=_answer_prior(config, conditions),
         )
-    path = config.output_dir / "evaluation.json"
+        result[split]["provenance"] = _provenance(
+            config,
+            data_files=[_data_path(config, split)],
+            checkpoint=checkpoint,
+            split=split,
+            sessions=len(sessions),
+            turns=sum(len(session.turns) for session in sessions),
+            conditions=conditions,
+            encoder_autocast=str(evaluation.get("encoder_autocast", "match_training")),
+        )
+    tag = f"_{_checkpoint_tag(checkpoint)}" if checkpoint is not None else ""
+    path = config.output_dir / f"evaluation{tag}.json"
     _write_json(path, result)
     _experiment_log(config, {"phase": "evaluate", "splits": list(result)})
     print(json.dumps({key: value["summary"] for key, value in result.items()}, indent=2))
@@ -1166,14 +1259,18 @@ def build_parser() -> argparse.ArgumentParser:
         "pilot-gates": command_pilot,
         "final-study": command_final_study,
     }
+    checkpoint_help = "best | final | path to a checkpoint dir (default: evaluation.checkpoint)"
     for name, function in commands.items():
         child = subparsers.add_parser(name)
         child.add_argument("--config", required=True, type=Path)
         child.add_argument("--no-progress", action="store_true")
+        if name == "evaluate":
+            child.add_argument("--checkpoint", default=None, help=checkpoint_help)
         child.set_defaults(handler=function)
     static = subparsers.add_parser("static-eval")
     static.add_argument("--config", required=True, type=Path)
     static.add_argument("--split", default="test")
+    static.add_argument("--checkpoint", default=None, help=checkpoint_help)
     static.add_argument("--no-progress", action="store_true")
     static.set_defaults(handler=command_static_eval)
     sweep = subparsers.add_parser("sweep-checkpoints")

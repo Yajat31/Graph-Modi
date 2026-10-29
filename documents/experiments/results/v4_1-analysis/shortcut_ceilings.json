@@ -1,0 +1,43 @@
+{
+  "paired": {},
+  "runs": {},
+  "seeds": {},
+  "shortcut": {
+    "features": "src/tgt degree, status, leaf neighbours, min neighbour degree, closed neighbours; hop radius; graph size; closed count",
+    "sessions_per_task": {
+      "constrained_reachability": 0.604040404040404,
+      "cycle_membership": 0.8222222222222222,
+      "edge_exists": 0.8141414141414142,
+      "filtered_neighbor_count": 0.3373737373737374,
+      "node_degree": 1.0,
+      "reachability": 0.8303030303030303,
+      "shortest_path": 0.37373737373737376,
+      "within_hops_count": 0.16767676767676767
+    },
+    "sessions_updated_graph_non_attribute": 0.6186868686868687,
+    "static_overall_non_attribute": 0.6338383838383839,
+    "static_per_task": {
+      "constrained_reachability": 0.6237373737373737,
+      "cycle_membership": 0.898989898989899,
+      "edge_exists": 0.8459595959595959,
+      "filtered_neighbor_count": 0.25757575757575757,
+      "node_degree": 1.0,
+      "reachability": 0.8712121212121212,
+      "shortest_path": 0.4116161616161616,
+      "within_hops_count": 0.16161616161616163
+    }
+  },
+  "slice_sizes": {
+    "all": 4455,
+    "answer_changing": 1622,
+    "answer_unchanged": 2833,
+    "changed_and_no_mention": 359,
+    "family_direct": 1485,
+    "family_notice": 1485,
+    "family_service": 1485,
+    "mention": 2235,
+    "no_mention": 2220,
+    "shortcut_right": 2450,
+    "shortcut_wrong": 1510
+  }
+}
