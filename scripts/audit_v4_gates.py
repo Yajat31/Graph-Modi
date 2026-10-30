@@ -323,7 +323,7 @@ def gate_shortcuts(static):
         f"{100 * summary['status_only']['tasks']['reachability']:.1f}%",
     )
     # node_degree is definitionally a degree lookup (100%); the meaningful ceiling is the
-    # other 7 tasks. Also report the raw 8-task mean for comparison with v3's 63.9%.
+    # other 7 tasks. Also report the raw 8-task mean.
     seven = [t for t in EIGHT if t != "node_degree"]
     mean7 = sum(summary["degree_status"]["tasks"][t] for t in seven) / len(seven)
     summary["degree_status"]["seven_ex_degree"] = mean7
@@ -357,7 +357,7 @@ def gate_shortcuts(static):
         "shortcuts",
         "cycle_leaf_neighbour_ceiling",
         leaf_acc <= 0.85,
-        f"{100 * leaf_acc:.1f}% (v4.0: ~95%)",
+        f"{100 * leaf_acc:.1f}%",
         "warn",
     )
     # Counterfactual items must obey the same filters as test items.
@@ -388,7 +388,7 @@ def gate_sessions(sessions):
             "sessions",
             f"{split}_answer_changing_share",
             changed_rate >= 0.35,
-            f"{changed_rate:.3f} (stale-answer baseline {1 - changed_rate:.3f}; v4.0: 0.146)",
+            f"{changed_rate:.3f} (stale-answer baseline {1 - changed_rate:.3f})",
         )
         by_length = defaultdict(lambda: [0, 0])
         for s in sess:

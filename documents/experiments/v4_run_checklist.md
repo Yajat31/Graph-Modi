@@ -43,7 +43,7 @@ tune away during these runs.
 |---|---|---|---|
 | `setup` | — | env, data hashes, tests | 15 min |
 | `soft` | `v4_soft_prompt` | graph-blind trained control (with and without history) | 1 h |
-| `gt42` | `v4_graphtoken_s42` | main reader, sum aggregation, working audit recipe | 1.5 h |
+| `gt42` | `v4_graphtoken_s42` | main reader, sum aggregation | 1.5 h |
 | `warm` | `v4_pretrain_sum` → `v4_graphtoken_warm_s42` (1 epoch, like s42) | does contrastive pretraining help the joint reader? | 2.5 h |
 | `gt43`, `gt44` | `v4_graphtoken_s{43,44}` | 3 seeds for the main reader | 3 h |
 | `random` | `v4_tea_random_sum` | frozen random GNN, projector only: how much does GNN training add? | 1.5 h |
@@ -54,14 +54,13 @@ Every graph rung runs `static-eval` on validation and test for **both** `checkpo
 validation loss) and `checkpoint-final`, then multi-turn `evaluate` on test sessions with
 `checkpoint-best`. Soft prompt has no validation pass, so it uses `checkpoint-final`.
 
-Recipe (all graph runs, from the audit run that trained, `archive/configs/audit/gt_sum.yaml`):
+Recipe (all graph runs):
 sum aggregation, GNN dropout 0, projector lr 1e-3, joint GNN lr 1e-4, cosine schedule with 200
 warmup steps, validation every 100 steps on 1000 examples, train prompts wrapped in the same
 `Question: {q}\nAnswer:` template the evaluator sends (`wrap_prompts: true`; this is not the Llama
 chat template), encoder autocast matched to training. GraphToken and random-frozen use the
 same projector lr, so the comparison changes only whether the GNN trains. The warm start trains
-for 1 epoch like s42, so warm vs s42 changes only the GNN initialisation (it was 2 epochs before
-2026-10-30, which confounded pretraining with training length). At evaluation BERT node features
+for 1 epoch like s42, so warm vs s42 changes only the GNN initialisation. At evaluation BERT node features
 are computed in fp32 while GNN + projector use the training precision.
 
 ## Go / no-go after `gt42`
@@ -83,8 +82,7 @@ Check `outputs/v4_graphtoken_s42/projector/val_history.json`, `static_eval_test_
   (`scripts/analyze_v4.py`).
 - Conditions: `oracle_updated_graph`, `predicted_updated_graph`, `structure_only`,
   `frozen_graph_history`, `shuffled_graph`, `question_only`, `stale_answer`, `majority_answer`,
-  `tool_solver`, soft prompt (with and without history). `cached_no_reencode` is gone: it was the
-  same input as `frozen_graph_history` and is now an alias for it.
+  `tool_solver`, soft prompt (with and without history), text baselines.
 
 ## Pre-registered slices
 
@@ -93,8 +91,7 @@ Fixed before any v4.1 result exists; `scripts/analyze_v4.py` computes all of the
 - **Answer-changing turns:** `gold_answer != stale_answer` (36% of test turns).
 - **Text-unresolvable turns:** `mentions_edit == false`. Required next to the headline because the
   answer-changing quota raised the mention rate (0.60 vs 0.26 chance, a gate warning).
-- **Amendment (2026-10-30, before any v4.1 result).** An independent check found the one-hop
-  shortcut is not the local ceiling: a two-hop local classifier (no distances) reaches 70.1% static /
+- **Local ceilings.** The one-hop shortcut is not the local ceiling: a two-hop local classifier (no distances) reaches 70.1% static /
   67.0% sessions on non-attribute tasks (reachability 92, cycle 96, edge 95 static), and text-only
   lookups fit on validation sessions reach 36.6% (revision text only) and 78.7% (stale answer +
   revision text) on test sessions. `analyze_v4.py` now reports all of them, and:
@@ -110,8 +107,7 @@ Fixed before any v4.1 result exists; `scripts/analyze_v4.py` computes all of the
     conditions in every table.
   - Do not slice reachability or shortest path by `hop_depth`: that metadata tag encodes the answer.
 - **Shortcut-wrong turns:** turns where the learned one-hop shortcut (`analyze_v4.py`; 61.9% on
-  non-attribute test turns, reachability 83%, cycle 82%) answers wrong: 1,510 turns. Accuracy here is
-  the cleanest evidence of graph use beyond a local degree/status reader.
+  non-attribute test turns, reachability 83%, cycle 82%) answers wrong: 1,510 turns.
 - **Write path by paraphrase family**, especially the held-out `notice` family.
 - **Per-task tables with ceilings:** each task next to its shortcut ceiling, its majority answer, and
   the tool solver. Cycle is degree-2 only, and its leaf-neighbour rule reaches 79%.
@@ -127,24 +123,8 @@ PYTHONPATH=src python3 scripts/analyze_v4.py --runs "$ART" \
 the analysis runs from the copied artifacts alone. Commit `$ART` minus checkpoints under
 `documents/experiments/results/v4_1-<date>/`.
 
-## Optional: v3 per-turn rows (old server only)
-
-The v3 warm-start validation number is disputed (67.0 in `static_gt_warm_full_validation.json`,
-62.6 / 63.1 in the checkpoint sweep). Resolving it needs the per-turn rows, which exist only on the
-old server. If it is reachable, and without running anything there:
-
-```bash
-rsync -av --include='*/' --include='*.json' --include='*.log' --exclude='*' \
-    lmw@<old-server>:/data/lmw/graph-modi/outputs/audit/ documents/experiments/results/v3-audit-rows/
-```
-
-Then rescore `static_gt_warm_full_validation.json` and the sweep rows against the same tuple IDs;
-a different tuple count or checkpoint path explains the gap. Until then, v3 numbers are a diagnostic
-story only, and the warm-start gap is reported as disputed.
-
 ## Do not
 
-- Compare v4.1 numbers with v4.0, v3 or September tables as if they were the same benchmark.
 - Claim graph reasoning if a model is within a few points of the soft prompt or of the learned
   local ceiling (two-hop 70.1% static / 67.0% sessions, one-hop 63.4% / 61.9% on non-attribute
   tasks; the lookup-rule 7-task ceiling is 41.0%), or if its local-wrong accuracy is at the slice's

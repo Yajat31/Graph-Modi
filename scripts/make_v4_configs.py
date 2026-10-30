@@ -3,8 +3,7 @@
 Usage:
   python3 scripts/make_v4_configs.py
 
-The graph recipe is the one that trained in the October audit (archive/configs/audit/gt_sum.yaml):
-sum aggregation, no GNN dropout, joint GNN lr 1e-4, cosine schedule with warmup, and validation
+The graph recipe: sum aggregation, no GNN dropout, joint GNN lr 1e-4, cosine schedule with warmup, and validation
 every 100 steps with best-checkpoint selection. Every graph run trains for 1 epoch, so the warm
 start differs from GraphToken s42 only in the pretrained GNN initialisation. Re-running this script is idempotent.
 """

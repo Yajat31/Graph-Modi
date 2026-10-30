@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Final independent correctness audit for metro_v4.
+"""Final independent correctness audit for metro_v4 (generator v4.1).
 
 Recomputes labels and edit effects with solvers written here (BFS, biconnected
 components, shortest paths) — not by calling graph_modi.graph.solvers or
@@ -7,12 +7,12 @@ graph_modi.graph.executor. Comparing the library against itself would prove noth
 
 Usage:
   PYTHONPATH=src python3 scripts/audit_v4_final.py \\
-      --data datasets/metro_v4 \\
-      --out documents/experiments/results/benchmark-final-audit-v4-20261025
+      --data datasets/metro_v4_1 \\
+      --out documents/experiments/results/benchmark-final-audit-v4_1-20261030
 
   # Also regenerate a small determinism probe (default on):
   PYTHONPATH=src python3 scripts/audit_v4_final.py \\
-      --data datasets/metro_v4 --work /tmp/v4_final_probe
+      --data datasets/metro_v4_1 --work /tmp/v4_final_probe
 """
 
 from __future__ import annotations
