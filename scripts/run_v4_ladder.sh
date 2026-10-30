@@ -51,6 +51,17 @@ run() {
     $GM "$@" --no-progress 2>&1 | tee "$ART/logs/$name.log"
 }
 
+prune_checkpoints() {
+    # Keep the checkpoint-best / checkpoint-final weights; drop the periodic resume checkpoints and
+    # optimizer state (~6 GB each with the 4096-wide readout), which evaluation never reads.
+    local out=$1 sub
+    for sub in projector soft_prompt; do
+        [ -d "$out/$sub" ] || continue
+        find "$out/$sub" -maxdepth 1 -type d -name 'checkpoint-0*' -exec rm -rf {} +
+        rm -f "$out/$sub"/checkpoint-*/optimizer.pt
+    done
+}
+
 copy_artifacts() {
     local out=$1 dest="$ART/$(basename "$1")"
     mkdir -p "$dest"
@@ -70,6 +81,7 @@ copy_artifacts() {
     done
     git rev-parse HEAD >"$dest/git_sha.txt" 2>/dev/null || echo unknown >"$dest/git_sha.txt"
     git status --porcelain >"$dest/git_status.txt" 2>/dev/null || echo unknown >"$dest/git_status.txt"
+    prune_checkpoints "$out"
 }
 
 rung() {
