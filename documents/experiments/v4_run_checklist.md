@@ -71,11 +71,9 @@ instance-wise loss through a two-layer ELU projection head, plus a feature-wise 
 embeddings projected onto the top 1000 principal components of Llama's token-embedding table
 (τ = 0.4 for both); Adam lr 2e-3, dropout 0.5, up to 70 epochs with patience 10 on the training
 loss, 32 graphs per batch. The feature-wise loss needs the GNN output to match Llama's hidden size,
-so the pretrained GNN (TEA-style and warm start) outputs 4096; the encoder is otherwise the shared
-3-layer sum GraphSAGE. Stage 2 trains only the projector with the GNN and Llama frozen.
+so every graph run uses the same 3-layer sum GraphSAGE with output 4096 (hidden 1024). Stage 2 trains only the projector with the GNN and Llama frozen.
 
-The warm start trains for 1 epoch like s42; warm vs s42 changes the GNN initialisation and, with
-it, the GNN output width (4096 vs 1024). At evaluation BERT node features
+The warm start trains for 1 epoch like s42, so warm vs s42 changes only the GNN initialisation. At evaluation BERT node features
 are computed in fp32 while GNN + projector use the training precision.
 
 ## Go / no-go after `gt42`

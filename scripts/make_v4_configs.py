@@ -5,8 +5,9 @@ Usage:
 
 The graph recipe: sum aggregation, no GNN dropout, joint GNN lr 1e-4, cosine schedule with
 warmup, and validation every 100 steps with best-checkpoint selection. Every graph run trains for
-1 epoch. TEA-style (TEA-GLM-pretrained GNN, frozen) differs from the warm start only in whether the
-GNN trains; the warm start differs from GraphToken s42 in the GNN initialisation and output width.
+1 epoch and uses the same GNN shape, so TEA-style (TEA-GLM-pretrained GNN, frozen) differs from
+the warm start only in whether the GNN trains, and the warm start differs from GraphToken s42 only
+in the GNN initialisation.
 Re-running this script is idempotent.
 """
 
@@ -55,6 +56,9 @@ GRAPH_MODEL = {
     "bert_model_name": "bert-base-uncased",
     "node_feature_size": 768,
     "graph_hidden_size": 1024,
+    # TEA-GLM's feature-wise loss maps node embeddings onto the LLM's token-embedding principal
+    # components, so the GNN output width is the Llama hidden size; every graph run shares it.
+    "graph_output_size": 4096,
     "graph_layers": 3,
     "graph_dropout": 0.0,
     "graph_aggregation": "sum",
@@ -120,12 +124,6 @@ def _base(output_dir: str, seed: int, header: str, *, gpu: bool = True) -> dict:
     return config
 
 
-# TEA-GLM projects node embeddings onto the LLM's token-embedding principal components, so the
-# pretrained GNN's output width is the Llama hidden size. Used by v4_pretrain_sum, the TEA-style
-# runs and the warm start (which loads that GNN); GraphToken from scratch keeps 1024.
-TEA_GNN = {"graph_output_size": 4096}
-
-
 def graph_token(seed: int, *, warm: bool = False) -> dict:
     name = f"v4_graphtoken_warm_s{seed}" if warm else f"v4_graphtoken_s{seed}"
     config = _base(
@@ -136,7 +134,6 @@ def graph_token(seed: int, *, warm: bool = False) -> dict:
     )
     model = {"backend": "tea", "architecture": "graph_token", **GRAPH_MODEL}
     if warm:
-        model.update(TEA_GNN)
         model["gnn_checkpoint"] = "outputs/v4_pretrain_sum/gnn/gnn.pt"
     config["model"] = model
     config["training"] = {
@@ -154,7 +151,7 @@ def pretrain_sum() -> dict:
         42,
         "TEA-GLM GNN pretraining only (pretrain-gnn); feeds v4_tea_s* and v4_graphtoken_warm_s42",
     )
-    config["model"] = {"backend": "tea", "architecture": "tea", **GRAPH_MODEL, **TEA_GNN}
+    config["model"] = {"backend": "tea", "architecture": "tea", **GRAPH_MODEL}
     # TEA-GLM's own settings (GNNPreTrain/train_valid_paper.py): Adam lr 2e-3, tau 0.4, dropout
     # 0.5, edge drop 0.3 / 0.4 and feature mask 0.0 / 0.1 for the two views, 1000 principal
     # components, up to 70 epochs with patience 10 on the training loss.
@@ -184,7 +181,6 @@ def tea(seed: int) -> dict:
         "backend": "tea",
         "architecture": "tea",
         **GRAPH_MODEL,
-        **TEA_GNN,
         "gnn_checkpoint": "outputs/v4_pretrain_sum/gnn/gnn.pt",
     }
     config["training"] = {"seed": seed, **TRAINING}
