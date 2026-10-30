@@ -87,6 +87,10 @@ YES_NO = {
 }
 
 
+# Repo-relative inputs resolve from the repo root, not the working directory.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
 def check(section: str, name: str, ok: bool, detail: str = "", level: str = "fail") -> bool:
     status = "pass" if ok else level
     CHECKS.append({"section": section, "name": name, "status": status, "detail": detail})
@@ -1222,9 +1226,15 @@ def step_evaluation(sessions: dict) -> None:
 
     # predicted_updated_graph must be in graph-model v4 configs (soft_prompt is graph-blind).
     missing = []
-    graph_configs = ("v4_graphtoken_s42.yaml", "v4_graphtoken_warm_s42.yaml", "v4_tea_random_sum.yaml")
+    graph_configs = (
+        "v4_graphtoken_s42.yaml",
+        "v4_graphtoken_s43.yaml",
+        "v4_graphtoken_s44.yaml",
+        "v4_graphtoken_warm_s42.yaml",
+        "v4_tea_random_sum.yaml",
+    )
     for name in graph_configs:
-        path = Path("configs") / name
+        path = REPO_ROOT / "configs" / name
         if not path.exists() or "predicted_updated_graph" not in path.read_text():
             missing.append(name)
     check(
@@ -1294,23 +1304,27 @@ def step_docs(gate_results: Path, bench_note: Path, checklist: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", default="datasets/metro_v4")
+    parser.add_argument("--data", default=str(REPO_ROOT / "datasets/metro_v4_1"))
     parser.add_argument("--work", default="/tmp/graphmodi_v4_final_probe")
     parser.add_argument(
         "--out",
-        default="documents/experiments/results/benchmark-final-audit-v4-20261025",
+        default=str(
+            REPO_ROOT / "documents/experiments/results/benchmark-final-audit-v4_1-20261030"
+        ),
     )
     parser.add_argument(
         "--manifest",
-        default="datasets/metro_v4/manifest.json",
+        default=str(REPO_ROOT / "datasets/metro_v4_1/manifest.json"),
     )
     parser.add_argument(
         "--gate-results",
-        default="documents/experiments/results/benchmark-audit-v4-20261025/results.json",
+        default=str(
+            REPO_ROOT / "documents/experiments/results/benchmark-audit-v4_1-20261030/results.json"
+        ),
     )
     parser.add_argument(
         "--note",
-        default="documents/experiments/benchmark_v4_2026-10-25.md",
+        default=str(REPO_ROOT / "documents/experiments/benchmark_v4_1_2026-10-30.md"),
         help="benchmark note whose cited gate numbers are checked against --gate-results",
     )
     args = parser.parse_args()
@@ -1345,7 +1359,7 @@ def main() -> None:
     step_docs(
         Path(args.gate_results),
         Path(args.note),
-        Path("documents/experiments/v4_run_checklist.md"),
+        REPO_ROOT / "documents/experiments/v4_run_checklist.md",
     )
 
     summary = Counter(item["status"] for item in CHECKS)

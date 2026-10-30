@@ -5,7 +5,8 @@ Usage:
 
 The graph recipe is the one that trained in the October audit (archive/configs/audit/gt_sum.yaml):
 sum aggregation, no GNN dropout, joint GNN lr 1e-4, cosine schedule with warmup, and validation
-every 500 steps with best-checkpoint selection. Re-running this script is idempotent.
+every 100 steps with best-checkpoint selection. Every graph run trains for 1 epoch, so the warm
+start differs from GraphToken s42 only in the pretrained GNN initialisation. Re-running this script is idempotent.
 """
 
 from __future__ import annotations
@@ -75,9 +76,9 @@ TRAINING = {
     "lr_schedule": "cosine",
     "warmup_steps": 200,
     "min_lr_ratio": 0.05,
-    "eval_every_steps": 500,
+    "eval_every_steps": 100,
     "val_max_examples": 1000,
-    # Train on the same chat-template-wrapped prompts the evaluator sends.
+    # Train on the same "Question: {q}\nAnswer:" prompt template the evaluator sends.
     "wrap_prompts": True,
 }
 
@@ -104,8 +105,8 @@ EVALUATION = {
 }
 
 
-def _base(output_dir: str, seed: int, header: str) -> dict:
-    return {
+def _base(output_dir: str, seed: int, header: str, *, gpu: bool = True) -> dict:
+    config = {
         "_header": header,
         "seed": seed,
         "output_dir": output_dir,
@@ -113,6 +114,9 @@ def _base(output_dir: str, seed: int, header: str) -> dict:
         "gpu_memory_fraction": 0.97,
         "data": copy.deepcopy(DATA),
     }
+    if not gpu:  # data generation is CPU-only and must not need torch
+        del config["gpu_memory_fraction"]
+    return config
 
 
 def graph_token(seed: int, *, warm: bool = False) -> dict:
@@ -130,7 +134,6 @@ def graph_token(seed: int, *, warm: bool = False) -> dict:
     config["training"] = {
         "seed": seed,
         **TRAINING,
-        "epochs": 2 if warm else 1,
         "gnn_learning_rate_joint": 1e-4,
     }
     config["evaluation"] = {**EVALUATION, "conditions": list(GRAPH_CONDITIONS)}
@@ -203,7 +206,9 @@ def soft_prompt() -> dict:
 
 
 def data_only() -> dict:
-    return _base("outputs/v4_data", 42, "Generate metro_v4 (generator v4.1) data and nothing else")
+    return _base(
+        "outputs/v4_data", 42, "Generate metro_v4 (generator v4.1) data and nothing else", gpu=False
+    )
 
 
 def write(name: str, config: dict) -> None:

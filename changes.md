@@ -8,7 +8,15 @@
 > still scores 87% on reachability, so the shortcut-wrong slice is pre-registered. Configs come from
 > `scripts/make_v4_configs.py` (sum recipe, 3 GraphToken seeds, warm start, random-GNN control);
 > the GPU ladder is `scripts/run_v4_ladder.sh`, and the post-run analysis is `scripts/analyze_v4.py`.
-> Plan and go/no-go: [v4_run_checklist.md](documents/experiments/v4_run_checklist.md). Still open:
+> Plan and go/no-go: [v4_run_checklist.md](documents/experiments/v4_run_checklist.md).
+>
+> **Pre-launch fixes 2026-10-30 (branch `v4_1-launch-fixes`).** The ladder no longer trains on CPU
+> silently (preflight GPU check + CLI refuses CPU unless `GRAPHMODI_ALLOW_CPU=1`), the pytest
+> skip gate works, the warm start trains 1 epoch like s42, validation runs every 100 steps,
+> `val_history.json` is written correctly, finished training is not repeated after an eval crash,
+> `generate` no longer needs torch, scikit-learn is a dev dependency, and `analyze_v4.py` adds the
+> two-hop local ceiling (70.1 / 67.0), the local-wrong slice and text baselines (pre-registration
+> amended in the checklist). Data and hashes are unchanged. Still open:
 > items 9, 11, 13, 14 (resume RNG, soft-prompt schedule), 16–19, 21, 23.
 
 *Written 2026-10-28 against branch `graphtoken-e2e` (merged into `graphmodi-experiments` as

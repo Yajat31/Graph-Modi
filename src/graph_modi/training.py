@@ -650,10 +650,11 @@ def pretrain_graph_encoder_contrastive(
     )
 
 
-def _write_json(path: Path, value: Mapping[str, Any]) -> None:
+def _write_json(path: Path, value: Mapping[str, Any] | Sequence[Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    payload = dict(value) if isinstance(value, Mapping) else list(value)
     path.write_text(
-        json.dumps(dict(value), sort_keys=True, separators=(",", ":")) + "\n",
+        json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
         encoding="utf-8",
     )
 

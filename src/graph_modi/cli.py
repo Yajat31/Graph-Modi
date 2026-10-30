@@ -74,6 +74,26 @@ def _static_path(config: ExperimentConfig, split: str) -> Path:
     return config.data_dir / f"static_{split}.jsonl"
 
 
+def _model_device() -> Any:
+    """CUDA for real model runs; refuse to fall back to CPU unless GRAPHMODI_ALLOW_CPU=1.
+
+    A CPU fallback on a GPU box (e.g. a torch wheel built for a newer CUDA than the driver) would
+    otherwise "train" the 8B model on CPU for hours without any error."""
+    import os
+
+    import torch
+
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if os.environ.get("GRAPHMODI_ALLOW_CPU") == "1":
+        return torch.device("cpu")
+    raise RuntimeError(
+        "CUDA is not available (torch "
+        f"{torch.__version__}, built for CUDA {torch.version.cuda}). Check the NVIDIA driver and "
+        "the torch wheel, or set GRAPHMODI_ALLOW_CPU=1 to run on CPU deliberately."
+    )
+
+
 def _git(*args: str) -> str:
     try:
         return subprocess.check_output(["git", *args], text=True).strip()
@@ -83,6 +103,12 @@ def _git(*args: str) -> str:
 
 def _git_sha() -> str:
     return _git("rev-parse", "HEAD")
+
+
+def _git_dirty() -> bool | None:
+    """True/False for tracked-file changes; None when git state cannot be read."""
+    status = _git("status", "--porcelain", "--untracked-files=no")
+    return None if status == "unknown" else status != ""
 
 
 def _sha256_file(path: Path) -> str:
@@ -105,7 +131,7 @@ def _provenance(
     """Identity of a result: code, config, data files and checkpoint it came from."""
     return {
         "git_sha": _git_sha(),
-        "git_dirty": _git("status", "--porcelain", "--untracked-files=no") not in ("", "unknown"),
+        "git_dirty": _git_dirty(),
         "branch": _git("rev-parse", "--abbrev-ref", "HEAD"),
         "config": str(config.path),
         "output_dir": str(config.output_dir),
@@ -632,7 +658,7 @@ def _embedding_only_lm(lm_name: str) -> tuple[Any, Any]:
     key = "model.embed_tokens.weight"
     with safe_open(str(root / index["weight_map"][key]), framework="pt", device="cpu") as handle:
         weight = handle.get_tensor(key)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = _model_device()
     embedding = torch.nn.Embedding.from_pretrained(weight.to(device), freeze=True)
 
     class _EmbeddingOnlyLM:
@@ -761,7 +787,7 @@ def _tea_model(config: ExperimentConfig) -> Any:
     if vector_norm not in {"none", "standardize"}:
         raise ValueError("model.graph_vector_norm must be one of: none, standardize")
     tea_model.graph_vector_norm = vector_norm
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = _model_device()
     tea_model = tea_model.to(device)
     if bool(model.get("gradient_checkpointing", False)):
         tea_model.language_model.gradient_checkpointing_enable()
@@ -792,7 +818,7 @@ def _soft_prompt_model(config: ExperimentConfig) -> Any:
     )
     if bool(model.get("gradient_checkpointing", False)):
         soft_model.language_model.gradient_checkpointing_enable()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = _model_device()
     return soft_model.to(device)
 
 
@@ -1296,7 +1322,10 @@ def build_parser() -> argparse.ArgumentParser:
 def _apply_gpu_memory_cap(fraction: float | None) -> None:
     if fraction is None or fraction >= 1.0:
         return
-    import torch
+    try:
+        import torch
+    except ImportError:  # CPU-only tools (e.g. data generation) don't need torch
+        return
 
     if not torch.cuda.is_available():
         return
@@ -1309,7 +1338,8 @@ def main() -> None:
     args = parser.parse_args()
     config = load_config(args.config)
     fraction = config.values.get("gpu_memory_fraction")
-    _apply_gpu_memory_cap(float(fraction) if fraction is not None else None)
+    if args.command != "generate":  # data generation is CPU-only
+        _apply_gpu_memory_cap(float(fraction) if fraction is not None else None)
     args.handler(config, args)
 
 

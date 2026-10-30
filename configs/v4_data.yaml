@@ -3,7 +3,6 @@
 seed: 42
 output_dir: outputs/v4_data
 data_dir: datasets/metro_v4_1
-gpu_memory_fraction: 0.97
 data:
   distribution: metro_v4
   static_train_graphs: 2000

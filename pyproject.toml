@@ -27,6 +27,9 @@ dev = [
   "pytest>=8.2",
   "pytest-cov>=5.0",
   "ruff>=0.6",
+  # scripts/analyze_v4.py fits the shortcut ceilings with GradientBoostingClassifier; 1.9.1
+  # reproduces the committed shortcut_ceilings.json exactly.
+  "scikit-learn==1.9.1; python_version >= '3.11'",
 ]
 gpu = [
   "accelerate>=1.0",
