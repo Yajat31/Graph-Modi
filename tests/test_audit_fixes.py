@@ -344,7 +344,7 @@ def test_joint_training_uses_two_groups_and_the_schedule(tmp_path) -> None:
     )
     examples = _examples()
     result = train_projector(model, examples, config, val_examples=examples[:2])
-    assert any(not torch.equal(before[k], v) for k, v in model.gnn.state_dict().items())
+    assert any(not torch.equal(before[k], v.cpu()) for k, v in model.gnn.state_dict().items())
     history = (tmp_path / "val_history.json").read_text()
     assert "val_loss" in history
     assert (tmp_path / "checkpoint-best" / "gnn.pt").exists()

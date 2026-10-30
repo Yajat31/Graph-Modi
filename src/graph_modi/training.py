@@ -478,7 +478,9 @@ def pretrain_graph_encoder_contrastive(
         if not token_ids:
             token_ids = [tokenizer.unk_token_id or 0]
         with torch.no_grad():
-            token_embeds = embedding_layer(torch.tensor(token_ids, device=device))
+            # Index on the embedding table's own device (it may differ from the GNN's device).
+            table_device = embedding_layer.weight.device
+            token_embeds = embedding_layer(torch.tensor(token_ids, device=table_device))
             return token_embeds.mean(dim=0).float()
 
     def _text_embedding(text: str, node: Any = None) -> Any:
