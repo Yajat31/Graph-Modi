@@ -17,6 +17,8 @@
 #   gt44    GraphToken sum, seed 44                                                     ~1.5 h
 #   random  frozen random sum GNN + projector (no-GNN-training control)                 ~1.5 h
 #   text    zero-shot serialized-graph text baselines (frozen Llama, needs gt42)        ~30 min
+#   sweep   projector lr 3e-4 / 1e-4 for TEA-style s42, random GNN, warm start
+#           (training + validation only; picks lr on validation loss)               ~1 h
 #
 # Every launch first runs a cheap preflight (uv present, torch sees the GPU, Llama path, data
 # hashes, BERT download), even when setup.done exists, so a new VM is checked before any rung
@@ -257,6 +259,24 @@ do_text() {
     copy_artifacts outputs/v4_text_baselines
 }
 
+do_sweep() {
+    # Training and validation loss only; checkpoints are deleted, the val histories are kept.
+    pretrain_once
+    local config name
+    for config in configs/sweep/*.yaml; do
+        name=$(basename "$config" .yaml)
+        train_once "sweep_${name}" "outputs/sweep/${name}/projector/checkpoint-final/metadata.json" \
+            train-projector --config "$config"
+        mkdir -p "$ART/sweep/$name/projector"
+        cp "outputs/sweep/${name}/projector/"*.json "$ART/sweep/$name/projector/"
+        rm -rf "outputs/sweep/${name}/projector/"checkpoint-0* \
+            "outputs/sweep/${name}/projector/checkpoint-best"/*.pt
+        rm -f "outputs/sweep/${name}/projector/checkpoint-final"/{gnn,projector,optimizer}.pt
+    done
+    $PY scripts/sweep_projector_lr.py --runs outputs --out "$ART/projector_lr_sweep.json" |
+        tee -a "$ART/ladder.log"
+}
+
 rungs=("$@")
 [ ${#rungs[@]} -gt 0 ] || rungs=(setup soft gt42 tea42 warm gt43 gt44 tea43 tea44 random text)
 if [ "${SKIP_PREFLIGHT:-0}" != 1 ]; then
@@ -265,7 +285,7 @@ if [ "${SKIP_PREFLIGHT:-0}" != 1 ]; then
 fi
 for name in "${rungs[@]}"; do
     case $name in
-        setup | soft | gt42 | gt43 | gt44 | tea42 | tea43 | tea44 | warm | random | text) rung "$name" "do_$name" ;;
+        setup | soft | gt42 | gt43 | gt44 | tea42 | tea43 | tea44 | warm | random | text | sweep) rung "$name" "do_$name" ;;
         *)
             echo "unknown rung: $name" >&2
             exit 2
