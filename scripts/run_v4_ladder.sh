@@ -17,7 +17,7 @@
 #   gt44    GraphToken sum, seed 44                                                     ~1.5 h
 #   random  frozen random sum GNN + projector (no-GNN-training control)                 ~1.5 h
 #   text    zero-shot serialized-graph text baselines (frozen Llama, needs gt42)        ~30 min
-#   sweep   projector lr 3e-4 / 1e-4 for TEA-style s42, random GNN, warm start
+#   sweep   projector lr 3e-4 / 1e-4 for GraphToken s42, TEA-style s42, random GNN, warm start
 #           (training + validation only; picks lr on validation loss)               ~1 h
 #
 # Every launch first runs a cheap preflight (uv present, torch sees the GPU, Llama path, data

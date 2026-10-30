@@ -124,11 +124,11 @@ def _base(output_dir: str, seed: int, header: str, *, gpu: bool = True) -> dict:
     return config
 
 
-# Projector learning rate per run family. GraphToken trains its GNN and is stable at 1e-3. The
-# runs whose projector reads a frozen (or pretrained) GNN spiked at the 1e-3 peak and were still
-# improving after one epoch, so their lr is the one with the lowest validation loss among
-# {1e-3, 3e-4, 1e-4} (scripts/sweep_projector_lr.py over configs/sweep/; test is never used).
-PROJECTOR_LR = {"graphtoken": 1e-3, "tea": 1e-3, "warm": 1e-3, "random": 1e-3}
+# Projector learning rate per run family: the one with the lowest validation loss among
+# {1e-3, 3e-4, 1e-4} on seed 42 (scripts/sweep_projector_lr.py over configs/sweep/; test is never
+# used). At 1e-3 the runs whose projector reads a frozen or pretrained GNN spiked at the peak lr
+# and were still improving after one epoch.
+PROJECTOR_LR = {"graphtoken": 1e-3, "tea": 1e-4, "warm": 1e-4, "random": 1e-4}
 SWEEP_LRS = (3e-4, 1e-4)
 
 
@@ -296,9 +296,13 @@ def main() -> None:
     write("v4_graphtoken_warm_s42", graph_token(42, warm=True))
     write("v4_tea_random_sum", tea_random_sum())
     write("v4_text_baselines", text_baselines())
-    # Projector-lr sweep for the frozen / pretrained-GNN families (training + validation only).
+    # Projector-lr sweep for every graph family (training + validation only).
     for lr in SWEEP_LRS:
         tag = f"lr{lr:.0e}".replace("-0", "-")
+        write(
+            f"sweep/v4_graphtoken_s42_{tag}",
+            graph_token(42, lr=lr, out=f"outputs/sweep/v4_graphtoken_s42_{tag}"),
+        )
         write(f"sweep/v4_tea_s42_{tag}", tea(42, lr=lr, out=f"outputs/sweep/v4_tea_s42_{tag}"))
         write(
             f"sweep/v4_tea_random_sum_{tag}",

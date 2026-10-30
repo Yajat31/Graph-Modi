@@ -52,8 +52,11 @@ GRAPH_CONDITIONS = [
 ]
 
 
-def pct(values: list[bool]) -> float | None:
-    return round(100 * sum(values) / len(values), 1) if values else None
+def pct(values: list[bool], digits: int | None = 1) -> float | None:
+    if not values:
+        return None
+    value = 100 * sum(values) / len(values)
+    return round(value, digits) if digits is not None else value
 
 
 def turn_meta(sessions) -> dict:
@@ -91,13 +94,13 @@ def load_rows(path: Path, meta: dict) -> dict[str, list[dict]]:
     return grouped
 
 
-def breakdown(rows: list[dict], key) -> dict:
+def breakdown(rows: list[dict], key, digits: int | None = None) -> dict:
     buckets = defaultdict(list)
     for r in rows:
         k = key(r["_m"])
         if k is not None:
             buckets[k].append(bool(r["answer_correct"]))
-    return {str(k): pct(v) for k, v in sorted(buckets.items(), key=lambda kv: str(kv[0]))}
+    return {str(k): pct(v, digits) for k, v in sorted(buckets.items(), key=lambda kv: str(kv[0]))}
 
 
 def averaged(dicts: list[dict]) -> dict:
@@ -208,7 +211,9 @@ def main() -> None:
                 for cond in GRAPH_CONDITIONS
                 if all(rows[run].get(cond) for run in runs)
             }
-        table["shared"] = {cond: breakdown(rows[run][cond], key) for cond, run in SHARED.items()}
+        table["shared"] = {
+            cond: breakdown(rows[run][cond], key, digits=1) for cond, run in SHARED.items()
+        }
         report["sessions"][view] = table
     report["sessions"]["local_ceiling_per_task"] = {
         t: round(100 * v, 1) for t, v in analysis["local_ceiling_per_task"]["sessions"].items()

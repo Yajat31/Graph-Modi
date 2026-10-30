@@ -1,9 +1,9 @@
-"""Pick the projector learning rate of each frozen / pretrained-GNN family on validation loss.
+"""Pick the projector learning rate of each graph-reader family on validation loss.
 
   python3 scripts/sweep_projector_lr.py --runs outputs \
       --out documents/experiments/results/v4_1-analysis/projector_lr_sweep.json
 
-For each family (TEA-style, frozen random GNN, warm start) the candidates are the 1e-3 run
+For each family (GraphToken-style, TEA-style, frozen random GNN, warm start) the candidates are the 1e-3 run
 (<run>/projector/val_history.json) and the sweep runs (sweep/<run>_lr<x>/projector/...). The chosen
 lr has the lowest best validation loss, the same quantity that selects checkpoint-best. Test data
 is never read. Copy the chosen values into PROJECTOR_LR in scripts/make_v4_configs.py.
@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 
 FAMILIES = {
+    "graphtoken": "v4_graphtoken_s42",
     "tea": "v4_tea_s42",
     "random": "v4_tea_random_sum",
     "warm": "v4_graphtoken_warm_s42",
