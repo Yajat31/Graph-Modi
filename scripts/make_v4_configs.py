@@ -128,7 +128,7 @@ def _base(output_dir: str, seed: int, header: str, *, gpu: bool = True) -> dict:
 # {1e-3, 3e-4, 1e-4} on seed 42 (scripts/sweep_projector_lr.py over configs/sweep/; test is never
 # used). At 1e-3 the runs whose projector reads a frozen or pretrained GNN spiked at the peak lr
 # and were still improving after one epoch.
-PROJECTOR_LR = {"graphtoken": 1e-3, "tea": 1e-4, "warm": 1e-4, "random": 1e-4}
+PROJECTOR_LR = {"graphtoken": 1e-4, "tea": 1e-4, "warm": 1e-4, "random": 1e-4}
 SWEEP_LRS = (3e-4, 1e-4)
 
 
