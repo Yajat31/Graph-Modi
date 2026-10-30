@@ -205,6 +205,31 @@ def tea_random_sum() -> dict:
     return config
 
 
+def text_baselines() -> dict:
+    """Frozen Llama, zero-shot, no graph tokens: the graph (and revisions) as text."""
+    config = _base(
+        "outputs/v4_text_baselines",
+        42,
+        "Zero-shot text baselines: frozen Llama reads the serialized graph (no graph tokens). "
+        "The checkpoint only satisfies the backend; text-only conditions never use its weights",
+    )
+    config["model"] = {
+        "backend": "tea",
+        "architecture": "graph_token",
+        **GRAPH_MODEL,
+        "checkpoint": "outputs/v4_graphtoken_s42/projector/checkpoint-best",
+    }
+    config["evaluation"] = {
+        **EVALUATION,
+        "conditions": [
+            "serialized_current_graph",
+            "serialized_initial_history",
+            "token_matched_history",
+        ],
+    }
+    return config
+
+
 def soft_prompt() -> dict:
     config = _base("outputs/v4_soft_prompt", 42, "Graph-blind soft-prompt control")
     config["model"] = {
@@ -260,6 +285,7 @@ def main() -> None:
         write(f"v4_tea_s{seed}", tea(seed))
     write("v4_graphtoken_warm_s42", graph_token(42, warm=True))
     write("v4_tea_random_sum", tea_random_sum())
+    write("v4_text_baselines", text_baselines())
 
 
 if __name__ == "__main__":

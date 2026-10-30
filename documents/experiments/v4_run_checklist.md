@@ -49,6 +49,7 @@ tune away during these runs.
 | `gt43`, `gt44` | `v4_graphtoken_s{43,44}` | 3 seeds for GraphToken | 2 h |
 | `tea43`, `tea44` | `v4_tea_s{43,44}` | 3 seeds for TEA-style | 2 h |
 | `random` | `v4_tea_random_sum` | frozen random GNN, projector only: how much does GNN training add? | 1.5 h |
+| `text` | `v4_text_baselines` | zero-shot Llama with the graph serialized as text (current graph; initial graph + revisions; last 64 words of revisions) | 30 min |
 
 Real wall times go to `$ART/timings.tsv`. If time runs short, drop `random` first, then `tea44` and `gt44`.
 

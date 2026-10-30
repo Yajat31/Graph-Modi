@@ -16,6 +16,7 @@
 #   gt43    GraphToken sum, seed 43                                                     ~1.5 h
 #   gt44    GraphToken sum, seed 44                                                     ~1.5 h
 #   random  frozen random sum GNN + projector (no-GNN-training control)                 ~1.5 h
+#   text    zero-shot serialized-graph text baselines (frozen Llama, needs gt42)        ~30 min
 #
 # Every launch first runs a cheap preflight (uv present, torch sees the GPU, Llama path, data
 # hashes, BERT download), even when setup.done exists, so a new VM is checked before any rung
@@ -239,15 +240,20 @@ do_random() {
     copy_artifacts outputs/v4_tea_random_sum
 }
 
+do_text() {
+    run text_sessions evaluate --config configs/v4_text_baselines.yaml
+    copy_artifacts outputs/v4_text_baselines
+}
+
 rungs=("$@")
-[ ${#rungs[@]} -gt 0 ] || rungs=(setup soft gt42 tea42 warm gt43 gt44 tea43 tea44 random)
+[ ${#rungs[@]} -gt 0 ] || rungs=(setup soft gt42 tea42 warm gt43 gt44 tea43 tea44 random text)
 if [ "${SKIP_PREFLIGHT:-0}" != 1 ]; then
     log "preflight"
     preflight
 fi
 for name in "${rungs[@]}"; do
     case $name in
-        setup | soft | gt42 | gt43 | gt44 | tea42 | tea43 | tea44 | warm | random) rung "$name" "do_$name" ;;
+        setup | soft | gt42 | gt43 | gt44 | tea42 | tea43 | tea44 | warm | random | text) rung "$name" "do_$name" ;;
         *)
             echo "unknown rung: $name" >&2
             exit 2
