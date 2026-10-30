@@ -23,8 +23,9 @@
    false, shortcut-wrong and local-wrong turns, paraphrase family, per task next to its ceiling).
    Do not slice reachability or shortest_path by hop_depth: that tag encodes the answer.
 4. Paired, session-clustered differences: within a run (oracle vs shuffled / frozen / structure
-   only) and across runs (GraphToken vs soft prompt without history, warm start, random GNN).
-5. Seed mean and spread for the GraphToken seeds.
+   only) and across runs (GraphToken and TEA-style vs soft prompt without history, GraphToken vs
+   TEA-style, warm start, random GNN).
+5. Seed mean and spread for the GraphToken and TEA-style seeds.
 
 Slices and comparisons are fixed in the run checklist before any v4.1 result exists.
 """
@@ -72,6 +73,9 @@ WITHIN_RUN_PAIRS = (
 ACROSS_RUN_PAIRS = (
     ("v4_graphtoken_s", "oracle_updated_graph", "v4_soft_prompt", "soft_prompt_no_history"),
     ("v4_graphtoken_s", "oracle_updated_graph", "v4_soft_prompt", "soft_prompt"),
+    ("v4_tea_s", "oracle_updated_graph", "v4_soft_prompt", "soft_prompt_no_history"),
+    ("v4_graphtoken_s", "oracle_updated_graph", "v4_tea_s", "oracle_updated_graph"),
+    ("v4_tea_s42", "oracle_updated_graph", "v4_tea_random_sum", "oracle_updated_graph"),
     ("v4_graphtoken_s42", "oracle_updated_graph", "v4_tea_random_sum", "oracle_updated_graph"),
     ("v4_graphtoken_warm_s42", "oracle_updated_graph", "v4_graphtoken_s42", "oracle_updated_graph"),
 )
@@ -569,16 +573,18 @@ def main() -> None:
                             pick, all_rows[right][right_cond], resamples=args.resamples
                         )
 
-        seed_runs = [n for n in report["runs"] if n.startswith("v4_graphtoken_s")]
-        for condition in GRAPH_CONDITIONS:
-            for slice_name in HEADLINE_SLICES:
-                values = [
-                    report["runs"][n]["sessions"][condition][slice_name]["acc"]
-                    for n in seed_runs
-                    if condition in report["runs"][n].get("sessions", {})
-                ]
-                if values:
-                    report["seeds"][f"{condition} [{slice_name}]"] = {
+        for family in ("v4_graphtoken_s", "v4_tea_s"):
+            seed_runs = [n for n in report["runs"] if n.startswith(family)]
+            for condition in GRAPH_CONDITIONS:
+                for slice_name in HEADLINE_SLICES:
+                    values = [
+                        report["runs"][n]["sessions"][condition][slice_name]["acc"]
+                        for n in seed_runs
+                        if condition in report["runs"][n].get("sessions", {})
+                    ]
+                    if not values:
+                        continue
+                    report["seeds"][f"{family}* {condition} [{slice_name}]"] = {
                         "runs": seed_runs,
                         "mean": statistics.mean(values),
                         "sd": statistics.stdev(values) if len(values) > 1 else None,

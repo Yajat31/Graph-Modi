@@ -456,6 +456,58 @@ def test_contrastive_pretraining_actually_updates_the_gnn(tmp_path) -> None:
     assert model.gnn.dropout.p == 0.0  # restored (it was 0.0); override must not leak
 
 
+def test_tea_glm_pretraining_updates_the_gnn_and_records_its_settings(tmp_path) -> None:
+    import json
+
+    torch = pytest.importorskip("torch")
+    from graph_modi.models.tea_glm import GraphSAGEConfig, GraphSAGEEncoder
+    from graph_modi.training import (
+        pretrain_graph_encoder_tea_glm,
+        token_embedding_principal_components,
+    )
+
+    model = _tiny_model()
+    lm_dim = model.language_model.get_input_embeddings().weight.shape[1]
+    pcs, explained = token_embedding_principal_components(
+        model.language_model.get_input_embeddings().weight, 4
+    )
+    assert pcs.shape == (4, lm_dim) and 0.0 < explained <= 1.0
+    assert torch.allclose(pcs @ pcs.T, torch.eye(4), atol=1e-4)  # orthonormal rows
+
+    gnn = GraphSAGEEncoder(GraphSAGEConfig(input_dim=16, hidden_dim=8, output_dim=lm_dim))
+    gnn.requires_grad_(False)  # as TEAGLM hands it over: frozen
+    before = {k: v.clone() for k, v in gnn.state_dict().items()}
+    graphs = [e.graph for e in _examples(6)]
+    pretrain_graph_encoder_tea_glm(
+        gnn,
+        model.tensorizer,
+        graphs,
+        model.language_model,
+        output_dir=tmp_path,
+        seed=0,
+        epochs=3,
+        patience=1,
+        graphs_per_batch=3,
+        principal_components=4,
+        eval_graphs=graphs[:3],
+    )
+    saved = torch.load(tmp_path / "gnn.pt", map_location="cpu", weights_only=True)
+    assert any(not torch.equal(before[k], saved[k]) for k in before)
+    assert gnn.dropout.p == 0.0 and not any(p.requires_grad for p in gnn.parameters())
+    meta = json.loads((tmp_path / "metadata.json").read_text())
+    assert meta["objective"] == "tea_glm" and meta["format"] == "graph-modi-gnn-v1"
+    assert meta["tau"] == 0.4 and meta["drop_edge_rates"] == [0.3, 0.4] and meta["dropout"] == 0.5
+    assert 1 <= meta["best_epoch"] <= meta["epochs_run"] <= 3
+    assert meta["best_loss"] == min(h["loss"] for h in meta["history"])
+    assert meta["held_out_loss"] > 0
+
+    narrow = GraphSAGEEncoder(GraphSAGEConfig(input_dim=16, hidden_dim=8, output_dim=8))
+    with pytest.raises(ValueError, match="LLM hidden size"):
+        pretrain_graph_encoder_tea_glm(
+            narrow, model.tensorizer, graphs, model.language_model, output_dir=tmp_path, seed=0
+        )
+
+
 def test_vector_standardisation_is_a_noop_option_that_runs() -> None:
     torch = pytest.importorskip("torch")
     model = _tiny_model()

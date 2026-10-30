@@ -1230,6 +1230,9 @@ def step_evaluation(sessions: dict) -> None:
         "v4_graphtoken_s42.yaml",
         "v4_graphtoken_s43.yaml",
         "v4_graphtoken_s44.yaml",
+        "v4_tea_s42.yaml",
+        "v4_tea_s43.yaml",
+        "v4_tea_s44.yaml",
         "v4_graphtoken_warm_s42.yaml",
         "v4_tea_random_sum.yaml",
     )

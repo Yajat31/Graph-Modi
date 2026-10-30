@@ -46,6 +46,7 @@ from graph_modi.training import (
     TrainingExample,
     pretrain_graph_encoder,
     pretrain_graph_encoder_contrastive,
+    pretrain_graph_encoder_tea_glm,
     run_mock_training,
     set_deterministic_seed,
     train_projector,
@@ -683,7 +684,7 @@ def _neural_components(config: ExperimentConfig) -> tuple[Any, Any, Any]:
     graph_config = GraphSAGEConfig(
         input_dim=int(model.get("node_feature_size", 256)),
         hidden_dim=int(model.get("graph_hidden_size", 256)),
-        output_dim=int(model.get("graph_hidden_size", 256)),
+        output_dim=int(model.get("graph_output_size", model.get("graph_hidden_size", 256))),
         num_layers=int(model.get("graph_layers", 4)),
         dropout=float(model.get("graph_dropout", 0.0)),
         aggregation=str(model.get("graph_aggregation", "mean")),
@@ -744,7 +745,7 @@ def _tea_model(config: ExperimentConfig) -> Any:
     graph_config = GraphSAGEConfig(
         input_dim=tensor_config.feature_dim,
         hidden_dim=int(model.get("graph_hidden_size", 256)),
-        output_dim=int(model.get("graph_hidden_size", 256)),
+        output_dim=int(model.get("graph_output_size", model.get("graph_hidden_size", 256))),
         num_layers=int(model.get("graph_layers", 4)),
         dropout=float(model.get("graph_dropout", 0.0)),
         aggregation=str(model.get("graph_aggregation", "mean")),
@@ -843,12 +844,34 @@ def command_pretrain(config: ExperimentConfig, _args: argparse.Namespace) -> Non
     examples = _training_examples(config)
     training = config.section("training")
     objective = str(training.get("pretrain_objective", "classification"))
-    if objective == "contrastive":
-        # TEA-GLM's own pretraining objective (arXiv:2408.14512), reused by the
-        # CLEGR paper -- needs the LM+tokenizer to embed node text, so build
-        # the full TEAGLM (which already respects model.tensorizer=bert) and
-        # reuse its gnn/tensorizer/language_model/tokenizer rather than
-        # duplicating LM-loading logic here.
+    if objective == "tea_glm":
+        # TEA-GLM stage 1: self-supervised graph contrastive learning plus feature-wise alignment
+        # with the LLM's token-embedding principal components; only the embedding table is loaded.
+        set_deterministic_seed(int(training.get("seed", config.seed)))
+        _, gnn, tensorizer = _neural_components(config)
+        embedding_lm, _ = _embedding_only_lm(str(model_config["lm_name"]))
+        graphs = list({example.graph.graph_id: example.graph for example in examples}.values())
+        result = pretrain_graph_encoder_tea_glm(
+            gnn,
+            tensorizer,
+            graphs,
+            embedding_lm,
+            output_dir=config.output_dir / "gnn",
+            seed=int(training.get("seed", config.seed)),
+            epochs=int(training.get("gnn_epochs", 70)),
+            patience=int(training.get("gnn_patience", 10)),
+            graphs_per_batch=int(training.get("gnn_graphs_per_batch", 32)),
+            learning_rate=float(training.get("gnn_learning_rate", 2e-3)),
+            tau=float(training.get("contrastive_temperature", 0.4)),
+            principal_components=int(training.get("principal_components", 1000)),
+            drop_edge_rates=tuple(training.get("drop_edge_rates", (0.3, 0.4))),
+            drop_feature_rates=tuple(training.get("drop_feature_rates", (0.0, 0.1))),
+            dropout=_optional_float(training.get("pretrain_dropout", 0.5)),
+            eval_graphs=_validation_graphs(config),
+        )
+    elif objective == "contrastive":
+        # Node-text alignment (pretrain_graph_encoder_contrastive): needs the LM's tokenizer and
+        # embedding table to embed node text.
         # Only the LLM's input-embedding table and tokenizer are needed, so the 8B model is
         # not loaded. The GNN is built after seeding, so a given seed gives one initialisation.
         set_deterministic_seed(int(training.get("seed", config.seed)))

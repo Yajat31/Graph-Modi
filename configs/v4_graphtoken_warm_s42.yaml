@@ -53,6 +53,7 @@ model:
   trust_remote_code: false
   torch_dtype: bfloat16
   gradient_checkpointing: true
+  graph_output_size: 4096
   gnn_checkpoint: outputs/v4_pretrain_sum/gnn/gnn.pt
 training:
   seed: 42

@@ -9,7 +9,10 @@
 #   setup   full pytest on the GPU box (no test may be skipped)                       ~15 min
 #   soft    graph-blind soft-prompt control                                             ~1 h
 #   gt42    GraphToken sum, seed 42                       <- go/no-go point (see checklist)  ~1.5 h
-#   warm    contrastive GNN pretrain, then warm-started GraphToken (1 epoch)            ~2.5 h
+#   tea42   TEA-GLM GNN pretrain, then TEA-style (frozen pretrained GNN), seed 42      ~1.5 h
+#   warm    warm-started GraphToken (pretrained GNN trained jointly, 1 epoch)           ~1 h
+#   tea43   TEA-style, seed 43                                                          ~1 h
+#   tea44   TEA-style, seed 44                                                          ~1 h
 #   gt43    GraphToken sum, seed 43                                                     ~1.5 h
 #   gt44    GraphToken sum, seed 44                                                     ~1.5 h
 #   random  frozen random sum GNN + projector (no-GNN-training control)                 ~1.5 h
@@ -203,10 +206,26 @@ do_gt42() { graph_token_seed 42; }
 do_gt43() { graph_token_seed 43; }
 do_gt44() { graph_token_seed 44; }
 
-do_warm() {
+pretrain_once() {
     train_once pretrain_sum outputs/v4_pretrain_sum/gnn/metadata.json \
         pretrain-gnn --config configs/v4_pretrain_sum.yaml
     copy_artifacts outputs/v4_pretrain_sum
+}
+
+tea_seed() {
+    local seed=$1 config="configs/v4_tea_s$1.yaml"
+    pretrain_once
+    train_once "tea${seed}_train" "outputs/v4_tea_s${seed}/projector/checkpoint-final/metadata.json" \
+        train-projector --config "$config"
+    evaluate_graph_run "$config" "tea${seed}"
+    copy_artifacts "outputs/v4_tea_s${seed}"
+}
+do_tea42() { tea_seed 42; }
+do_tea43() { tea_seed 43; }
+do_tea44() { tea_seed 44; }
+
+do_warm() {
+    pretrain_once
     train_once warm_train outputs/v4_graphtoken_warm_s42/projector/checkpoint-final/metadata.json \
         train-projector --config configs/v4_graphtoken_warm_s42.yaml
     evaluate_graph_run configs/v4_graphtoken_warm_s42.yaml warm
@@ -221,14 +240,14 @@ do_random() {
 }
 
 rungs=("$@")
-[ ${#rungs[@]} -gt 0 ] || rungs=(setup soft gt42 warm gt43 gt44 random)
+[ ${#rungs[@]} -gt 0 ] || rungs=(setup soft gt42 tea42 warm gt43 gt44 tea43 tea44 random)
 if [ "${SKIP_PREFLIGHT:-0}" != 1 ]; then
     log "preflight"
     preflight
 fi
 for name in "${rungs[@]}"; do
     case $name in
-        setup | soft | gt42 | gt43 | gt44 | warm | random) rung "$name" "do_$name" ;;
+        setup | soft | gt42 | gt43 | gt44 | tea42 | tea43 | tea44 | warm | random) rung "$name" "do_$name" ;;
         *)
             echo "unknown rung: $name" >&2
             exit 2

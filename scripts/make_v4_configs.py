@@ -3,9 +3,11 @@
 Usage:
   python3 scripts/make_v4_configs.py
 
-The graph recipe: sum aggregation, no GNN dropout, joint GNN lr 1e-4, cosine schedule with warmup, and validation
-every 100 steps with best-checkpoint selection. Every graph run trains for 1 epoch, so the warm
-start differs from GraphToken s42 only in the pretrained GNN initialisation. Re-running this script is idempotent.
+The graph recipe: sum aggregation, no GNN dropout, joint GNN lr 1e-4, cosine schedule with
+warmup, and validation every 100 steps with best-checkpoint selection. Every graph run trains for
+1 epoch. TEA-style (TEA-GLM-pretrained GNN, frozen) differs from the warm start only in whether the
+GNN trains; the warm start differs from GraphToken s42 in the GNN initialisation and output width.
+Re-running this script is idempotent.
 """
 
 from __future__ import annotations
@@ -118,6 +120,12 @@ def _base(output_dir: str, seed: int, header: str, *, gpu: bool = True) -> dict:
     return config
 
 
+# TEA-GLM projects node embeddings onto the LLM's token-embedding principal components, so the
+# pretrained GNN's output width is the Llama hidden size. Used by v4_pretrain_sum, the TEA-style
+# runs and the warm start (which loads that GNN); GraphToken from scratch keeps 1024.
+TEA_GNN = {"graph_output_size": 4096}
+
+
 def graph_token(seed: int, *, warm: bool = False) -> dict:
     name = f"v4_graphtoken_warm_s{seed}" if warm else f"v4_graphtoken_s{seed}"
     config = _base(
@@ -128,6 +136,7 @@ def graph_token(seed: int, *, warm: bool = False) -> dict:
     )
     model = {"backend": "tea", "architecture": "graph_token", **GRAPH_MODEL}
     if warm:
+        model.update(TEA_GNN)
         model["gnn_checkpoint"] = "outputs/v4_pretrain_sum/gnn/gnn.pt"
     config["model"] = model
     config["training"] = {
@@ -143,18 +152,43 @@ def pretrain_sum() -> dict:
     config = _base(
         "outputs/v4_pretrain_sum",
         42,
-        "Contrastive GNN pretraining only (pretrain-gnn); feeds v4_graphtoken_warm_s42",
+        "TEA-GLM GNN pretraining only (pretrain-gnn); feeds v4_tea_s* and v4_graphtoken_warm_s42",
     )
-    config["model"] = {"backend": "tea", "architecture": "tea", **GRAPH_MODEL}
+    config["model"] = {"backend": "tea", "architecture": "tea", **GRAPH_MODEL, **TEA_GNN}
+    # TEA-GLM's own settings (GNNPreTrain/train_valid_paper.py): Adam lr 2e-3, tau 0.4, dropout
+    # 0.5, edge drop 0.3 / 0.4 and feature mask 0.0 / 0.1 for the two views, 1000 principal
+    # components, up to 70 epochs with patience 10 on the training loss.
     config["training"] = {
         "seed": 42,
-        "pretrain_objective": "contrastive",
-        "gnn_epochs": 10,
-        "gnn_learning_rate": 1e-3,
-        "gnn_graphs_per_batch": 8,
-        "contrastive_temperature": 0.07,
-        "pretrain_dropout": 0.0,
+        "pretrain_objective": "tea_glm",
+        "gnn_epochs": 70,
+        "gnn_patience": 10,
+        "gnn_learning_rate": 2e-3,
+        "gnn_graphs_per_batch": 32,
+        "contrastive_temperature": 0.4,
+        "principal_components": 1000,
+        "drop_edge_rates": [0.3, 0.4],
+        "drop_feature_rates": [0.0, 0.1],
+        "pretrain_dropout": 0.5,
     }
+    return config
+
+
+def tea(seed: int) -> dict:
+    config = _base(
+        f"outputs/v4_tea_s{seed}",
+        seed,
+        "TEA-style: TEA-GLM-pretrained sum GNN (v4_pretrain_sum), frozen, + trained projector",
+    )
+    config["model"] = {
+        "backend": "tea",
+        "architecture": "tea",
+        **GRAPH_MODEL,
+        **TEA_GNN,
+        "gnn_checkpoint": "outputs/v4_pretrain_sum/gnn/gnn.pt",
+    }
+    config["training"] = {"seed": seed, **TRAINING}
+    config["evaluation"] = {**EVALUATION, "conditions": list(GRAPH_CONDITIONS)}
     return config
 
 
@@ -226,6 +260,8 @@ def main() -> None:
     for seed in (42, 43, 44):
         write(f"v4_graphtoken_s{seed}", graph_token(seed))
     write("v4_pretrain_sum", pretrain_sum())
+    for seed in (42, 43, 44):
+        write(f"v4_tea_s{seed}", tea(seed))
     write("v4_graphtoken_warm_s42", graph_token(42, warm=True))
     write("v4_tea_random_sum", tea_random_sum())
 

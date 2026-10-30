@@ -44,11 +44,13 @@ tune away during these runs.
 | `setup` | — | env, data hashes, tests | 15 min |
 | `soft` | `v4_soft_prompt` | graph-blind trained control (with and without history) | 1 h |
 | `gt42` | `v4_graphtoken_s42` | main reader, sum aggregation | 1.5 h |
-| `warm` | `v4_pretrain_sum` → `v4_graphtoken_warm_s42` (1 epoch, like s42) | does contrastive pretraining help the joint reader? | 2.5 h |
-| `gt43`, `gt44` | `v4_graphtoken_s{43,44}` | 3 seeds for the main reader | 3 h |
+| `tea42` | `v4_pretrain_sum` → `v4_tea_s42` | TEA-style: TEA-GLM-pretrained GNN, frozen, projector only | 1.5 h |
+| `warm` | `v4_graphtoken_warm_s42` (1 epoch, like s42) | does TEA-GLM pretraining help the joint reader? | 1 h |
+| `gt43`, `gt44` | `v4_graphtoken_s{43,44}` | 3 seeds for GraphToken | 2 h |
+| `tea43`, `tea44` | `v4_tea_s{43,44}` | 3 seeds for TEA-style | 2 h |
 | `random` | `v4_tea_random_sum` | frozen random GNN, projector only: how much does GNN training add? | 1.5 h |
 
-Real wall times go to `$ART/timings.tsv`. If time runs short, drop `random` first, then `gt44`.
+Real wall times go to `$ART/timings.tsv`. If time runs short, drop `random` first, then `tea44` and `gt44`.
 
 Every graph rung runs `static-eval` on validation and test for **both** `checkpoint-best` (lowest
 validation loss) and `checkpoint-final`, then multi-turn `evaluate` on test sessions with
@@ -59,8 +61,21 @@ sum aggregation, GNN dropout 0, projector lr 1e-3, joint GNN lr 1e-4, cosine sch
 warmup steps, validation every 100 steps on 1000 examples, train prompts wrapped in the same
 `Question: {q}\nAnswer:` template the evaluator sends (`wrap_prompts: true`; this is not the Llama
 chat template), encoder autocast matched to training. GraphToken and random-frozen use the
-same projector lr, so the comparison changes only whether the GNN trains. The warm start trains
-for 1 epoch like s42, so warm vs s42 changes only the GNN initialisation. At evaluation BERT node features
+same projector lr, so the comparison changes only whether the GNN trains; TEA-style vs the warm
+start also changes only whether the (pretrained) GNN trains.
+
+TEA-style stage 1 (`v4_pretrain_sum`) follows TEA-GLM's released pretraining code
+(`GNNPreTrain/train_valid_paper.py`, `loss/contrastive_loss.py`): two views per batch (edges
+dropped at 0.3 / 0.4, node-feature dimensions masked at 0.0 / 0.1, one mask per epoch), a GRACE
+instance-wise loss through a two-layer ELU projection head, plus a feature-wise loss on the node
+embeddings projected onto the top 1000 principal components of Llama's token-embedding table
+(τ = 0.4 for both); Adam lr 2e-3, dropout 0.5, up to 70 epochs with patience 10 on the training
+loss, 32 graphs per batch. The feature-wise loss needs the GNN output to match Llama's hidden size,
+so the pretrained GNN (TEA-style and warm start) outputs 4096; the encoder is otherwise the shared
+3-layer sum GraphSAGE. Stage 2 trains only the projector with the GNN and Llama frozen.
+
+The warm start trains for 1 epoch like s42; warm vs s42 changes the GNN initialisation and, with
+it, the GNN output width (4096 vs 1024). At evaluation BERT node features
 are computed in fp32 while GNN + projector use the training precision.
 
 ## Go / no-go after `gt42`
@@ -76,7 +91,7 @@ Check `outputs/v4_graphtoken_s42/projector/val_history.json`, `static_eval_test_
 
 ## Required reporting
 
-- **3 seeds** (42, 43, 44) for GraphToken: mean and spread; single-seed rungs are labelled as such.
+- **3 seeds** (42, 43, 44) for GraphToken and TEA-style: mean and spread; single-seed rungs are labelled as such.
 - Best and final checkpoint both reported; the headline uses best (selected on validation only).
 - Session-clustered bootstrap CIs; paired, session-clustered differences between models
   (`scripts/analyze_v4.py`).

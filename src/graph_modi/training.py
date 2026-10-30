@@ -417,14 +417,10 @@ def pretrain_graph_encoder_contrastive(
     dropout: float | None = None,
     eval_graphs: Sequence[AttributedGraph] = (),
 ) -> GNNPretrainingResult:
-    """TEA-GLM's own pretraining objective (arXiv:2408.14512, reused by the
-    CLEGR paper as its TEA-GLM baseline): align each node's GNN embedding
-    with that node's own textual description, embedded via the frozen LLM's
-    word-embedding matrix, via a symmetric InfoNCE contrastive loss --
-    instead of this project's earlier proxy of classifying the exact answer
-    string from pooled+source+target (a proxy the classification head could
-    never solve for most of the ~1800 real-CLEGR answer classes, and which
-    the CLEGR paper's own TEA-GLM baseline never uses).
+    """Node-text alignment pretraining: align each node's GNN embedding with that node's own
+    textual description, embedded via the frozen LLM's word-embedding matrix, via a symmetric
+    InfoNCE loss. A simpler alternative to TEA-GLM's objective (``pretrain_graph_encoder_tea_glm``,
+    used by the v4.1 runs).
 
     Self-supervised: needs only the graphs themselves, no QA labels, so
     every node in every training graph is a training signal (not just the
@@ -649,6 +645,264 @@ def pretrain_graph_encoder_contrastive(
         metadata=metadata_path,
         labels=(),
         training_accuracy=final_loss,
+    )
+
+
+def token_embedding_principal_components(embedding_weight: Any, components: int) -> Any:
+    """Top principal components of an LLM's input-embedding table, as rows [P, hidden].
+
+    Same quantity as TEA-GLM's ``get_pc.py`` (sklearn PCA on the token embeddings), computed
+    from the covariance matrix: the matmul runs on the table's device, the eigendecomposition in
+    float64 on CPU so the result does not depend on the GPU.
+    """
+    import torch
+
+    table = embedding_weight.detach().float()
+    centered = table - table.mean(dim=0, keepdim=True)
+    covariance = (centered.T @ centered / max(1, table.shape[0] - 1)).double().cpu()
+    eigenvalues, eigenvectors = torch.linalg.eigh(covariance)
+    order = torch.argsort(eigenvalues, descending=True)[:components]
+    explained = float(eigenvalues[order].sum() / eigenvalues.clamp_min(0).sum())
+    return eigenvectors[:, order].T.float().contiguous(), explained
+
+
+def _tea_glm_loss(z1: Any, z2: Any, proj_z1: Any, proj_z2: Any, pcs: Any, tau: float) -> tuple:
+    """TEA-GLM's ``ContrastiveLoss`` (GNNPreTrain/loss/contrastive_loss.py), both directions.
+
+    Instance-wise: GRACE loss on the projection-head outputs (a node's other view is the
+    positive; every other node in either view is a negative). Feature-wise: node embeddings are
+    mapped onto the token-embedding principal components, and each component (a column over the
+    batch's nodes) is contrasted with the same component in the other view.
+    """
+    import torch
+    from torch import nn
+
+    def sim(a: Any, b: Any) -> Any:
+        return nn.functional.normalize(a) @ nn.functional.normalize(b).T
+
+    def instance(p1: Any, p2: Any) -> Any:
+        refl = torch.exp(sim(p1, p1) / tau)
+        between = torch.exp(sim(p1, p2) / tau)
+        return -torch.log(between.diag() / (refl.sum(1) + between.sum(1) - refl.diag())).mean()
+
+    def feature(a: Any, b: Any) -> Any:
+        m1, m2 = (a @ pcs.T).T, (b @ pcs.T).T
+        refl = torch.exp(sim(m1, m1) / tau)
+        between = torch.exp(sim(m1, m2) / tau)
+        denominator = refl.sum(1) + between.sum(1) - refl.diag() - between.diag()
+        return -torch.log(between.diag() / denominator).mean()
+
+    ins_12, feat_12 = instance(proj_z1, proj_z2), feature(z1, z2)
+    ins_21, feat_21 = instance(proj_z2, proj_z1), feature(z2, z1)
+    loss = (ins_12 + feat_12 + ins_21 + feat_21) / 2
+    return loss, float((ins_12 + ins_21).item()) / 2, float((feat_12 + feat_21).item()) / 2
+
+
+def pretrain_graph_encoder_tea_glm(
+    gnn: GraphSAGEEncoder,
+    tensorizer: DeterministicNodeTensorizer,
+    graphs: Sequence[AttributedGraph],
+    language_model: Any,
+    *,
+    output_dir: str | Path,
+    seed: int,
+    epochs: int = 70,
+    patience: int = 10,
+    graphs_per_batch: int = 32,
+    learning_rate: float = 2e-3,
+    tau: float = 0.4,
+    principal_components: int = 1000,
+    drop_edge_rates: tuple[float, float] = (0.3, 0.4),
+    drop_feature_rates: tuple[float, float] = (0.0, 0.1),
+    dropout: float | None = 0.5,
+    eval_graphs: Sequence[AttributedGraph] = (),
+) -> GNNPretrainingResult:
+    """TEA-GLM stage 1 (Wang et al., NeurIPS 2024, arXiv:2408.14512), as in the authors'
+    ``GNNPreTrain/train_valid_paper.py``: self-supervised, no QA labels and no LLM forward pass.
+
+    Each batch is seen in two views (edges dropped with ``drop_edge_rates``, feature dimensions
+    zeroed with one mask per view per epoch at ``drop_feature_rates``). The loss is TEA-GLM's
+    instance-wise + feature-wise contrastive loss (``_tea_glm_loss``), where the feature-wise part
+    uses the top ``principal_components`` of the LLM's token embeddings, so the GNN output
+    dimension must equal the LLM hidden size. A two-layer ELU projection head (output -> output ->
+    output) feeds the instance loss and is discarded. Adam, no weight decay; training stops after
+    ``patience`` epochs without a lower mean loss, and the lowest-loss GNN is saved.
+    """
+    require_tea_dependencies()
+    if not graphs:
+        raise ValueError("At least one graph is required for TEA-GLM pretraining")
+    if min(epochs, graphs_per_batch, principal_components) <= 0 or learning_rate <= 0:
+        raise ValueError("epochs, graphs_per_batch, components and learning_rate must be positive")
+
+    import copy
+
+    import torch
+    from torch import nn
+
+    set_deterministic_seed(seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    gnn.to(device)
+    embedding_weight = language_model.get_input_embeddings().weight
+    if gnn.config.output_dim != embedding_weight.shape[1]:
+        raise ValueError(
+            "TEA-GLM pretraining maps node embeddings onto token-embedding principal components, "
+            f"so the GNN output dim ({gnn.config.output_dim}) must equal the LLM hidden size "
+            f"({embedding_weight.shape[1]})"
+        )
+    pcs, explained = token_embedding_principal_components(embedding_weight, principal_components)
+    pcs = pcs.to(device)
+
+    out_dim = gnn.config.output_dim
+    projection_head = nn.Sequential(
+        nn.Linear(out_dim, out_dim), nn.ELU(), nn.Linear(out_dim, out_dim)
+    ).to(device)
+    original_requires_grad = [parameter.requires_grad for parameter in gnn.parameters()]
+    gnn.requires_grad_(True)
+    original_dropout = gnn.dropout.p
+    if dropout is not None:
+        gnn.dropout.p = dropout
+    optimizer = torch.optim.Adam(
+        [*gnn.parameters(), *projection_head.parameters()], lr=learning_rate
+    )
+    generator = torch.Generator().manual_seed(seed)
+    in_dim = gnn.config.input_dim
+
+    class _GraphExample:
+        __slots__ = ("graph",)
+
+        def __init__(self, graph: AttributedGraph) -> None:
+            self.graph = graph
+
+    def _view(merged: GraphTensor, feature_mask: Any, drop_edge: float) -> GraphTensor:
+        keep = torch.rand(merged.edge_weight.shape[0], generator=generator) >= drop_edge
+        keep = keep.to(device)
+        return GraphTensor(
+            x=merged.x.masked_fill(feature_mask, 0.0),
+            edge_index=merged.edge_index[:, keep],
+            edge_weight=merged.edge_weight[keep],
+            node_ids=merged.node_ids,
+            graph_id=merged.graph_id,
+        )
+
+    def _batch_loss(batch_graphs: Sequence[AttributedGraph], masks: tuple[Any, Any]) -> tuple:
+        merged, _, _ = _collate_batch(tensorizer, [_GraphExample(g) for g in batch_graphs], device)
+        z1 = gnn(_view(merged, masks[0], drop_edge_rates[0]))
+        z2 = gnn(_view(merged, masks[1], drop_edge_rates[1]))
+        return _tea_glm_loss(z1, z2, projection_head(z1), projection_head(z2), pcs, tau)
+
+    def _feature_masks() -> tuple[Any, Any]:
+        return tuple(  # type: ignore[return-value]
+            (torch.rand(in_dim, generator=generator) < rate).to(device).unsqueeze(0)
+            for rate in drop_feature_rates
+        )
+
+    rng = random.Random(seed)
+    ordered_graphs = list(graphs)
+    batches_per_epoch = (len(ordered_graphs) + graphs_per_batch - 1) // graphs_per_batch
+    tracker = ProgressTracker(
+        "[pretrain-gnn-tea-glm]", batches_per_epoch * epochs, phase="gnn_tea_glm"
+    )
+    tracker.banner(
+        graphs=len(ordered_graphs),
+        epochs=epochs,
+        graphs_per_batch=graphs_per_batch,
+        device=str(device),
+        explained_variance=f"{explained:.3f}",
+    )
+    history: list[dict[str, float]] = []
+    best_loss = float("inf")
+    best_state = copy.deepcopy(gnn.state_dict())
+    best_epoch = 0
+    stale_epochs = 0
+    for epoch in range(epochs):
+        rng.shuffle(ordered_graphs)
+        masks = _feature_masks()
+        gnn.train()
+        projection_head.train()
+        sums = [0.0, 0.0, 0.0]
+        for start in range(0, len(ordered_graphs), graphs_per_batch):
+            loss, ins, feat = _batch_loss(ordered_graphs[start : start + graphs_per_batch], masks)
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+            for index, value in enumerate((float(loss.item()), ins, feat)):
+                sums[index] += value
+            tracker.tick(loss=f"{loss.item():.4f}", epoch=f"{epoch + 1}/{epochs}")
+        mean = [value / batches_per_epoch for value in sums]
+        history.append(
+            {"epoch": epoch + 1, "loss": mean[0], "instance": mean[1], "feature": mean[2]}
+        )
+        tracker.end(mean_loss=f"{mean[0]:.4f}", instance=f"{mean[1]:.4f}", feature=f"{mean[2]:.4f}")
+        if mean[0] < best_loss:
+            best_loss, best_epoch, stale_epochs = mean[0], epoch + 1, 0
+            best_state = copy.deepcopy(gnn.state_dict())
+        else:
+            stale_epochs += 1
+            if stale_epochs > patience:
+                break
+
+    gnn.load_state_dict(best_state)
+    gnn.dropout.p = original_dropout
+    gnn.eval()
+    projection_head.eval()
+    held_out: dict[str, float] = {}
+    if eval_graphs:
+        masks = _feature_masks()
+        totals = [0.0, 0.0, 0.0]
+        count = 0
+        with torch.no_grad():
+            for start in range(0, len(eval_graphs), graphs_per_batch):
+                loss, ins, feat = _batch_loss(
+                    list(eval_graphs[start : start + graphs_per_batch]), masks
+                )
+                for index, value in enumerate((float(loss.item()), ins, feat)):
+                    totals[index] += value
+                count += 1
+        held_out = {
+            "held_out_loss": totals[0] / count,
+            "held_out_instance": totals[1] / count,
+            "held_out_feature": totals[2] / count,
+        }
+    for parameter, flag in zip(gnn.parameters(), original_requires_grad, strict=True):
+        parameter.requires_grad_(flag)
+
+    destination = Path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    checkpoint = destination / "gnn.pt"
+    torch.save({key: value.cpu() for key, value in gnn.state_dict().items()}, checkpoint)
+    metadata_path = destination / "metadata.json"
+    _write_json(
+        metadata_path,
+        {
+            "format": "graph-modi-gnn-v1",
+            "gnn_config": asdict(gnn.config),
+            "tensorizer_config": asdict(tensorizer.config),
+            "labels": (),
+            "data_sha256": data_records_sha256([g.to_dict() for g in graphs]),
+            "seed": seed,
+            "objective": "tea_glm",
+            "max_epochs": epochs,
+            "patience": patience,
+            "best_epoch": best_epoch,
+            "epochs_run": len(history),
+            "graphs_per_batch": graphs_per_batch,
+            "learning_rate": learning_rate,
+            "tau": tau,
+            "principal_components": principal_components,
+            "pca_explained_variance": explained,
+            "drop_edge_rates": list(drop_edge_rates),
+            "drop_feature_rates": list(drop_feature_rates),
+            "dropout": dropout if dropout is not None else original_dropout,
+            "best_loss": best_loss,
+            "history": history,
+            **held_out,
+        },
+    )
+    return GNNPretrainingResult(
+        checkpoint=checkpoint,
+        metadata=metadata_path,
+        labels=(),
+        training_accuracy=best_loss,
     )
 
 
