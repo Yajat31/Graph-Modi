@@ -1,0 +1,71 @@
+{
+  "bert_input": {
+    "collapse": {
+      "dim": 768,
+      "effective_rank": 13.009172728616615,
+      "mean_within_graph_cosine": 0.9738702313466505
+    },
+    "probe": {
+      "degree": 0.32248958945274353,
+      "status": 1.0,
+      "within_two_hops": 0.5790255069732666
+    }
+  },
+  "graphs": {
+    "test": 396,
+    "train": 600
+  },
+  "graphtoken_s42": {
+    "collapse": {
+      "dim": 4096,
+      "effective_rank": 1.8863835831472693,
+      "mean_within_graph_cosine": 0.9943689589548592
+    },
+    "probe": {
+      "degree": 1.0,
+      "status": 0.9642007946968079,
+      "within_two_hops": 0.9603386521339417
+    }
+  },
+  "majority": {
+    "degree": 0.3651218062982769,
+    "status": 0.8816102198455139,
+    "within_two_hops": 0.5904634581105169
+  },
+  "random_frozen": {
+    "collapse": {
+      "dim": 4096,
+      "effective_rank": 1.8939393448007458,
+      "mean_within_graph_cosine": 0.9172103236419986
+    },
+    "probe": {
+      "degree": 1.0,
+      "status": 0.9656862616539001,
+      "within_two_hops": 0.9221627712249756
+    }
+  },
+  "tea_glm_pretrained": {
+    "collapse": {
+      "dim": 4096,
+      "effective_rank": 16.193058414356624,
+      "mean_within_graph_cosine": 0.2361931852770574
+    },
+    "probe": {
+      "degree": 0.9642007946968079,
+      "status": 0.88116455078125,
+      "within_two_hops": 0.7924836277961731
+    }
+  },
+  "warm_start_s42": {
+    "collapse": {
+      "dim": 4096,
+      "effective_rank": 4.154837386939454,
+      "mean_within_graph_cosine": 0.7238307584716817
+    },
+    "probe": {
+      "degree": 0.9937611222267151,
+      "status": 0.8813130855560303,
+      "within_two_hops": 0.8680926561355591
+    }
+  }
+}

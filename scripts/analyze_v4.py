@@ -18,7 +18,7 @@
    plus that text). Revisions are templated and parse exactly into the gold edits, so the gold
    edits stand in for the text.
 3. For every run directory under --runs (evaluation_<ckpt>.json, static_eval_test_<ckpt>.json):
-   accuracy with session-clustered bootstrap CIs, overall and on the pre-registered slices
+   rows are rescored from the saved raw generations with the current scorer, then accuracy with session-clustered bootstrap CIs, overall and on the pre-registered slices
    (answer-changing turns, answer-changing turns that do not mention the edit, mentions_edit ==
    false, shortcut-wrong and local-wrong turns, paraphrase family, per task next to its ceiling).
    Do not slice reachability or shortest_path by hop_depth: that tag encodes the answer.
@@ -397,10 +397,15 @@ def sliced(rows: list[dict], meta: dict, resamples: int) -> dict:
 
 def static_report(path: Path, test_items: dict, shortcut_ok: dict, local_ok: dict) -> dict:
     rows = json.loads(path.read_text())["rows"]
-    correct = {r["tuple_id"]: bool(r["correct"]) for r in rows}
+    correct = {
+        r["tuple_id"]: answers_match(
+            r["gold_answer"], r["raw_prediction"], reasoning_type=r["reasoning_type"]
+        )
+        for r in rows
+    }
     by_task = defaultdict(list)
     for r in rows:
-        by_task[r["reasoning_type"]].append(bool(r["correct"]))
+        by_task[r["reasoning_type"]].append(correct[r["tuple_id"]])
     hard = [t for t in correct if shortcut_ok.get(t) is False]
     return {
         "overall": acc(correct.values()),
@@ -415,9 +420,15 @@ def static_report(path: Path, test_items: dict, shortcut_ok: dict, local_ok: dic
     }
 
 
-def condition_rows(evaluation: dict, split: str) -> dict[str, list[dict]]:
+def condition_rows(evaluation: dict, split: str, meta: dict) -> dict[str, list[dict]]:
+    """Rows per condition, rescored from the saved raw generation with the current scorer."""
     grouped = defaultdict(list)
     for row in evaluation.get(split, {}).get("rows", []):
+        task = meta.get((row["session_id"], row["turn_index"]), {}).get("task")
+        if row.get("raw_answer") is not None and task is not None:
+            row["answer_correct"] = answers_match(
+                row["gold_answer"], row["raw_answer"], reasoning_type=task
+            )
         grouped[row["condition"]].append(row)
     return grouped
 
@@ -533,7 +544,7 @@ def main() -> None:
                 eval_path = run / "evaluation_final.json"
             if eval_path.exists():
                 evaluation = json.loads(eval_path.read_text())
-                grouped = condition_rows(evaluation, args.split)
+                grouped = condition_rows(evaluation, args.split, meta)
                 all_rows[run.name] = grouped
                 entry["sessions_file"] = eval_path.name
                 entry["provenance"] = evaluation.get(args.split, {}).get("provenance")

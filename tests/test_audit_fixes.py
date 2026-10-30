@@ -41,6 +41,9 @@ from graph_modi.training import ProjectorTrainingConfig, lr_multiplier
         ("-2", "-2"),
         ("modern", "modern"),
         ("Yes.", "yes"),
+        ("blue\nExplanation: the most common line within 1 hops", "blue"),  # first line only
+        ("\n4\n## Chapter 4", "4"),
+        ("no.\nThe path n0-n3 has 2 hops", "no"),
         (None, None),
     ],
 )

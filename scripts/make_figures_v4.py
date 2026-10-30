@@ -9,7 +9,8 @@ and answer-changing flags, and writes one figure set per model:
   <model>_fig1_accuracy_by_session_length.png   main conditions vs session length
   <model>_fig2_accuracy_by_turn_index.png       main conditions vs turn index
   <model>_fig3_edit_tracking.png                answer-changing vs unchanged turns
-  <model>_figA1/A2/A3_all_conditions_*.png      the same with every condition
+  <model>_figA1/A2/A3_all_conditions_*.png      the same with every condition (by_session_length,
+                                                by_turn_index, edit_tracking)
   <model>_figA4_static_accuracy_by_task.png     static test per task vs the local ceiling
   v4_combined_{conditions,by_session_length,edit_tracking}.png   models side by side
 
@@ -35,7 +36,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from graph_modi.data.multiturn import load_sessions  # noqa: E402
-from graph_modi.evaluation.metrics import normalize_answer  # noqa: E402
+from graph_modi.evaluation.metrics import answers_match, normalize_answer  # noqa: E402
 
 MODELS = {
     "graphtoken": ("GraphToken", ("v4_graphtoken_s42", "v4_graphtoken_s43", "v4_graphtoken_s44")),
@@ -116,7 +117,7 @@ def turn_meta(sessions) -> dict[tuple[str, int], dict]:
     return meta
 
 
-def load_rows(run: Path, ckpt: str) -> dict[str, list[dict]]:
+def load_rows(run: Path, ckpt: str, meta: dict) -> dict[str, list[dict]]:
     path = run / f"evaluation_{ckpt}.json"
     if not path.exists():
         path = run / "evaluation_final.json"
@@ -124,6 +125,11 @@ def load_rows(run: Path, ckpt: str) -> dict[str, list[dict]]:
         return {}
     grouped = defaultdict(list)
     for row in json.loads(path.read_text())["test"]["rows"]:
+        task = meta[(row["session_id"], row["turn_index"])]["task"]
+        if row.get("raw_answer") is not None:  # rescore with the current scorer
+            row["answer_correct"] = answers_match(
+                row["gold_answer"], row["raw_answer"], reasoning_type=task
+            )
         grouped[row["condition"]].append(row)
     return grouped
 
@@ -197,7 +203,7 @@ def bar_plot(groups: dict[str, dict], series: list[tuple[str, str]], title, path
     for i, (key, label) in enumerate(series):
         xs = [g + (i - (len(series) - 1) / 2) * width for g in range(len(names))]
         vals = [groups[n].get(key, (float("nan"),) * 3) for n in names]
-        err = [[v[0] - v[1] for v in vals], [v[2] - v[0] for v in vals]]
+        err = [[max(0.0, v[0] - v[1]) for v in vals], [max(0.0, v[2] - v[0]) for v in vals]]
         ax.bar(
             xs,
             [v[0] for v in vals],
@@ -286,7 +292,7 @@ def main() -> None:
 
     meta = turn_meta(load_sessions(Path(args.data) / "sessions_test.jsonl"))
     ceilings = json.loads(Path(args.ceilings).read_text())["local_ceiling_per_task"]["static"]
-    soft = load_rows(root / SOFT_RUN, "final")
+    soft = load_rows(root / SOFT_RUN, "final", meta)
     lengths = sorted({m["length"] for m in meta.values()})
     turns = sorted({m["turn"] for m in meta.values()})
     by_length = lambda m: m["length"]  # noqa: E731
@@ -299,9 +305,9 @@ def main() -> None:
         if not run_dirs:
             print(f"skip {slug}: no runs under {root}")
             continue
-        runs = [load_rows(r, args.checkpoint) for r in run_dirs]
+        runs = [load_rows(r, args.checkpoint, meta) for r in run_dirs]
         seeds = f" (mean of {len(runs)} seeds)" if len(runs) > 1 else ""
-        for conds, prefix, tag in ((MAIN, "fig", ""), (ALL, "figA", "all_conditions_")):
+        for conds, prefix, tag in ((MAIN, "fig", "accuracy_"), (ALL, "figA", "all_conditions_")):
             n = {"fig": ("1", "2", "3"), "figA": ("A1", "A2", "A3")}[prefix]
             c_len = model_curves(runs, soft, conds, meta, by_length)
             line_plot(
@@ -310,7 +316,7 @@ def main() -> None:
                 lengths,
                 "Session length (turns)",
                 f"{name}: accuracy by session length{seeds}",
-                out / f"{slug}_fig{n[0]}_{tag}accuracy_by_session_length.png",
+                out / f"{slug}_fig{n[0]}_{tag}by_session_length.png",
             )
             c_turn = model_curves(runs, soft, conds, meta, by_turn)
             line_plot(
@@ -319,7 +325,7 @@ def main() -> None:
                 turns,
                 "Turn index",
                 f"{name}: accuracy by turn{seeds}",
-                out / f"{slug}_fig{n[1]}_{tag}accuracy_by_turn_index.png",
+                out / f"{slug}_fig{n[1]}_{tag}by_turn_index.png",
                 [str(t + 1) for t in turns],
             )
             c_chg = model_curves(runs, soft, conds, meta, by_changed)
@@ -327,7 +333,7 @@ def main() -> None:
                 c_chg,
                 conds,
                 f"{name}: answer-changing vs unchanged turns{seeds}",
-                out / f"{slug}_fig{n[2]}_{tag}edit_tracking.png",
+                out / f"{slug}_fig{n[2]}_{tag.replace('accuracy_', '')}edit_tracking.png",
             )
             if prefix == "fig":
                 combined[name] = {

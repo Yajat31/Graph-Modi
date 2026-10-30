@@ -37,13 +37,16 @@ def _leading_answer(text: str) -> str | None:
 def normalize_answer(value: str | None) -> str | None:
     """Canonicalise a gold or generated answer.
 
-    Order: exact alias -> answer the text leads with (first token) -> keyword anywhere
-    ("unreachable"/"no path") -> first number -> first yes/no word -> the text itself.
-    The leading-token rule comes first so trailing prose cannot change the answer.
+    Only the first non-empty line is read: zero-shot generations put the answer there and then
+    continue with an explanation ("blue\\nExplanation: ... within 1 hops"). Then: exact alias ->
+    answer the text leads with (first token) -> keyword anywhere ("unreachable"/"no path") ->
+    first number -> first yes/no word -> the text itself. The leading-token rule comes first so
+    trailing prose cannot change the answer.
     """
     if value is None:
         return None
-    normalized = value.strip().casefold().rstrip(".")
+    lines = [line for line in value.strip().splitlines() if line.strip()]
+    normalized = (lines[0] if lines else "").strip().casefold().rstrip(".")
     if normalized in _ALIASES:
         return _ALIASES[normalized]
     leading = _leading_answer(normalized)
