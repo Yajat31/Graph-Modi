@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 RES = ROOT / "documents/experiments/results/v3-20260929"
 OUT = ROOT / "documents/experiments/figures/report"
 MAJORITY_CACHE = RES / "per_task_majority_cuts.json"

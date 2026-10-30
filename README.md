@@ -124,8 +124,10 @@ GPU run checklist (ladder, go/no-go, slices): [`documents/experiments/v4_run_che
 ### Historical v3 results
 
 September v3 numbers and figures remain under `documents/experiments/results/v3-20260929/` and
-`status_report_v3.md`. Headline v3 configs stay in `configs/v3_*.yaml`; regenerate with
-`graph-modi generate --config configs/v3_tea.yaml` if needed. Do not compare v4 scores to v3 tables.
+`status_report_v3.md`. The v3 configs and analysis scripts are archived under
+`archive/configs/v3/` and `archive/scripts/v3/` (regenerate v3 data with
+`graph-modi generate --config archive/configs/v3/v3_tea.yaml` if needed). Do not compare v4
+scores to v3 tables.
 
 ## Development
 
@@ -140,7 +142,7 @@ Audit the current benchmark:
 
 ```bash
 PYTHONPATH=src python3 scripts/audit_v4_gates.py
-PYTHONPATH=src python3 scripts/audit_v4_final.py --data datasets/metro_v4
+PYTHONPATH=src python3 scripts/audit_v4_final.py   # defaults to datasets/metro_v4_1
 ```
 
 ## Repository layout
@@ -153,9 +155,9 @@ src/graph_modi/
   evaluation/  runner.py (paired conditions), static_eval.py, metrics.py
   training.py  contrastive GNN pretraining, projector and soft-prompt training
   cli.py       graph-modi entry point
-configs/       v4_*.yaml (current), v3_*.yaml (frozen headline), smoke.yaml
-archive/       superseded audit configs, v3x variants, one-off probe scripts
-scripts/       v4 gates/final audit, v3 analysis/report builders
+configs/       v4_*.yaml (frozen v4.1 runs), smoke.yaml (CI)
+archive/       superseded configs (v3, v3x, audit), v3-era scripts, v4.0 manifest, old presentation
+scripts/       v4.1 gates / final audit / configs / GPU ladder / analysis, setup.sh
 documents/     experiments/ (log, audits, results, figures), proposal, decisions
 tests/         unit and download-free integration tests
 datasets/      regenerated JSONL (gitignored) + README / manifests

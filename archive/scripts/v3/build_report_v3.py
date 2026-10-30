@@ -11,7 +11,7 @@ import json
 import math
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 R = ROOT / "documents/experiments/results/v3-20260929"
 RX = ROOT / "documents/experiments/results/v3x-20260929"
 RA = ROOT / "documents/experiments/results/audit-20261016"

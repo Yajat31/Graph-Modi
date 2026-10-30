@@ -338,6 +338,7 @@ def gate_shortcuts(static):
         "eight_task_ceiling",
         f"{100 * summary['degree_status']['eight']:.1f}% (includes node_degree at 100%)",
     )
+
     # v4.1: 2-hop cycle rule. A degree-2 station next to a leaf is on a pendant chain.
     def neighbours(graph, node_id):
         return {e.target for e in graph.edges if e.source == node_id} | {

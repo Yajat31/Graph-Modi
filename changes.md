@@ -337,7 +337,7 @@ sum model and reachability for the warm start at 91–94%: both are still single
 ### Documents
 20. `status_report_v3.md` still says labels are balanced 50/50 and never mentions the cycle bug;
     its §0a says all runs used cosine warmup (false for the TEA sum runs).
-21. The presentation (`documents/presentation/`) is pre-audit (says TEA uses trained alignment and
+21. The presentation (now `archive/documents/presentation/`) is pre-audit (says TEA uses trained alignment and
     calls TEA run 2 "GraphToken").
 22. README's model table says v4 uses mean aggregation and lr 1e-3; `log.md` rows are out of date
     order, one link is broken, and two automatic smoke-run lines are committed in it.

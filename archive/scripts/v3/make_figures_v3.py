@@ -15,7 +15,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 RES = ROOT / "documents/experiments/results/v3-20260929"
 FIG = ROOT / "documents/experiments/figures"
 
