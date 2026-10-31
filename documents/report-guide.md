@@ -25,7 +25,7 @@ prompt and the text baselines are one run (seed 42). Multi-turn results are on t
 
 1. **Re-encoding the updated graph works.** GT answers 54.3 ± 0.2% of test turns from re-encoded
    tokens, against 41.2% for stale tokens plus the revision text, 32.5% for another session's graph,
-   34.7% for a trained soft prompt that reads the revisions, and 29.9% for zero-shot Llama with the
+   34.7% for a trained soft prompt that reads the revisions, and 29.4% for zero-shot Llama with the
    initial graph and all revisions in context. Paired on seed 42: +13.6 points over stale + history
    (CI 11.7–15.5) and +22.0 over the shuffled graph (19.5–24.5).
 2. **The gain sits on the turns where the edit changes the answer.** On answer-changing turns GT
@@ -215,8 +215,8 @@ For completeness, read accuracy by family (this is the task mix, not a wording e
 | Random · `question_only` | 35.0 | 20.9 | 23.6 |
 | shared · `soft_prompt` | 42.8 | 29.2 | 32.2 |
 | shared · `soft_prompt_no_history` | 39.5 | 28.7 | 31.7 |
-| shared · `serialized_current_graph` | 37.6 | 22.1 | 25.3 |
-| shared · `serialized_initial_history` | 42.8 | 22.7 | 24.3 |
+| shared · `serialized_current_graph` | 35.9 | 26.7 | 30.5 |
+| shared · `serialized_initial_history` | 37.2 | 25.8 | 25.3 |
 | shared · `token_matched_history` | 38.5 | 21.9 | 23.5 |
 | shared · `majority_answer` | 41.1 | 29.2 | 25.1 |
 | shared · `stale_answer` | 63.2 | 60.9 | 66.7 |
@@ -464,8 +464,8 @@ Reader-independent conditions (one run each):
 |---|---|
 | `soft_prompt` | 34.7 |
 | `soft_prompt_no_history` | 33.3 |
-| `serialized_current_graph` | 28.4 |
-| `serialized_initial_history` | 29.9 |
+| `serialized_current_graph` | 31.0 |
+| `serialized_initial_history` | 29.4 |
 | `token_matched_history` | 27.9 |
 | `majority_answer` | 31.8 |
 | `stale_answer` | 63.6 |
@@ -480,8 +480,10 @@ Reader-independent conditions (one run each):
 - **Text does not repair stale tokens.** `frozen_graph_history` equals `structure_only` for every
   reader (GT 41.2 vs 41.2): adding the revision text to stale tokens does not help.
 - **Graph-blind channels that see the full history do not catch up.** The soft prompt with history
-  scores 34.7%. Zero-shot Llama reading the current graph as text scores 28.4%, and with the initial
-  graph plus every revision 29.9%, both below the per-task majority (31.8%).
+  scores 34.7%. Zero-shot Llama reading the current graph as text scores 31.0%, and with the initial
+  graph plus every revision 29.4%; neither beats the per-task majority (31.8%). These prompts run to
+  1,937 tokens and are evaluated with a 4,096-token budget, so none is truncated (every row has
+  `truncated: false`).
 - **The stale answer (63.6%) is a reference, not a competitor.** It is high because 63.6% of turns
   keep their pre-edit answer by construction, and it is 0% on answer-changing turns.
 - **The seed spread is small:** 0.2 for GT and 0.4 for TEA on oracle.
@@ -661,8 +663,8 @@ Reader-independent conditions (one run each):
 | Random · `question_only` | 22.4 | 28.8 | 24.2 |
 | shared · `soft_prompt` | 32.2 | 36.1 | 24.8 |
 | shared · `soft_prompt_no_history` | 29.3 | 35.6 | 22.0 |
-| shared · `serialized_current_graph` | 25.4 | 30.0 | 26.7 |
-| shared · `serialized_initial_history` | 27.8 | 31.2 | 25.3 |
+| shared · `serialized_current_graph` | 27.3 | 33.2 | 27.6 |
+| shared · `serialized_initial_history` | 27.2 | 30.7 | 28.1 |
 | shared · `token_matched_history` | 25.5 | 29.4 | 24.8 |
 | shared · `majority_answer` | 27.3 | 34.4 | 25.3 |
 | shared · `stale_answer` | 0.0 | 100.0 | 0.0 |
@@ -713,8 +715,8 @@ Reader-independent conditions (one run each):
 | Random · `question_only` | 26.6 | 29.5 | 26.0 | 26.0 |
 | shared · `soft_prompt` | 30.6 | 31.8 | 35.4 | 35.6 |
 | shared · `soft_prompt_no_history` | 33.0 | 32.2 | 33.2 | 33.7 |
-| shared · `serialized_current_graph` | 27.6 | 30.6 | 27.9 | 28.1 |
-| shared · `serialized_initial_history` | 27.3 | 30.1 | 29.2 | 30.6 |
+| shared · `serialized_current_graph` | 31.6 | 34.7 | 29.6 | 30.7 |
+| shared · `serialized_initial_history` | 29.3 | 33.3 | 29.0 | 28.7 |
 | shared · `token_matched_history` | 27.9 | 30.1 | 27.1 | 27.8 |
 | shared · `majority_answer` | 27.9 | 31.1 | 32.2 | 32.2 |
 | shared · `stale_answer` | 64.0 | 61.1 | 63.3 | 64.3 |
@@ -749,8 +751,8 @@ Reader-independent conditions (one run each):
 | Random · `question_only` | 26.0 | 29.0 | 26.8 | 26.8 | 24.9 | 25.3 | 27.6 | 21.5 |
 | shared · `soft_prompt` | 34.1 | 31.8 | 36.7 | 35.0 | 34.0 | 38.0 | 36.0 | 37.7 |
 | shared · `soft_prompt_no_history` | 31.7 | 31.8 | 33.7 | 34.3 | 36.7 | 37.0 | 33.0 | 34.7 |
-| shared · `serialized_current_graph` | 28.6 | 30.0 | 27.1 | 29.1 | 24.9 | 29.6 | 27.6 | 26.3 |
-| shared · `serialized_initial_history` | 30.7 | 28.5 | 31.3 | 29.3 | 30.3 | 31.6 | 28.6 | 29.0 |
+| shared · `serialized_current_graph` | 31.1 | 33.3 | 31.0 | 29.3 | 29.0 | 30.6 | 32.0 | 29.0 |
+| shared · `serialized_initial_history` | 30.4 | 30.6 | 28.1 | 29.0 | 28.6 | 28.3 | 29.6 | 27.3 |
 | shared · `token_matched_history` | 27.5 | 29.5 | 28.6 | 27.9 | 26.6 | 27.3 | 27.3 | 26.3 |
 | shared · `majority_answer` | 31.6 | 31.5 | 31.0 | 31.5 | 27.9 | 37.0 | 32.7 | 33.3 |
 | shared · `stale_answer` | 63.4 | 63.6 | 66.2 | 63.6 | 57.9 | 65.7 | 59.9 | 66.3 |
@@ -801,8 +803,8 @@ Reader-independent conditions (one run each):
 | Random · `question_only` | 29.2 | 26.3 | 23.9 |
 | shared · `soft_prompt` | 34.3 | 33.9 | 36.0 |
 | shared · `soft_prompt_no_history` | 31.9 | 33.5 | 34.5 |
-| shared · `serialized_current_graph` | 31.1 | 27.5 | 26.4 |
-| shared · `serialized_initial_history` | 31.4 | 30.9 | 27.5 |
+| shared · `serialized_current_graph` | 33.7 | 31.3 | 28.0 |
+| shared · `serialized_initial_history` | 32.3 | 29.2 | 26.8 |
 | shared · `token_matched_history` | 30.0 | 27.2 | 26.6 |
 | shared · `majority_answer` | 31.7 | 31.0 | 32.7 |
 | shared · `stale_answer` | 62.0 | 63.2 | 65.6 |
@@ -857,8 +859,8 @@ Full by-task table for every condition:
 | Random · `question_only` | 49.9 | 41.6 | 49.7 | 19.8 | 1.0 | 11.3 | 40.6 | 13.7 | 10.7 |
 | shared · `soft_prompt` | 50.7 | 58.0 | 55.4 | 18.2 | 27.7 | 11.7 | 59.2 | 15.2 | 16.6 |
 | shared · `soft_prompt_no_history` | 49.9 | 54.9 | 50.7 | 18.2 | 27.1 | 11.5 | 59.6 | 12.9 | 14.9 |
-| shared · `serialized_current_graph` | 50.7 | 47.1 | 50.3 | 16.6 | 8.7 | 14.7 | 39.2 | 15.6 | 12.3 |
-| shared · `serialized_initial_history` | 50.9 | 56.0 | 55.8 | 19.8 | 2.2 | 13.7 | 42.6 | 16.8 | 11.7 |
+| shared · `serialized_current_graph` | 50.1 | 41.6 | 50.3 | 20.4 | 21.0 | 23.0 | 39.6 | 15.8 | 17.4 |
+| shared · `serialized_initial_history` | 50.7 | 42.8 | 52.5 | 20.2 | 5.1 | 18.0 | 41.8 | 16.2 | 17.6 |
 | shared · `token_matched_history` | 50.1 | 46.7 | 55.2 | 19.4 | 1.0 | 12.9 | 40.4 | 13.5 | 12.3 |
 | shared · `majority_answer` | 50.1 | 57.8 | 50.3 | 19.0 | 6.3 | 13.9 | 59.6 | 15.4 | 13.9 |
 | shared · `stale_answer` | 74.1 | 76.0 | 59.2 | 54.9 | 70.9 | 54.9 | 72.7 | 54.5 | 54.9 |
@@ -954,8 +956,8 @@ Full by-task table for every condition:
 | v4_tea_random_sum | `structure_only` | 41.7 | 22.8 | 26.7 | 21.6 |
 | v4_soft_prompt | `soft_prompt` | 34.7 | 32.2 | 24.8 | 18.6 |
 | v4_soft_prompt | `soft_prompt_no_history` | 33.3 | 29.3 | 22.0 | 18.2 |
-| v4_text_baselines | `serialized_current_graph` | 28.4 | 25.4 | 26.7 | 24.0 |
-| v4_text_baselines | `serialized_initial_history` | 29.9 | 27.8 | 25.3 | 25.4 |
+| v4_text_baselines | `serialized_current_graph` | 31.0 | 27.3 | 27.6 | 26.8 |
+| v4_text_baselines | `serialized_initial_history` | 29.4 | 27.2 | 28.1 | 27.9 |
 | v4_text_baselines | `token_matched_history` | 27.9 | 25.5 | 24.8 | 24.1 |
 
 
@@ -1137,7 +1139,7 @@ How the probe works (`scripts/probe_gnn_v4.py`):
 predicted conditions, so their gain must come from the updated tokens. Adding the revision text to
 stale tokens does not help (`frozen_graph_history` = `structure_only`). Frozen Llama cannot apply a
 revision to a graph it holds only as soft tokens. Even when it holds the whole graph as text, it
-cannot answer these questions zero-shot (28–30%).
+cannot answer these questions zero-shot (29–31%, at the per-task majority).
 
 **Why a frozen random GNN matches GraphToken.** The projector is one linear layer into 10 × 4096
 input embeddings, and a random sum-aggregation GraphSAGE already exposes degree, status and
@@ -1196,6 +1198,11 @@ the graph on a later question's path. Free-form revisions would be harder; this 
 - Our readers are "TEA-style" and "GraphToken-style", not reproductions: readouts, tasks and
   training data differ from the original papers.
 - The attribute explanation for TEA (§6) is a hypothesis without a dedicated probe.
+- The zero-shot text baselines use the plain `Question: … Answer:` template, not the Llama-3.1
+  chat template, and see no examples of the answer formats (path length counting both endpoints,
+  `unreachable`, bare integers) that the graph readers are trained on. Edges are listed by node ID
+  while questions name stations, so the model must map names to IDs itself. These baselines are a
+  floor for in-context reading, not its best case.
 - Open items from the proposal: a contradiction probe (a session that evolves into a logically
   inconsistent state the GLM should flag), and free-form revisions.
 
@@ -1274,7 +1281,8 @@ numbers changed relative to the earlier draft, for anyone checking an older copy
 | Breakdown text | shortest 23.8, reach 69.0; counting 34.0 / 18.9; most-common "within a point of shuffled" | 25.5, 68.4; 34.3 / 21.3; equal to shuffled (28.6) |
 | Local-wrong text | 20.9 (s.d. 0.9), shuffled 20.1, question 24.6 | 22.2 (0.3), 21.2, 24.6 |
 | Write path text | 0.2 points (53.5 vs 53.7; CI −0.1 to 0.5); "within 1.3 points" | 0.1 (54.2 vs 54.3; s42 CI −0.2 to 0.4); within 1.2 points |
-| Inferences | shuffled 21.8; zero-shot "25 points"; 25.2 / 51.2; 35.8 / 26.1; 41.3; 0.2; 20.9 vs 20.1 | 22.0; 26 points; 24.2 / 51.8; 38.3 / 26.8; 41.2; 0.1; 22.2 vs 21.2 |
+| Inferences | shuffled 21.8; zero-shot "25 points"; 25.2 / 51.2; 35.8 / 26.1; 41.3; 0.2; 20.9 vs 20.1 | 22.0; 23 points; 24.2 / 51.8; 38.3 / 26.8; 41.2; 0.1; 22.2 vs 21.2 |
+| Abstract, conditions table and text, length and changing tables, inferences | zero-shot serialized graph 28.4, initial graph + history 29.9 (prompts truncated to 502 tokens) | 31.0 and 29.4 (full prompts, 4,096-token budget); by length 29.3 / 33.3 / 29.0 / 28.7; changed / unchanged / unmentioned 27.2 / 30.7 / 28.1 |
 | Appendix static | degree 97.5, cycle 79.0, reach 65.2, edge 61.7; attr lookup 29.0 (soft 25.8), most common 27.9 (26.5), check 49.9 | 99.1, 79.0, 65.7, 61.2; 29.5 (25.8), 28.5 (26.5), 49.4 |
 
 The former `%TEA-*` placeholder comments have been replaced by those paragraphs.
@@ -1314,13 +1322,15 @@ The former `%TEA-*` placeholder comments have been replaced by those paragraphs.
 | warm | 26 | 2026-10-30 19:59:30 |
 | tea43 | 25 | 2026-10-30 20:24:46 |
 | tea44 | 25 | 2026-10-30 20:50:03 |
-| text | 9 | 2026-10-30 16:42:34 |
+| text | 23 | 2026-10-31 11:39:05 |
 | sweep | 21 | 2026-10-30 19:08:16 |
 
 
-The data rungs (`setup`), soft prompt and text baselines ran on 30 October and do not depend on
-the graph reader's learning rate. Every graph-reader number comes from the 1e-4 runs of 30–31
-October.
+The data rungs (`setup`) and the soft prompt ran on 30 October and do not depend on the graph
+reader's learning rate. Every graph-reader number comes from the 1e-4 runs of 30–31 October. The
+zero-shot text baselines were rerun on 31 October with `max_sequence_length: 4096`. The first run
+used the 512-token default, which cut every serialized-graph prompt to its last 502 tokens (28.4 and
+29.9 then). No other condition, nor any training or edit prompt (at most 413 tokens), was affected.
 
 **Artifacts.**
 

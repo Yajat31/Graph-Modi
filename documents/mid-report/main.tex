@@ -37,7 +37,7 @@ Graph language models (GLMs) answer questions from soft graph tokens, where the 
 In dialogue, users revise the world, and graph tokens computed before a revision become stale.
 We build a synthetic benchmark of multi-turn sessions (4,455 turns per split) in which each turn is a revision followed by a question, and 36\% of test turns change the answer.
 GraphModi converts each revision into a typed edit program, applies it to an explicit graph, re-encodes the result, and answers from the new graph tokens with a frozen Llama-3.1-8B-Instruct that never sees the revision text.
-With a GraphToken-style reader (three seeds), re-encoding scores 54.3\% on test against 41.2\% for stale tokens plus the revision text, 32.5\% for a shuffled graph, 34.7\% for a trained soft prompt that reads the revisions, and 28.4\% for zero-shot Llama reading the serialized graph.
+With a GraphToken-style reader (three seeds), re-encoding scores 54.3\% on test against 41.2\% for stale tokens plus the revision text, 32.5\% for a shuffled graph, 34.7\% for a trained soft prompt that reads the revisions, and 31.0\% for zero-shot Llama reading the serialized graph.
 Model-written edits are execution-correct on 96.6\% of turns and cost 0.1 points.
 The gain is largest on answer-changing turns (51.8\% vs.\ 24.2\% with stale tokens), but learned local classifiers reach 67--70\% on the structural tasks, and on turns that no local rule solves every reader stays below the question alone (19--24\% vs.\ 24.6\%): the reader tracks updates through local features, not multi-hop reasoning.
 A frozen random GNN with a trained projector matches the jointly trained reader (55.2\%), and linear probes show that its node embeddings already expose degree, status, and two-hop counts.
@@ -297,8 +297,8 @@ shuffled\_graph & 32.5 & 31.9 & 30.8 & 31.8 \\
 question\_only & \multicolumn{4}{c}{26.5} \\
 \midrule
 soft\_prompt / no history & \multicolumn{4}{c}{34.7 / 33.3} \\
-serialized\_current\_graph & \multicolumn{4}{c}{28.4} \\
-serialized\_initial\_history & \multicolumn{4}{c}{29.9} \\
+serialized\_current\_graph & \multicolumn{4}{c}{31.0} \\
+serialized\_initial\_history & \multicolumn{4}{c}{29.4} \\
 token\_matched\_history & \multicolumn{4}{c}{27.9} \\
 per-task majority & \multicolumn{4}{c}{31.8} \\
 stale answer & \multicolumn{4}{c}{63.6} \\
@@ -312,7 +312,7 @@ Table~\ref{tab:conditions} gives the multi-turn results.
 For GraphToken-style, re-encoding the gold graph scores 54.3\% (s.d.\ 0.2 over seeds; 95\% CI of seed 42: 51.8--56.3), and re-encoding the graph built from the model's own edits scores 54.2\%.
 Paired by turn, re-encoding beats the shuffled graph by 22.0 points (seed 42; CI 19.5--24.5), stale tokens plus history by 13.6 (11.7--15.5), and stale tokens alone by 13.4 (11.6--15.4), with the same picture on the other two seeds.
 It beats the soft prompt with the revision history by 19.4 points (16.8--22.0) and without it by 20.8 (18.2--23.3).
-Zero-shot Llama does worse than the per-task majority even when it reads the whole current graph as text (28.4\% vs.\ 31.8\%), and adding the initial graph and the revision history in context gives 29.9\%.
+Zero-shot Llama does no better than the per-task majority even when it reads the whole current graph as text (31.0\% vs.\ 31.8\%; prompts of up to 1{,}937 tokens, never truncated), and adding the initial graph and the revision history in context gives 29.4\%.
 The stale answer scores 63.6\% because 63.6\% of turns keep their pre-edit answer; it is a reference for a system that ignores edits, not a competitor.
 
 The other readers follow the same pattern at different levels (Figure~\ref{fig:combined}, Appendix~\ref{app:combined}).
@@ -363,7 +363,7 @@ frozen\_graph\_history & 47.0 & 40.7 & 41.7 & 40.3 \\
 structure\_only & 45.0 & 39.6 & 42.2 & 40.7 \\
 shuffled\_graph & 28.7 & 31.7 & 33.1 & 32.8 \\
 soft\_prompt & 30.6 & 31.8 & 35.4 & 35.6 \\
-serialized\_initial\_history & 27.3 & 30.1 & 29.2 & 30.6 \\
+serialized\_initial\_history & 29.3 & 33.3 & 29.0 & 28.7 \\
 stale answer & 64.0 & 61.1 & 63.3 & 64.3 \\
 \bottomrule
 \end{tabular}}
@@ -375,7 +375,7 @@ Figure~\ref{fig:multiturn} and Table~\ref{tab:length} address RQ2.
 Re-encoded tokens hold their accuracy at every session length (53.6--55.1\%).
 Stale tokens drop as soon as a session has more than one turn and do not recover with the revision text: stale tokens plus history fall from 47.0\% in one-turn sessions to 40.3--41.7\% in longer ones, and stale tokens alone from 45.0\% to 39.6--42.2\%.
 They do not keep declining with length because the per-split quota fixes the answer-changing share at 36--39\% for every length, so each additional edit is as likely to restore an answer as to change it.
-The soft prompt rises slightly with session length (30.6\% to 35.6\%) because the accumulated revision text answers more questions directly, and zero-shot Llama with the initial graph and history in context stays near 30\% at every length.
+The soft prompt rises slightly with session length (30.6\% to 35.6\%) because the accumulated revision text answers more questions directly, and zero-shot Llama with the initial graph and history in context stays between 29\% and 33\% at every length.
 
 \begin{table}[t]
 \centering
@@ -391,7 +391,7 @@ frozen\_graph\_history & 24.2 & 50.9 & 26.8 \\
 structure\_only & 23.0 & 51.7 & 27.2 \\
 shuffled\_graph & 29.4 & 34.2 & 27.8 \\
 soft\_prompt & 32.2 & 36.1 & 24.8 \\
-serialized\_initial\_history & 27.8 & 31.2 & 25.3 \\
+serialized\_initial\_history & 27.2 & 30.7 & 28.1 \\
 per-task majority & 27.3 & 34.4 & 25.3 \\
 \midrule
 TEA-style oracle & 37.8 & 44.6 & 26.3 \\
@@ -513,7 +513,7 @@ In the other direction, the feature-wise objective aligns node embeddings with t
 \label{sec:discussion}
 
 \paragraph{Graph tokens encode the specific, current graph.}
-Re-encoded GraphToken-style tokens beat a shuffled graph by 22.0 points, a graph-blind soft prompt by 19--21 points with or without the revision text, and zero-shot Llama reading the serialized graph by 26 points, at every density and session length and on all three seeds.
+Re-encoded GraphToken-style tokens beat a shuffled graph by 22.0 points, a graph-blind soft prompt by 19--21 points with or without the revision text, and zero-shot Llama reading the serialized graph by 23 points, at every density and session length and on all three seeds.
 A model that ignored the tokens would score the same under all of these conditions, so the tokens carry session-specific information (RQ3).
 
 \paragraph{Staleness hurts exactly where an edit matters.}
@@ -522,7 +522,7 @@ The gap survives on changed turns whose question does not name the edited statio
 
 \paragraph{The gain comes from re-encoding, not from text history.}
 Adding the revision text to stale tokens does not help: \texttt{frozen\_graph\_history} and \texttt{structure\_only} are both 41.2\%.
-Text channels that see the full history do not catch up either: the soft prompt reaches 34.7\%, and zero-shot Llama with the initial graph and every revision in context reaches 29.9\%.
+Text channels that see the full history do not catch up either: the soft prompt reaches 34.7\%, and zero-shot Llama with the initial graph and every revision in context reaches 29.4\%.
 Updating the graph and re-reading it is what recovers the answer.
 
 \paragraph{The write path is not the bottleneck.}
@@ -573,6 +573,7 @@ Every reader trains for one epoch on static QA, and longer training could change
 The projector learning rate was chosen on validation loss after a first round of runs at $10^{-3}$, in which the readers built on a frozen or pretrained GNN had not converged; the soft prompt's learning rate ($10^{-3}$) was not swept.
 Each multi-turn task uses a single revision paraphrase family, so wording effects cannot be separated from task effects.
 Our explanation of TEA-style's advantage on the attribute tasks is not backed by a dedicated attribute probe.
+The zero-shot text baselines use the plain question--answer template rather than Llama's chat template and see no examples of the answer formats, so they are a floor for in-context reading rather than its best case.
 Learned local classifiers reach 67--70\% on the structural tasks, so absolute accuracy on this benchmark mostly measures local reading.
 
 \bibliography{custom}

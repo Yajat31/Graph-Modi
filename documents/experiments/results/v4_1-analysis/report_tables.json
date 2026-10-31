@@ -185,10 +185,10 @@
           "all": 31.8
         },
         "serialized_current_graph": {
-          "all": 28.4
+          "all": 31.0
         },
         "serialized_initial_history": {
-          "all": 29.9
+          "all": 29.4
         },
         "soft_prompt": {
           "all": 34.7
@@ -414,12 +414,12 @@
           "unchanged": 34.4
         },
         "serialized_current_graph": {
-          "changed": 25.4,
-          "unchanged": 30.0
+          "changed": 27.3,
+          "unchanged": 33.2
         },
         "serialized_initial_history": {
-          "changed": 27.8,
-          "unchanged": 31.2
+          "changed": 27.2,
+          "unchanged": 30.7
         },
         "soft_prompt": {
           "changed": 32.2,
@@ -747,14 +747,14 @@
           "sparse": 31.7
         },
         "serialized_current_graph": {
-          "dense": 26.4,
-          "medium": 27.5,
-          "sparse": 31.1
+          "dense": 28.0,
+          "medium": 31.3,
+          "sparse": 33.7
         },
         "serialized_initial_history": {
-          "dense": 27.5,
-          "medium": 30.9,
-          "sparse": 31.4
+          "dense": 26.8,
+          "medium": 29.2,
+          "sparse": 32.3
         },
         "soft_prompt": {
           "dense": 36.0,
@@ -1135,14 +1135,14 @@
           "service": 29.2
         },
         "serialized_current_graph": {
-          "direct": 37.6,
-          "notice": 25.3,
-          "service": 22.1
+          "direct": 35.9,
+          "notice": 30.5,
+          "service": 26.7
         },
         "serialized_initial_history": {
-          "direct": 42.8,
-          "notice": 24.3,
-          "service": 22.7
+          "direct": 37.2,
+          "notice": 25.3,
+          "service": 25.8
         },
         "soft_prompt": {
           "direct": 42.8,
@@ -1572,16 +1572,16 @@
           "8": 32.2
         },
         "serialized_current_graph": {
-          "1": 27.6,
-          "2": 30.6,
-          "4": 27.9,
-          "8": 28.1
+          "1": 31.6,
+          "2": 34.7,
+          "4": 29.6,
+          "8": 30.7
         },
         "serialized_initial_history": {
-          "1": 27.3,
-          "2": 30.1,
-          "4": 29.2,
-          "8": 30.6
+          "1": 29.3,
+          "2": 33.3,
+          "4": 29.0,
+          "8": 28.7
         },
         "soft_prompt": {
           "1": 30.6,
@@ -2309,26 +2309,26 @@
           "within_hops_count": 13.9
         },
         "serialized_current_graph": {
-          "constrained_reachability": 50.7,
-          "cycle_membership": 47.1,
+          "constrained_reachability": 50.1,
+          "cycle_membership": 41.6,
           "edge_exists": 50.3,
-          "filtered_neighbor_count": 16.6,
-          "most_common_attribute_within_hops": 8.7,
-          "node_degree": 14.7,
-          "reachability": 39.2,
-          "shortest_path": 15.6,
-          "within_hops_count": 12.3
+          "filtered_neighbor_count": 20.4,
+          "most_common_attribute_within_hops": 21.0,
+          "node_degree": 23.0,
+          "reachability": 39.6,
+          "shortest_path": 15.8,
+          "within_hops_count": 17.4
         },
         "serialized_initial_history": {
-          "constrained_reachability": 50.9,
-          "cycle_membership": 56.0,
-          "edge_exists": 55.8,
-          "filtered_neighbor_count": 19.8,
-          "most_common_attribute_within_hops": 2.2,
-          "node_degree": 13.7,
-          "reachability": 42.6,
-          "shortest_path": 16.8,
-          "within_hops_count": 11.7
+          "constrained_reachability": 50.7,
+          "cycle_membership": 42.8,
+          "edge_exists": 52.5,
+          "filtered_neighbor_count": 20.2,
+          "most_common_attribute_within_hops": 5.1,
+          "node_degree": 18.0,
+          "reachability": 41.8,
+          "shortest_path": 16.2,
+          "within_hops_count": 17.6
         },
         "soft_prompt": {
           "constrained_reachability": 50.7,
@@ -3272,24 +3272,24 @@
           "8": 33.3
         },
         "serialized_current_graph": {
-          "1": 28.6,
-          "2": 30.0,
-          "3": 27.1,
-          "4": 29.1,
-          "5": 24.9,
-          "6": 29.6,
-          "7": 27.6,
-          "8": 26.3
+          "1": 31.1,
+          "2": 33.3,
+          "3": 31.0,
+          "4": 29.3,
+          "5": 29.0,
+          "6": 30.6,
+          "7": 32.0,
+          "8": 29.0
         },
         "serialized_initial_history": {
-          "1": 30.7,
-          "2": 28.5,
-          "3": 31.3,
-          "4": 29.3,
-          "5": 30.3,
-          "6": 31.6,
-          "7": 28.6,
-          "8": 29.0
+          "1": 30.4,
+          "2": 30.6,
+          "3": 28.1,
+          "4": 29.0,
+          "5": 28.6,
+          "6": 28.3,
+          "7": 29.6,
+          "8": 27.3
         },
         "soft_prompt": {
           "1": 34.1,
@@ -3837,10 +3837,10 @@
           "changed_no_mention": 25.3
         },
         "serialized_current_graph": {
-          "changed_no_mention": 26.7
+          "changed_no_mention": 27.6
         },
         "serialized_initial_history": {
-          "changed_no_mention": 25.3
+          "changed_no_mention": 28.1
         },
         "soft_prompt": {
           "changed_no_mention": 24.8
@@ -4252,12 +4252,12 @@
       },
       "v4_text_baselines": {
         "serialized_current_graph": [
-          26.5,
-          30.2
+          29.2,
+          32.8
         ],
         "serialized_initial_history": [
-          28.0,
-          31.8
+          27.6,
+          31.3
         ],
         "token_matched_history": [
           26.1,
@@ -5473,16 +5473,16 @@
       },
       "v4_text_baselines": {
         "serialized_current_graph": {
-          "all": 28.4,
-          "answer_changing": 25.4,
-          "changed_and_no_mention": 26.7,
-          "local_wrong": 24.0
+          "all": 31.0,
+          "answer_changing": 27.3,
+          "changed_and_no_mention": 27.6,
+          "local_wrong": 26.8
         },
         "serialized_initial_history": {
-          "all": 29.9,
-          "answer_changing": 27.8,
-          "changed_and_no_mention": 25.3,
-          "local_wrong": 25.4
+          "all": 29.4,
+          "answer_changing": 27.2,
+          "changed_and_no_mention": 28.1,
+          "local_wrong": 27.9
         },
         "token_matched_history": {
           "all": 27.9,
