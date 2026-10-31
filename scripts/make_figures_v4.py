@@ -58,9 +58,9 @@ LABELS = {
     "question_only": "Question only",
     "soft_prompt": "Soft prompt + history",
     "soft_prompt_no_history": "Soft prompt",
-    "tool_solver": "Tool solver",
-    "stale_answer": "Stale answer",
-    "majority_answer": "Majority answer",
+    "tool_solver": "Solver on current graph",
+    "stale_answer": "Stale oracle",
+    "majority_answer": "Per-task majority",
 }
 MAIN = [
     "oracle_updated_graph",
@@ -71,7 +71,7 @@ MAIN = [
     "soft_prompt",
 ]
 ALL = MAIN[:2] + ["structure_only"] + MAIN[2:] + ["soft_prompt_no_history"]
-REFERENCE = {"stale_answer": "--", "majority_answer": ":"}
+REFERENCE = {"stale_answer": "--"}
 TASK_ORDER = [
     "node_degree",
     "edge_exists",
@@ -163,14 +163,16 @@ def model_curves(runs: list[dict], soft: dict, conditions, meta, key) -> dict[st
         per_run = [accuracy_by(r[cond], meta, key) for r in source if r.get(cond)]
         if per_run:
             curves[cond] = averaged(per_run)
-    for cond in list(REFERENCE) + ["tool_solver"]:
+    for cond in list(REFERENCE) + ["tool_solver", "majority_answer"]:
         per_run = [accuracy_by(r[cond], meta, key) for r in runs if r.get(cond)]
         if per_run:
             curves[cond] = averaged(per_run)
     return curves
 
 
-def line_plot(curves, conditions, xs, xlabel, title, path, xticklabels=None) -> None:
+def line_plot(
+    curves, conditions, xs, xlabel, title, path, xticklabels=None, references=True
+) -> None:
     fig, ax = plt.subplots(figsize=(6.4, 3.4))
     for i, cond in enumerate(c for c in conditions if c in curves):
         c = curves[cond]
@@ -181,7 +183,7 @@ def line_plot(curves, conditions, xs, xlabel, title, path, xticklabels=None) -> 
         if low != high:
             ax.fill_between(x, low, high, color=SERIES[i], alpha=0.15, lw=0)
     for cond, style in REFERENCE.items():
-        if cond in curves:
+        if references and cond in curves:
             x = [v for v in xs if v in curves[cond]]
             y = [curves[cond][v][0] for v in x]
             ax.plot(x, y, color=GRAY, lw=1.2, ls=style, label=LABELS[cond])
@@ -317,6 +319,7 @@ def main() -> None:
                 "Session length (turns)",
                 f"{name}: accuracy by session length{seeds}",
                 out / f"{slug}_fig{n[0]}_{tag}by_session_length.png",
+                references=False,
             )
             c_turn = model_curves(runs, soft, conds, meta, by_turn)
             line_plot(
@@ -327,6 +330,7 @@ def main() -> None:
                 f"{name}: accuracy by turn{seeds}",
                 out / f"{slug}_fig{n[1]}_{tag}by_turn_index.png",
                 [str(t + 1) for t in turns],
+                references=False,
             )
             c_chg = model_curves(runs, soft, conds, meta, by_changed)
             edit_tracking(
@@ -355,7 +359,7 @@ def main() -> None:
     oracle = "oracle_updated_graph"
     groups = {
         LABELS[c]: {m: v["all"][c]["all"] for m, v in combined.items() if c in v["all"]}
-        for c in ALL + ["tool_solver", "stale_answer", "majority_answer"]
+        for c in ALL
     }
     bar_plot(
         groups,
