@@ -20,9 +20,11 @@ from graph_modi.models.base import ModelInput
 from graph_modi.models.tea_glm import (
     _object_name,
     _sha256_json,
+    fit_prompt,
     require_tea_dependencies,
     save_checkpoint_metadata,
     tokenizer_identity,
+    warn_truncated,
 )
 from graph_modi.schema import AttributedGraph, GraphEdit
 
@@ -161,13 +163,18 @@ class SoftPromptGLM(_Module):
     def _truncate(
         self, prompt_ids: list[int], answer_ids: list[int]
     ) -> tuple[list[int], list[int]]:
-        available = self.config.max_sequence_length - self.config.prefix_tokens
-        if available <= 0:
-            raise ValueError("max_sequence_length must exceed prefix_tokens")
-        if len(answer_ids) >= available:
-            return [], answer_ids[:available]
-        prompt_budget = available - len(answer_ids)
-        return prompt_ids[-prompt_budget:], answer_ids
+        return fit_prompt(
+            prompt_ids,
+            answer_ids,
+            available=self.config.max_sequence_length - self.config.prefix_tokens,
+            bos_token_id=getattr(self.tokenizer, "bos_token_id", None),
+        )
+
+    def prompt_length(self, prompt: str) -> tuple[int, bool]:
+        """Prompt tokens (with BOS) before truncation, and whether ``_truncate`` cuts them."""
+        prompt_ids = self._encode_text(prompt, answer=False)
+        kept, _ = self._truncate(prompt_ids, [])
+        return len(prompt_ids), len(kept) < len(prompt_ids)
 
     def forward(self, *, prompts: Sequence[str], answers: Sequence[str]) -> Any:
         """Compute causal loss over answer tokens, masking prompt + soft-prompt prefix."""
@@ -223,7 +230,9 @@ class SoftPromptGLM(_Module):
 
     @torch.no_grad() if torch is not None else (lambda function: function)
     def generate(self, prompt: str, *, max_new_tokens: int = 64, **generation_kwargs: Any) -> str:
-        prompt_ids, _ = self._truncate(self._encode_text(prompt, answer=False), [])
+        encoded = self._encode_text(prompt, answer=False)
+        prompt_ids, _ = self._truncate(encoded, [])
+        warn_truncated([encoded], [prompt_ids])
         embedding = self.language_model.get_input_embeddings()
         inputs_embeds = torch.cat(
             self._assemble_prompt(prompt_ids, self._prefix(), embedding), dim=0
@@ -263,10 +272,13 @@ class SoftPromptGLM(_Module):
             raise ValueError("prompts must be non-empty")
         embedding = self.language_model.get_input_embeddings()
         prefix = self._prefix()
-        sequences = []
-        for prompt in prompts:
-            prompt_ids, _ = self._truncate(self._encode_text(prompt, answer=False), [])
-            sequences.append(torch.cat(self._assemble_prompt(prompt_ids, prefix, embedding), dim=0))
+        encoded = [self._encode_text(prompt, answer=False) for prompt in prompts]
+        kept = [self._truncate(ids, [])[0] for ids in encoded]
+        warn_truncated(encoded, kept)
+        sequences = [
+            torch.cat(self._assemble_prompt(prompt_ids, prefix, embedding), dim=0)
+            for prompt_ids in kept
+        ]
         inputs_embeds, attention_mask = self._left_pad_embeds(sequences, self.device)
         with self._lm_autocast():
             generated = self.language_model.generate(
@@ -378,6 +390,11 @@ class SoftPromptBackend:
         if model_input.condition in {"structure_only", "question_only"}:
             return 0
         return int(self.model.config.prefix_tokens)
+
+    def prompt_token_count(self, model_input: ModelInput) -> tuple[int, bool]:
+        """Tokenizer length of the formatted prompt and whether it was truncated."""
+        prompt = self.model.config.prompt_template.format(question=model_input.question)
+        return self.model.prompt_length(prompt)
 
     def answer(self, model_input: ModelInput) -> str | None:
         if model_input.condition in {"structure_only", "question_only"}:

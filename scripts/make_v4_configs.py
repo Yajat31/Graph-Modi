@@ -227,6 +227,8 @@ def text_baselines() -> dict:
         "architecture": "graph_token",
         **GRAPH_MODEL,
         "checkpoint": "outputs/v4_graphtoken_s42/projector/checkpoint-best",
+        # Serialized graphs run to ~1.9k Llama tokens; the 512 default cut every prompt.
+        "max_sequence_length": 4096,
     }
     config["evaluation"] = {
         **EVALUATION,

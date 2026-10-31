@@ -601,3 +601,21 @@ def test_degree_balanced_generation_removes_the_degree_shortcut() -> None:
         yes = sum(i.answer == "yes" for i in balanced if i.query.reasoning_type.value == task)
         total = sum(1 for i in balanced if i.query.reasoning_type.value == task)
         assert abs(yes / total - 0.5) < 0.06, task
+
+
+def test_checkpoint_loads_under_a_longer_max_sequence_length() -> None:
+    pytest.importorskip("torch")
+    from dataclasses import replace
+
+    from graph_modi.models.tea_glm import assert_checkpoint_compatible, model_checkpoint_metadata
+
+    model = _tiny_model()
+    metadata = model_checkpoint_metadata(
+        model, training_config={}, data_split={}, data_sha256="", step=0
+    )
+    # The zero-shot text baselines load a checkpoint trained at 512 with a 4096-token budget.
+    model.config = replace(model.config, max_sequence_length=4096)
+    assert_checkpoint_compatible(model, metadata, component="projector")
+    model.config = replace(model.config, prompt_template="Q: {question}\nA:")
+    with pytest.raises(ValueError, match="tea_glm_config"):
+        assert_checkpoint_compatible(model, metadata, component="projector")

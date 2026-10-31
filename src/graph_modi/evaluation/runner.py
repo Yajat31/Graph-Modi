@@ -99,6 +99,8 @@ class _Task:
     edit_correct: bool | None = None
     predicted_answer: str | None = None
     graph_prefix_tokens: int = 0
+    prompt_tokens: int | None = None
+    truncated: bool | None = None
 
 
 def _advance_round(
@@ -193,9 +195,12 @@ def _advance_round(
         )
     answers = backend.answer_batch(model_inputs)
     count_prefix = getattr(backend, "prefix_token_count", None)
+    count_prompt = getattr(backend, "prompt_token_count", None)
     for task, model_input, answer in zip(chunk, model_inputs, answers, strict=True):
         task.predicted_answer = answer
         task.graph_prefix_tokens = int(count_prefix(model_input)) if count_prefix else 0
+        if count_prompt:
+            task.prompt_tokens, task.truncated = count_prompt(model_input)
 
 
 def _row_for(
@@ -228,6 +233,10 @@ def _row_for(
         "state_exact": graph_fingerprint(task.current) == turn.after_fingerprint,
         # Whitespace-split words of the text prompt; the graph prefix is counted separately.
         "input_tokens": len(prompt.split()),
+        # Tokenizer length of the formatted prompt (with BOS) and whether it was cut to fit
+        # max_sequence_length; None for backends without a tokenizer.
+        "prompt_tokens": task.prompt_tokens,
+        "truncated": task.truncated,
         "graph_prefix_tokens": task.graph_prefix_tokens,
         # Mean over the batch this turn was generated in, not a per-row measurement.
         "latency_seconds": latency_seconds,

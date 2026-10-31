@@ -55,6 +55,7 @@ model:
   torch_dtype: bfloat16
   gradient_checkpointing: true
   checkpoint: outputs/v4_graphtoken_s42/projector/checkpoint-best
+  max_sequence_length: 4096
 evaluation:
   splits:
   - test

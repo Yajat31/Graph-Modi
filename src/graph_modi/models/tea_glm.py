@@ -11,6 +11,7 @@ import hashlib
 import json
 import math
 import re
+import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -389,6 +390,40 @@ class TEAGLMConfig:
             raise ValueError("prompt_template must contain {question}")
 
 
+def fit_prompt(
+    prompt_ids: list[int],
+    answer_ids: list[int],
+    *,
+    available: int,
+    bos_token_id: int | None,
+) -> tuple[list[int], list[int]]:
+    """Cut the prompt from the left so prompt + answer fit in ``available`` tokens.
+
+    A leading BOS is kept: the frozen LM never saw sequences without it.
+    """
+    if available <= 0:
+        raise ValueError("max_sequence_length must exceed prefix_tokens")
+    head = prompt_ids[:1] if prompt_ids and prompt_ids[0] == bos_token_id else []
+    if len(answer_ids) >= available - len(head):
+        return head, answer_ids[: available - len(head)]
+    budget = available - len(answer_ids)
+    if len(prompt_ids) <= budget:
+        return prompt_ids, answer_ids
+    return head + prompt_ids[len(prompt_ids) - budget + len(head) :], answer_ids
+
+
+def warn_truncated(full: Sequence[list[int]], kept: Sequence[list[int]]) -> int:
+    """Warn once for a batch whose prompts lost tokens to ``fit_prompt``; return the count."""
+    count = sum(len(k) < len(f) for f, k in zip(full, kept, strict=True))
+    if count:
+        warnings.warn(
+            f"{count} of {len(full)} prompts exceeded max_sequence_length and lost their "
+            "earliest tokens; raise model.max_sequence_length",
+            stacklevel=3,
+        )
+    return count
+
+
 class TEAGLM(_Module):
     """Frozen causal LM conditioned on GraphSAGE-derived prefix embeddings."""
 
@@ -680,15 +715,22 @@ class TEAGLM(_Module):
         return [part for part in parts if part.shape[0] > 0]
 
     def _truncate(
-        self, prompt_ids: list[int], answer_ids: list[int]
+        self, prompt_ids: list[int], answer_ids: list[int], *, graph_prefix: bool = True
     ) -> tuple[list[int], list[int]]:
-        available = self.config.max_sequence_length - self.projector.config.prefix_tokens
-        if available <= 0:
-            raise ValueError("max_sequence_length must exceed prefix_tokens")
-        if len(answer_ids) >= available:
-            return [], answer_ids[:available]
-        prompt_budget = available - len(answer_ids)
-        return prompt_ids[-prompt_budget:], answer_ids
+        # Text-only generation prepends no graph tokens, so it reserves no room for them.
+        reserved = self.projector.config.prefix_tokens if graph_prefix else 0
+        return fit_prompt(
+            prompt_ids,
+            answer_ids,
+            available=self.config.max_sequence_length - reserved,
+            bos_token_id=getattr(self.tokenizer, "bos_token_id", None),
+        )
+
+    def prompt_length(self, prompt: str, *, graph_prefix: bool = True) -> tuple[int, bool]:
+        """Prompt tokens (with BOS) before truncation, and whether ``_truncate`` cuts them."""
+        prompt_ids = self._encode_text(prompt, answer=False)
+        kept, _ = self._truncate(prompt_ids, [], graph_prefix=graph_prefix)
+        return len(prompt_ids), len(kept) < len(prompt_ids)
 
     def forward(
         self,
@@ -773,8 +815,9 @@ class TEAGLM(_Module):
         max_new_tokens: int = 64,
         **generation_kwargs: Any,
     ) -> str:
-        prompt_ids = self._encode_text(prompt, answer=False)
-        prompt_ids, _ = self._truncate(prompt_ids, [])
+        encoded = self._encode_text(prompt, answer=False)
+        prompt_ids, _ = self._truncate(encoded, [])
+        warn_truncated([encoded], [prompt_ids])
         prefix = self.graph_prefix(
             [graph],
             source_ids=[source_id],
@@ -807,8 +850,9 @@ class TEAGLM(_Module):
         max_new_tokens: int = 64,
         **generation_kwargs: Any,
     ) -> str:
-        token_ids = self._encode_text(prompt, answer=False)
-        token_ids, _ = self._truncate(token_ids, [])
+        encoded = self._encode_text(prompt, answer=False)
+        token_ids, _ = self._truncate(encoded, [], graph_prefix=False)
+        warn_truncated([encoded], [token_ids])
         input_ids = torch.tensor([token_ids], dtype=torch.long, device=self.device)
         attention_mask = torch.ones_like(input_ids)
         with self._lm_autocast():
@@ -870,12 +914,13 @@ class TEAGLM(_Module):
             hops=hops,
             reasoning_types=reasoning_types,
         )
-        sequences = []
-        for index, prompt in enumerate(prompts):
-            prompt_ids, _ = self._truncate(self._encode_text(prompt, answer=False), [])
-            sequences.append(
-                torch.cat(self._assemble_prompt(prompt_ids, prefixes[index], embedding), dim=0)
-            )
+        encoded = [self._encode_text(prompt, answer=False) for prompt in prompts]
+        kept = [self._truncate(ids, [])[0] for ids in encoded]
+        warn_truncated(encoded, kept)
+        sequences = [
+            torch.cat(self._assemble_prompt(prompt_ids, prefixes[index], embedding), dim=0)
+            for index, prompt_ids in enumerate(kept)
+        ]
         inputs_embeds, attention_mask = self._left_pad_embeds(sequences, self.device)
         with self._lm_autocast():
             generated = self.language_model.generate(
@@ -903,9 +948,9 @@ class TEAGLM(_Module):
         if not prompts:
             raise ValueError("prompts must be non-empty")
         pad_id = int(self.tokenizer.pad_token_id)
-        token_id_lists = [
-            self._truncate(self._encode_text(prompt, answer=False), [])[0] for prompt in prompts
-        ]
+        encoded = [self._encode_text(prompt, answer=False) for prompt in prompts]
+        token_id_lists = [self._truncate(ids, [], graph_prefix=False)[0] for ids in encoded]
+        warn_truncated(encoded, token_id_lists)
         max_length = max(len(ids) for ids in token_id_lists)
         input_ids = torch.full(
             (len(prompts), max_length), pad_id, dtype=torch.long, device=self.device
@@ -1040,7 +1085,12 @@ def assert_checkpoint_compatible(
         "tensorizer_config",
         "tea_glm_config",
     ):
-        if metadata.get(backbone) != expected[backbone]:
+        actual, wanted = metadata.get(backbone), expected[backbone]
+        if backbone == "tea_glm_config" and isinstance(actual, Mapping):
+            # The length budget only decides how much prompt is kept; it changes no weights, so a
+            # checkpoint can be evaluated with a longer one (the zero-shot text baselines).
+            actual = {**actual, "max_sequence_length": wanted["max_sequence_length"]}
+        if actual != wanted:
             raise ValueError(f"Checkpoint {backbone} does not match the active model")
     if component == "projector" and metadata.get("gnn") != expected["gnn"]:
         raise ValueError("Projector checkpoint was trained against a different GNN")
@@ -1184,6 +1234,13 @@ class TEAGLMBackend:
         ):
             return 0
         return int(self.model.projector.config.prefix_tokens)
+
+    def prompt_token_count(self, model_input: ModelInput) -> tuple[int, bool]:
+        """Tokenizer length of the formatted prompt and whether it was truncated."""
+        prompt = self.model.config.prompt_template.format(question=model_input.question)
+        return self.model.prompt_length(
+            prompt, graph_prefix=self.prefix_token_count(model_input) > 0
+        )
 
     def answer(self, model_input: ModelInput) -> str | None:
         text_only_conditions = self._TEXT_ONLY_CONDITIONS
