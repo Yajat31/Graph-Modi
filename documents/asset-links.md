@@ -3,15 +3,16 @@
 ## Code (GitHub)
 
 - Repository: <https://github.com/Yajat31/Graph-Modi>
-- **Final code and results: branch `v4_1-launch-fixes`**:
+- **Final code and results: default branch `graphmodi-experiments`**:
+  <https://github.com/Yajat31/Graph-Modi/tree/graphmodi-experiments>
+- The same commits are on the working branch `v4_1-launch-fixes`:
   <https://github.com/Yajat31/Graph-Modi/tree/v4_1-launch-fixes>
 
-The repository's default branch (`graphmodi-experiments`) does not have the final runs yet. Use
-`v4_1-launch-fixes`, which holds the code, configs, analysis, figures, the final report
+The branch holds the code, configs, analysis, figures, the final report
 (`documents/mid-report/main.tex`) and the results guide (`documents/report-guide.md`).
 
 ```bash
-git clone -b v4_1-launch-fixes git@github.com:Yajat31/Graph-Modi.git
+git clone -b graphmodi-experiments git@github.com:Yajat31/Graph-Modi.git
 ```
 
 ## Checkpoints and run artifacts (Hugging Face bucket)
