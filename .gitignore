@@ -29,3 +29,4 @@ outputs/
 wandb/
 irel
 *.pdf
+!documents/final_report.pdf

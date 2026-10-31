@@ -9,7 +9,9 @@
   <https://github.com/Yajat31/Graph-Modi/tree/v4_1-launch-fixes>
 
 The branch holds the code, configs, analysis, figures, the final report
-(`documents/mid-report/main.tex`) and the results guide (`documents/report-guide.md`).
+(`documents/final_report.pdf`, built from the LaTeX sources in `documents/mid-report/`: `main.tex`,
+`custom.bib`, the ACL style files and `figures/`) and the results guide
+(`documents/report-guide.md`).
 
 ```bash
 git clone -b graphmodi-experiments git@github.com:Yajat31/Graph-Modi.git
