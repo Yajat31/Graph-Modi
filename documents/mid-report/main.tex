@@ -37,10 +37,11 @@ Graph language models (GLMs) answer questions from soft graph tokens, where the 
 In dialogue, users revise the world, and graph tokens computed before a revision become stale.
 We build a synthetic benchmark of multi-turn sessions (4,455 turns per split) in which each turn is a revision followed by a question, and 36\% of test turns change the answer.
 GraphModi converts each revision into a typed edit program, applies it to an explicit graph, re-encodes the result, and answers from the new graph tokens with a frozen Llama-3.1-8B-Instruct that never sees the revision text.
-With a GraphToken-style reader (three seeds), re-encoding scores 53.7\% on test against 41.3\% for stale tokens plus the revision text, 32.4\% for a shuffled graph, 34.7\% for a trained soft prompt that reads the revisions, and 28.4\% for zero-shot Llama reading the serialized graph.
-Model-written edits are execution-correct on 96.6\% of turns and cost 0.2 points.
-The gain is largest on answer-changing turns (51.2\% vs.\ 25.2\% with stale tokens), but learned local classifiers reach 67--70\% on the structural tasks, and on turns that no local rule solves every model is near 21\%: the reader tracks updates through local features, not multi-hop reasoning.
-A TEA-style reader, whose GNN is pretrained with TEA-GLM's contrastive objective and then frozen, reaches @@sessions.all.tea.oracle_updated_graph.all.mean@@\%; linear probes show that this pretraining removes station status from the node embeddings.
+With a GraphToken-style reader (three seeds), re-encoding scores 54.3\% on test against 41.2\% for stale tokens plus the revision text, 32.5\% for a shuffled graph, 34.7\% for a trained soft prompt that reads the revisions, and 28.4\% for zero-shot Llama reading the serialized graph.
+Model-written edits are execution-correct on 96.6\% of turns and cost 0.1 points.
+The gain is largest on answer-changing turns (51.8\% vs.\ 24.2\% with stale tokens), but learned local classifiers reach 67--70\% on the structural tasks, and on turns that no local rule solves every reader stays below the question alone (19--24\% vs.\ 24.6\%): the reader tracks updates through local features, not multi-hop reasoning.
+A frozen random GNN with a trained projector matches the jointly trained reader (55.2\%), and linear probes show that its node embeddings already expose degree, status, and two-hop counts.
+A TEA-style reader, whose GNN is pretrained with TEA-GLM's contrastive objective and then frozen, reaches 42.1\%: the pretraining removes station status from the node embeddings, although it keeps more node-attribute content than the other readers.
 \end{abstract}
 
 \section{Introduction}
@@ -69,7 +70,7 @@ This lets us score writing (did the edit land?) separately from reading (can the
   \item i) A formulation of multi-turn GLM updating with an edit language and executor, which separates write accuracy from read accuracy.
   \item ii) A multi-turn benchmark across graph size, density, session length, and task, with paired conditions that isolate stale tokens, text history, graph-blind and zero-shot text baselines, and learned local-shortcut ceilings.
   \item iii) Evidence over three seeds that re-encoding beats stale tokens and every text channel, by the widest margin on answer-changing turns, and that model-written edits cost almost nothing.
-  \item iv) A diagnosis of what the readers learn: GraphToken-style reading stays within local features, and TEA-style contrastive pretraining discards the node status that updates change.
+  \item iv) A diagnosis of what the readers learn: a frozen random GNN matches a jointly trained one, both read local features only, and TEA-GLM contrastive pretraining discards the node status that updates change while keeping node-text content.
 \end{description}
 
 \section{Related Work}
@@ -261,20 +262,21 @@ Every number in this report is produced by the scripts in the released code from
 \toprule
  & \textbf{GT} & \textbf{TEA} & \textbf{Warm} & \textbf{Rand.} & \textbf{Soft} & \textbf{Maj.} \\
 \midrule
-Validation & @@static.graphtoken.validation.overall.mean@@ & @@static.tea.validation.overall.mean@@ & @@static.warm.validation.overall.mean@@ & @@static.random.validation.overall.mean@@ & 33.7 & -- \\
-Test & @@static.graphtoken.test.overall.mean@@ & @@static.tea.test.overall.mean@@ & @@static.warm.test.overall.mean@@ & @@static.random.test.overall.mean@@ & 32.6 & 29.6 \\
+Validation & 51.1 & 43.2 & 47.1 & 51.5 & 33.7 & -- \\
+Test & 50.3 & 42.7 & 46.8 & 50.8 & 32.6 & 29.6 \\
 \bottomrule
 \end{tabular}}
-\caption{Static exact-match accuracy (\%). GT: GraphToken-style; TEA: TEA-style; Warm: GraphToken-style from the TEA-GLM-pretrained GNN; Rand.: frozen random GNN; Maj.: per-task majority. GT and TEA are means over three seeds (test s.d.\ 0.6 and @@static.tea.test.overall.sd@@).}
+\caption{Static exact-match accuracy (\%). GT: GraphToken-style; TEA: TEA-style; Warm: GraphToken-style from the TEA-GLM-pretrained GNN; Rand.: frozen random GNN; Maj.: per-task majority. GT and TEA are means over three seeds (test s.d.\ 0.1 for both).}
 \label{tab:static}
 \end{table}
 
 Table~\ref{tab:static} shows single-graph QA (RQ3).
-GraphToken-style reaches 49.7\% on test against 32.6\% for the soft prompt and 29.6\% for the per-task majority, and the ranking is the same on validation.
-Its gains are on structural tasks: node degree 97.5\% (soft prompt 11.6\%), cycle membership 79.0\% (51.8\%), reachability 65.2\% (54.0\%), edge existence 61.7\% (45.7\%), and shortest path 30.0\% (14.1\%).
+GraphToken-style reaches 50.3\% on test against 32.6\% for the soft prompt and 29.6\% for the per-task majority, and the ranking is the same on validation.
+Its gains are on structural tasks: node degree 99.1\% (soft prompt 11.6\%), cycle membership 79.0\% (51.8\%), reachability 65.7\% (54.0\%), edge existence 61.2\% (45.7\%), and shortest path 33.6\% (14.1\%).
 These are also the tasks a local classifier solves (static ceilings: 100, 95.7, 92.4, 95.2, and 62.1\%), and GraphToken-style stays below those ceilings on every one of them.
 The attribute tasks stay near the soft prompt (Appendix~\ref{app:task-families}).
-%TEA-STATIC
+The frozen random GNN is level with GraphToken-style (50.8\%), while the two readers built on the TEA-GLM-pretrained GNN fall behind: the warm start reaches 46.8\% and TEA-style 42.7\%.
+The pretrained GNN changes which tasks are solved rather than lowering accuracy uniformly: TEA-style is far weaker on node degree (44.2\%) and at chance on cycle membership (52.0\%), but stronger on attribute lookup (46.5\% vs.\ 29.5\%) and the most common attribute within two hops (36.3\% vs.\ 28.5\%).
 
 \subsection{Multi-turn conditions}
 \label{sec:conditions}
@@ -287,11 +289,11 @@ The attribute tasks stay near the soft prompt (Appendix~\ref{app:task-families})
 \toprule
 \textbf{Condition} & \textbf{GT} & \textbf{TEA} & \textbf{Warm} & \textbf{Rand.} \\
 \midrule
-oracle\_updated\_graph & @@sessions.all.graphtoken.oracle_updated_graph.all.mean@@ & @@sessions.all.tea.oracle_updated_graph.all.mean@@ & @@sessions.all.warm.oracle_updated_graph.all.mean@@ & @@sessions.all.random.oracle_updated_graph.all.mean@@ \\
-predicted\_updated\_graph & @@sessions.all.graphtoken.predicted_updated_graph.all.mean@@ & @@sessions.all.tea.predicted_updated_graph.all.mean@@ & @@sessions.all.warm.predicted_updated_graph.all.mean@@ & @@sessions.all.random.predicted_updated_graph.all.mean@@ \\
-frozen\_graph\_history & @@sessions.all.graphtoken.frozen_graph_history.all.mean@@ & @@sessions.all.tea.frozen_graph_history.all.mean@@ & @@sessions.all.warm.frozen_graph_history.all.mean@@ & @@sessions.all.random.frozen_graph_history.all.mean@@ \\
-structure\_only & @@sessions.all.graphtoken.structure_only.all.mean@@ & @@sessions.all.tea.structure_only.all.mean@@ & @@sessions.all.warm.structure_only.all.mean@@ & @@sessions.all.random.structure_only.all.mean@@ \\
-shuffled\_graph & @@sessions.all.graphtoken.shuffled_graph.all.mean@@ & @@sessions.all.tea.shuffled_graph.all.mean@@ & @@sessions.all.warm.shuffled_graph.all.mean@@ & @@sessions.all.random.shuffled_graph.all.mean@@ \\
+oracle\_updated\_graph & 54.3 & 42.1 & 44.5 & 55.2 \\
+predicted\_updated\_graph & 54.2 & 42.1 & 44.6 & 55.1 \\
+frozen\_graph\_history & 41.2 & 38.2 & 38.8 & 41.7 \\
+structure\_only & 41.2 & 37.9 & 38.0 & 41.7 \\
+shuffled\_graph & 32.5 & 31.9 & 30.8 & 31.8 \\
 question\_only & \multicolumn{4}{c}{26.5} \\
 \midrule
 soft\_prompt / no history & \multicolumn{4}{c}{34.7 / 33.3} \\
@@ -302,17 +304,21 @@ per-task majority & \multicolumn{4}{c}{31.8} \\
 stale answer & \multicolumn{4}{c}{63.6} \\
 \bottomrule
 \end{tabular}}
-\caption{Multi-turn test accuracy (\%), 4{,}455 turns. GT and TEA are means over three seeds; the seed s.d.\ of \texttt{oracle\_updated\_graph} is 0.8 (GT) and @@sessions.all.tea.oracle_updated_graph.all.sd@@ (TEA). Rows below the rule do not depend on the graph reader; the serialized and token-matched rows are zero-shot Llama.}
+\caption{Multi-turn test accuracy (\%), 4{,}455 turns. GT and TEA are means over three seeds; the seed s.d.\ of \texttt{oracle\_updated\_graph} is 0.2 (GT) and 0.4 (TEA). Rows below the rule do not depend on the graph reader; the serialized and token-matched rows are zero-shot Llama.}
 \label{tab:conditions}
 \end{table}
 
 Table~\ref{tab:conditions} gives the multi-turn results.
-For GraphToken-style, re-encoding the gold graph scores 53.7\% (s.d.\ 0.8 over seeds; 95\% CI of seed 42: 51.5--56.2), and re-encoding the graph built from the model's own edits scores 53.5\%.
-Paired by turn, re-encoding beats the shuffled graph by 21.8 points (seed 42; CI 19.4--24.2), stale tokens plus history by 12.9 (11.1--14.7), and stale tokens alone by 13.0 (11.2--14.9).
-It beats the soft prompt with the revision history by 19.1 points (16.5--21.7) and without it by 20.5 (18.0--23.0).
+For GraphToken-style, re-encoding the gold graph scores 54.3\% (s.d.\ 0.2 over seeds; 95\% CI of seed 42: 51.8--56.3), and re-encoding the graph built from the model's own edits scores 54.2\%.
+Paired by turn, re-encoding beats the shuffled graph by 22.0 points (seed 42; CI 19.5--24.5), stale tokens plus history by 13.6 (11.7--15.5), and stale tokens alone by 13.4 (11.6--15.4), with the same picture on the other two seeds.
+It beats the soft prompt with the revision history by 19.4 points (16.8--22.0) and without it by 20.8 (18.2--23.3).
 Zero-shot Llama does worse than the per-task majority even when it reads the whole current graph as text (28.4\% vs.\ 31.8\%), and adding the initial graph and the revision history in context gives 29.9\%.
 The stale answer scores 63.6\% because 63.6\% of turns keep their pre-edit answer; it is a reference for a system that ignores edits, not a competitor.
-%TEA-CONDITIONS
+
+The other readers follow the same pattern at different levels (Figure~\ref{fig:combined}, Appendix~\ref{app:combined}).
+The frozen random GNN scores 55.2\%, statistically level with GraphToken-style (paired with seed 42: $-1.1$ points, CI $-2.3$ to 0.0), so training the GNN jointly adds nothing measurable over a random one here.
+TEA-style scores 42.1\%; re-encoding still beats its stale tokens plus history by 3.7--4.5 points and its shuffled graph by 9.4--10.9 points on every seed, and it beats the soft prompt without history by 8.5--9.3 points, but it trails the frozen random GNN by 13.2 points (seed 42; CI 11.0--15.4), which uses the same frozen-GNN recipe.
+The warm start, which trains the TEA-GLM-pretrained GNN jointly, reaches 44.5\%, 9.6 points below GraphToken-style from random weights (CI 7.7--11.5).
 
 \subsection{Multi-turn degradation}
 \label{sec:multiturn}
@@ -351,11 +357,11 @@ The stale answer scores 63.6\% because 63.6\% of turns keep their pre-edit answe
 \toprule
 \textbf{Condition} & \textbf{1} & \textbf{2} & \textbf{4} & \textbf{8} \\
 \midrule
-oracle\_updated\_graph & @@sessions.by_length.graphtoken.oracle_updated_graph.1.mean@@ & @@sessions.by_length.graphtoken.oracle_updated_graph.2.mean@@ & @@sessions.by_length.graphtoken.oracle_updated_graph.4.mean@@ & @@sessions.by_length.graphtoken.oracle_updated_graph.8.mean@@ \\
-predicted\_updated\_graph & @@sessions.by_length.graphtoken.predicted_updated_graph.1.mean@@ & @@sessions.by_length.graphtoken.predicted_updated_graph.2.mean@@ & @@sessions.by_length.graphtoken.predicted_updated_graph.4.mean@@ & @@sessions.by_length.graphtoken.predicted_updated_graph.8.mean@@ \\
-frozen\_graph\_history & @@sessions.by_length.graphtoken.frozen_graph_history.1.mean@@ & @@sessions.by_length.graphtoken.frozen_graph_history.2.mean@@ & @@sessions.by_length.graphtoken.frozen_graph_history.4.mean@@ & @@sessions.by_length.graphtoken.frozen_graph_history.8.mean@@ \\
-structure\_only & @@sessions.by_length.graphtoken.structure_only.1.mean@@ & @@sessions.by_length.graphtoken.structure_only.2.mean@@ & @@sessions.by_length.graphtoken.structure_only.4.mean@@ & @@sessions.by_length.graphtoken.structure_only.8.mean@@ \\
-shuffled\_graph & @@sessions.by_length.graphtoken.shuffled_graph.1.mean@@ & @@sessions.by_length.graphtoken.shuffled_graph.2.mean@@ & @@sessions.by_length.graphtoken.shuffled_graph.4.mean@@ & @@sessions.by_length.graphtoken.shuffled_graph.8.mean@@ \\
+oracle\_updated\_graph & 54.1 & 53.6 & 55.1 & 54.1 \\
+predicted\_updated\_graph & 53.5 & 53.5 & 55.4 & 53.8 \\
+frozen\_graph\_history & 47.0 & 40.7 & 41.7 & 40.3 \\
+structure\_only & 45.0 & 39.6 & 42.2 & 40.7 \\
+shuffled\_graph & 28.7 & 31.7 & 33.1 & 32.8 \\
 soft\_prompt & 30.6 & 31.8 & 35.4 & 35.6 \\
 serialized\_initial\_history & 27.3 & 30.1 & 29.2 & 30.6 \\
 stale answer & 64.0 & 61.1 & 63.3 & 64.3 \\
@@ -366,8 +372,8 @@ stale answer & 64.0 & 61.1 & 63.3 & 64.3 \\
 \end{table}
 
 Figure~\ref{fig:multiturn} and Table~\ref{tab:length} address RQ2.
-Re-encoded tokens hold their accuracy at every session length (52.5--54.5\%).
-Stale tokens lose 3.5--6.6 points as soon as a session has more than one turn (45.1\% for one-turn sessions, 38.5--41.6\% for longer ones) and do not recover with the revision text.
+Re-encoded tokens hold their accuracy at every session length (53.6--55.1\%).
+Stale tokens drop as soon as a session has more than one turn and do not recover with the revision text: stale tokens plus history fall from 47.0\% in one-turn sessions to 40.3--41.7\% in longer ones, and stale tokens alone from 45.0\% to 39.6--42.2\%.
 They do not keep declining with length because the per-split quota fixes the answer-changing share at 36--39\% for every length, so each additional edit is as likely to restore an answer as to change it.
 The soft prompt rises slightly with session length (30.6\% to 35.6\%) because the accumulated revision text answers more questions directly, and zero-shot Llama with the initial graph and history in context stays near 30\% at every length.
 
@@ -379,28 +385,31 @@ The soft prompt rises slightly with session length (30.6\% to 35.6\%) because th
 \toprule
 \textbf{Condition} & \textbf{Changed} & \textbf{Unchanged} & \textbf{Unmentioned} \\
 \midrule
-oracle\_updated\_graph & @@sessions.by_change.graphtoken.oracle_updated_graph.changed.mean@@ & @@sessions.by_change.graphtoken.oracle_updated_graph.unchanged.mean@@ & @@sessions.changed_no_mention.graphtoken.oracle_updated_graph.changed_no_mention.mean@@ \\
-predicted\_updated\_graph & @@sessions.by_change.graphtoken.predicted_updated_graph.changed.mean@@ & @@sessions.by_change.graphtoken.predicted_updated_graph.unchanged.mean@@ & @@sessions.changed_no_mention.graphtoken.predicted_updated_graph.changed_no_mention.mean@@ \\
-frozen\_graph\_history & @@sessions.by_change.graphtoken.frozen_graph_history.changed.mean@@ & @@sessions.by_change.graphtoken.frozen_graph_history.unchanged.mean@@ & @@sessions.changed_no_mention.graphtoken.frozen_graph_history.changed_no_mention.mean@@ \\
-structure\_only & @@sessions.by_change.graphtoken.structure_only.changed.mean@@ & @@sessions.by_change.graphtoken.structure_only.unchanged.mean@@ & @@sessions.changed_no_mention.graphtoken.structure_only.changed_no_mention.mean@@ \\
-shuffled\_graph & @@sessions.by_change.graphtoken.shuffled_graph.changed.mean@@ & @@sessions.by_change.graphtoken.shuffled_graph.unchanged.mean@@ & @@sessions.changed_no_mention.graphtoken.shuffled_graph.changed_no_mention.mean@@ \\
+oracle\_updated\_graph & 51.8 & 55.7 & 38.3 \\
+predicted\_updated\_graph & 51.2 & 55.9 & 38.2 \\
+frozen\_graph\_history & 24.2 & 50.9 & 26.8 \\
+structure\_only & 23.0 & 51.7 & 27.2 \\
+shuffled\_graph & 29.4 & 34.2 & 27.8 \\
 soft\_prompt & 32.2 & 36.1 & 24.8 \\
 serialized\_initial\_history & 27.8 & 31.2 & 25.3 \\
 per-task majority & 27.3 & 34.4 & 25.3 \\
 \midrule
-TEA-style oracle & @@sessions.by_change.tea.oracle_updated_graph.changed.mean@@ & @@sessions.by_change.tea.oracle_updated_graph.unchanged.mean@@ & @@sessions.changed_no_mention.tea.oracle_updated_graph.changed_no_mention.mean@@ \\
-TEA-style stale + history & @@sessions.by_change.tea.frozen_graph_history.changed.mean@@ & @@sessions.by_change.tea.frozen_graph_history.unchanged.mean@@ & @@sessions.changed_no_mention.tea.frozen_graph_history.changed_no_mention.mean@@ \\
+TEA-style oracle & 37.8 & 44.6 & 26.3 \\
+TEA-style stale + history & 29.1 & 43.4 & 27.5 \\
+Random GNN oracle & 52.8 & 56.6 & 40.9 \\
+Random GNN stale + history & 24.8 & 51.4 & 24.8 \\
 \bottomrule
 \end{tabular}}
-\caption{Test accuracy (\%) on answer-changing turns (1{,}622), unchanged turns (2{,}833), and answer-changing turns whose question names no edited station (359). Graph rows above the rule are GraphToken-style, means of three seeds.}
+\caption{Test accuracy (\%) on answer-changing turns (1{,}622), unchanged turns (2{,}833), and answer-changing turns whose question names no edited station (359). Graph rows above the rule are GraphToken-style, means of three seeds; TEA-style rows are means of three seeds, random-GNN rows one seed.}
 \label{tab:changing}
 \end{table}
 
 Table~\ref{tab:changing} and Figure~\ref{fig:edit} (Appendix~\ref{app:edit}) split turns by whether the edit changed the answer.
-On unchanged turns, stale and re-encoded GraphToken-style tokens are within 5 points of each other (50.5\% vs.\ 55.1\%).
-On changed turns, stale tokens fall to 25.2\%, below the per-task majority, while re-encoded tokens keep 51.2\%: a 26-point gap where the edit matters, against 4.6 points where it does not.
-On the 359 changed turns whose question does not name an edited station, where the revision text cannot be matched to the question, re-encoding still scores 35.8\% against 26.1\% for stale tokens plus history and 24.8\% for the soft prompt; here the text-only lookup that otherwise reaches 78.7\% scores 2.5\%.
-%TEA-CHANGING
+On unchanged turns, stale and re-encoded GraphToken-style tokens are within 5 points of each other (50.9\% vs.\ 55.7\%).
+On changed turns, stale tokens fall to 24.2\%, below the per-task majority, while re-encoded tokens keep 51.8\%: a 27.6-point gap where the edit matters, against 4.8 points where it does not.
+On the 359 changed turns whose question does not name an edited station, where the revision text cannot be matched to the question, re-encoding still scores 38.3\% against 26.8\% for stale tokens plus history and 24.8\% for the soft prompt; here the text-only lookup that otherwise reaches 78.7\% scores 2.5\%.
+The frozen random GNN tracks edits as well as GraphToken-style (52.8\% vs.\ 24.8\% on changed turns, 40.9\% on unmentioned ones).
+TEA-style gains 8.7 points from re-encoding on changed turns (37.8\% vs.\ 29.1\%), but on the unmentioned ones its re-encoded tokens (26.3\%) are no better than its stale tokens plus history (27.5\%), so its tokens barely carry the status and edge changes.
 
 \subsection{Density, task, and local shortcuts}
 \label{sec:breakdown}
@@ -412,10 +421,10 @@ On the 359 changed turns whose question does not name an edited station, where t
 \toprule
  & \textbf{Sparse} & \textbf{Medium} & \textbf{Dense} \\
 \midrule
-oracle\_updated\_graph & @@sessions.by_density.graphtoken.oracle_updated_graph.sparse.mean@@ & @@sessions.by_density.graphtoken.oracle_updated_graph.medium.mean@@ & @@sessions.by_density.graphtoken.oracle_updated_graph.dense.mean@@ \\
-predicted\_updated\_graph & @@sessions.by_density.graphtoken.predicted_updated_graph.sparse.mean@@ & @@sessions.by_density.graphtoken.predicted_updated_graph.medium.mean@@ & @@sessions.by_density.graphtoken.predicted_updated_graph.dense.mean@@ \\
-frozen\_graph\_history & @@sessions.by_density.graphtoken.frozen_graph_history.sparse.mean@@ & @@sessions.by_density.graphtoken.frozen_graph_history.medium.mean@@ & @@sessions.by_density.graphtoken.frozen_graph_history.dense.mean@@ \\
-shuffled\_graph & @@sessions.by_density.graphtoken.shuffled_graph.sparse.mean@@ & @@sessions.by_density.graphtoken.shuffled_graph.medium.mean@@ & @@sessions.by_density.graphtoken.shuffled_graph.dense.mean@@ \\
+oracle\_updated\_graph & 53.0 & 54.5 & 55.4 \\
+predicted\_updated\_graph & 52.8 & 54.4 & 55.4 \\
+frozen\_graph\_history & 39.6 & 41.7 & 42.3 \\
+shuffled\_graph & 32.3 & 33.6 & 31.4 \\
 soft\_prompt & 34.3 & 33.9 & 36.0 \\
 \bottomrule
 \end{tabular}
@@ -423,39 +432,38 @@ soft\_prompt & 34.3 & 33.9 & 36.0 \\
 \label{tab:density}
 \end{table}
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \small
-\resizebox{\linewidth}{!}{%
-\begin{tabular}{@{}lcccccc@{}}
+\begin{tabular}{@{}lcccccccc@{}}
 \toprule
-\textbf{Task} & \textbf{Oracle} & \textbf{Stale+h.} & \textbf{Shuf.} & \textbf{Soft} & \textbf{Maj.} & \textbf{Local} \\
+\textbf{Task} & \textbf{GT} & \textbf{TEA} & \textbf{Rand.} & \textbf{Stale+h.} & \textbf{Shuf.} & \textbf{Soft} & \textbf{Maj.} & \textbf{Local} \\
 \midrule
-node\_degree & @@sessions.by_task.graphtoken.oracle_updated_graph.node_degree.mean@@ & @@sessions.by_task.graphtoken.frozen_graph_history.node_degree.mean@@ & @@sessions.by_task.graphtoken.shuffled_graph.node_degree.mean@@ & 11.7 & 13.9 & 100.0 \\
-cycle\_membership & @@sessions.by_task.graphtoken.oracle_updated_graph.cycle_membership.mean@@ & @@sessions.by_task.graphtoken.frozen_graph_history.cycle_membership.mean@@ & @@sessions.by_task.graphtoken.shuffled_graph.cycle_membership.mean@@ & 58.0 & 57.8 & 88.1 \\
-reachability & @@sessions.by_task.graphtoken.oracle_updated_graph.reachability.mean@@ & @@sessions.by_task.graphtoken.frozen_graph_history.reachability.mean@@ & @@sessions.by_task.graphtoken.shuffled_graph.reachability.mean@@ & 59.2 & 59.6 & 91.3 \\
-edge\_exists & @@sessions.by_task.graphtoken.oracle_updated_graph.edge_exists.mean@@ & @@sessions.by_task.graphtoken.frozen_graph_history.edge_exists.mean@@ & @@sessions.by_task.graphtoken.shuffled_graph.edge_exists.mean@@ & 55.4 & 50.3 & 91.5 \\
-constrained\_reachability & @@sessions.by_task.graphtoken.oracle_updated_graph.constrained_reachability.mean@@ & @@sessions.by_task.graphtoken.frozen_graph_history.constrained_reachability.mean@@ & @@sessions.by_task.graphtoken.shuffled_graph.constrained_reachability.mean@@ & 50.7 & 50.1 & 64.4 \\
-filtered\_neighbor\_count & @@sessions.by_task.graphtoken.oracle_updated_graph.filtered_neighbor_count.mean@@ & @@sessions.by_task.graphtoken.frozen_graph_history.filtered_neighbor_count.mean@@ & @@sessions.by_task.graphtoken.shuffled_graph.filtered_neighbor_count.mean@@ & 18.2 & 19.0 & 33.7 \\
-most\_common\_attr.\ within hops & @@sessions.by_task.graphtoken.oracle_updated_graph.most_common_attribute_within_hops.mean@@ & @@sessions.by_task.graphtoken.frozen_graph_history.most_common_attribute_within_hops.mean@@ & @@sessions.by_task.graphtoken.shuffled_graph.most_common_attribute_within_hops.mean@@ & 27.7 & 6.3 & -- \\
-shortest\_path & @@sessions.by_task.graphtoken.oracle_updated_graph.shortest_path.mean@@ & @@sessions.by_task.graphtoken.frozen_graph_history.shortest_path.mean@@ & @@sessions.by_task.graphtoken.shuffled_graph.shortest_path.mean@@ & 15.2 & 15.4 & 55.6 \\
-within\_hops\_count & @@sessions.by_task.graphtoken.oracle_updated_graph.within_hops_count.mean@@ & @@sessions.by_task.graphtoken.frozen_graph_history.within_hops_count.mean@@ & @@sessions.by_task.graphtoken.shuffled_graph.within_hops_count.mean@@ & 16.6 & 13.9 & 16.8 \\
+node\_degree & 99.9 & 49.6 & 97.6 & 40.8 & 11.1 & 11.7 & 13.9 & 100.0 \\
+cycle\_membership & 83.4 & 49.2 & 87.3 & 62.5 & 54.5 & 58.0 & 57.8 & 88.1 \\
+reachability & 68.4 & 60.2 & 70.3 & 61.0 & 53.7 & 59.2 & 59.6 & 91.3 \\
+edge\_exists & 66.3 & 58.1 & 70.5 & 53.2 & 46.9 & 55.4 & 50.3 & 91.5 \\
+constrained\_reachability & 61.0 & 56.6 & 61.8 & 52.9 & 47.3 & 50.7 & 50.1 & 64.4 \\
+filtered\_neighbor\_count & 34.3 & 30.6 & 33.1 & 30.0 & 20.1 & 18.2 & 19.0 & 33.7 \\
+most\_common\_attr.\ within hops & 28.6 & 36.0 & 33.1 & 29.6 & 28.6 & 27.7 & 6.3 & -- \\
+shortest\_path & 25.5 & 20.5 & 24.8 & 24.0 & 15.1 & 15.2 & 15.4 & 55.6 \\
+within\_hops\_count & 21.3 & 18.6 & 18.4 & 17.0 & 14.7 & 16.6 & 13.9 & 16.8 \\
 \bottomrule
-\end{tabular}%
-}
-\caption{Multi-turn test accuracy (\%) by task ($n{=}495$ each): GraphToken-style re-encoded (Oracle), stale tokens plus history (Stale+h.), shuffled graph, soft prompt, per-task majority, and the learned local ceiling on the updated graphs (better of the one- and two-hop classifiers).}
+\end{tabular}
+\caption{Multi-turn test accuracy (\%) by task ($n{=}495$ each): GraphToken-style re-encoded (GT; mean of three seeds), TEA-style and frozen random GNN re-encoded (TEA, Rand.), GraphToken-style stale tokens plus history (Stale+h.), shuffled graph, soft prompt, per-task majority, and the learned local ceiling on the updated graphs (better of the one- and two-hop classifiers).}
 \label{tab:pertask}
 \label{tab:task-breakdown}
-\end{table}
+\end{table*}
 
 Tables~\ref{tab:density} and~\ref{tab:pertask} break the test results down.
-Accuracy varies by about 2 points across densities, and re-encoding is 20--23 points ahead of the shuffled graph at every density.
-By task, re-encoding helps most where the answer is a local structural fact that edits change: node degree (99.1\% vs.\ 41.4\% stale), cycle membership (84.2\% vs.\ 62.8\%), and edge existence (65.9\% vs.\ 53.7\%).
-GraphToken-style stays below the local ceiling on the path, cycle, and edge tasks, far below it on shortest path (23.8\% vs.\ 55.6\%) and reachability (69.0\% vs.\ 91.3\%), reaches it on the two counting tasks (34.0\% vs.\ 33.7\%; 18.9\% vs.\ 16.8\%), and on the most-common-attribute task it is within a point of the shuffled graph.
+Accuracy varies by 2.4 points across densities, and re-encoding is 21--24 points ahead of the shuffled graph at every density.
+By task, re-encoding helps most where the answer is a local structural fact that edits change: node degree (99.9\% vs.\ 40.8\% stale), cycle membership (83.4\% vs.\ 62.5\%), and edge existence (66.3\% vs.\ 53.2\%).
+GraphToken-style stays below the local ceiling on the path, cycle, and edge tasks, far below it on shortest path (25.5\% vs.\ 55.6\%) and reachability (68.4\% vs.\ 91.3\%), reaches it on the two counting tasks (34.3\% vs.\ 33.7\%; 21.3\% vs.\ 16.8\%), and on the most-common-attribute task it equals the shuffled graph (28.6\%).
+The frozen random GNN matches or exceeds GraphToken-style on every structural task, while TEA-style is at chance on cycle membership (49.2\%), reaches only 49.6\% on node degree, and is the strongest reader on the most-common-attribute task (36.0\%).
 
 The local-wrong slice makes the same point directly.
-On the 1{,}052 test turns that both local classifiers get wrong, GraphToken-style scores 20.9\% re-encoded (s.d.\ 0.9), 20.1\% with a shuffled graph, and 24.6\% with the question alone.
-The reader therefore uses the graph to track local facts such as degree, status, and nearby closures, which is what most updates change, but we find no evidence of reasoning that goes beyond a two-hop neighbourhood.
+On the 1{,}052 test turns that both local classifiers get wrong, GraphToken-style scores 22.2\% re-encoded (s.d.\ 0.3), 21.2\% with a shuffled graph, and 24.6\% with the question alone; TEA-style (23.6\%), the warm start (21.6\%), and the frozen random GNN (19.2\%) are also below the question alone.
+The readers therefore use the graph to track local facts such as degree, status, and nearby closures, which is what most updates change, but we find no evidence of reasoning that goes beyond a two-hop neighbourhood.
 
 \subsection{Write path}
 \label{sec:write}
@@ -463,10 +471,10 @@ The reader therefore uses the graph to track local facts such as degree, status,
 The \texttt{predicted\_updated\_graph} condition applies the model's own edit programs and re-encodes the result, and it answers RQ1.
 The frozen LLM writes an execution-equivalent program on 96.6\% of test turns, and the graph state built from its own edits is exactly right on 91.1\% of turns, since an error persists for the rest of a session.
 NOOP turns are always correct and status and deletion edits are above 97\%; the weakest operation is a lone \texttt{ADD EDGE} at 79.9\%.
-On the \texttt{notice} paraphrase family, held out of the few-shot prompt, edit accuracy is 91.5\% against 98.9--99.3\% for the other two.
-These errors cost 0.2 points for GraphToken-style (53.5\% vs.\ 53.7\%; paired CI $-0.1$ to 0.5) and at most @@write_cost_max@@ points for every reader, and the predicted and oracle rows agree within 1.3 points by session length, change status, density, and task (Tables~\ref{tab:length}--\ref{tab:pertask}).
+On the \texttt{notice} paraphrase family, held out of the few-shot prompt, edit accuracy is 91.5\% against 98.9--99.3\% for the other two; each task uses a single family, so this gap mixes wording with the edits that the \texttt{notice} tasks draw.
+These errors cost 0.1 points for GraphToken-style (54.2\% vs.\ 54.3\%; paired CI of seed 42 $-0.2$ to 0.4) and at most 0.1 points for every reader, and the predicted and oracle rows agree within 1.2 points by session length, change status, density, and task (Tables~\ref{tab:length}--\ref{tab:pertask}).
 
-\subsection{Why TEA-style lags}
+\subsection{What the readers learn}
 \label{sec:probe}
 
 \begin{table}[t]
@@ -478,10 +486,10 @@ These errors cost 0.2 points for GraphToken-style (53.5\% vs.\ 53.7\%; paired CI
 \textbf{Node embeddings} & \textbf{Degree} & \textbf{Status} & \textbf{2-hop} & \textbf{Cos.} & \textbf{Rank} \\
 \midrule
 BERT input (no GNN) & 32.2 & 100.0 & 57.9 & 0.97 & 13.0 \\
-Random frozen GNN & @@pct:gnn_probe.random_frozen.probe.degree@@ & @@pct:gnn_probe.random_frozen.probe.status@@ & @@pct:gnn_probe.random_frozen.probe.within_two_hops@@ & @@f2:gnn_probe.random_frozen.collapse.mean_within_graph_cosine@@ & @@gnn_probe.random_frozen.collapse.effective_rank@@ \\
-GraphToken-style GNN & @@pct:gnn_probe.graphtoken_s42.probe.degree@@ & @@pct:gnn_probe.graphtoken_s42.probe.status@@ & @@pct:gnn_probe.graphtoken_s42.probe.within_two_hops@@ & @@f2:gnn_probe.graphtoken_s42.collapse.mean_within_graph_cosine@@ & @@gnn_probe.graphtoken_s42.collapse.effective_rank@@ \\
-TEA-GLM-pretrained GNN & @@pct:gnn_probe.tea_glm_pretrained.probe.degree@@ & @@pct:gnn_probe.tea_glm_pretrained.probe.status@@ & @@pct:gnn_probe.tea_glm_pretrained.probe.within_two_hops@@ & @@f2:gnn_probe.tea_glm_pretrained.collapse.mean_within_graph_cosine@@ & @@gnn_probe.tea_glm_pretrained.collapse.effective_rank@@ \\
-Warm-start GNN & @@pct:gnn_probe.warm_start_s42.probe.degree@@ & @@pct:gnn_probe.warm_start_s42.probe.status@@ & @@pct:gnn_probe.warm_start_s42.probe.within_two_hops@@ & @@f2:gnn_probe.warm_start_s42.collapse.mean_within_graph_cosine@@ & @@gnn_probe.warm_start_s42.collapse.effective_rank@@ \\
+Random frozen GNN & 100.0 & 96.6 & 92.3 & 0.92 & 1.9 \\
+GraphToken-style GNN & 100.0 & 95.8 & 96.9 & 0.97 & 1.9 \\
+TEA-GLM-pretrained GNN & 96.4 & 88.1 & 79.2 & 0.24 & 16.2 \\
+Warm-start GNN & 98.3 & 88.1 & 82.1 & 0.37 & 12.9 \\
 \midrule
 Majority class & 36.5 & 88.2 & 59.0 & & \\
 \bottomrule
@@ -490,32 +498,45 @@ Majority class & 36.5 & 88.2 & 59.0 & & \\
 \label{tab:probe}
 \end{table}
 
-%TEA-PROBE
+To see what each GNN passes to the projector, we fit linear probes on its frozen node embeddings (multinomial logistic regression on standardized features, trained on train-split graphs and scored on test-split graphs) for three local facts that the tasks and edits depend on (Table~\ref{tab:probe}).
+The BERT input features encode status (it is in the node text) but not degree.
+A frozen random GNN with sum aggregation already makes degree (100\%), status (96.6\%), and the two-hop count (92.3\%) linearly decodable, and the GNN trained jointly by GraphToken-style adds almost nothing (100, 95.8, and 96.9\%).
+Since the projector is a single linear map, this explains why the frozen random GNN reads as well as GraphToken-style: the information the tasks need is already linearly available before any training.
+
+The TEA-GLM-pretrained GNN loses station status: its probe accuracy (88.1\%) equals the majority class, and the two-hop count drops to 79.2\%.
+Its instance-wise objective makes embeddings invariant to dropped edges and masked features, which removes exactly the local details that updates change; this matches TEA-style's chance accuracy on cycle membership and its weak tracking of changed answers.
+The loss is not embedding collapse: the TEA-GLM embeddings are the least collapsed (mean cosine 0.24, effective rank 16.2), while the random and GraphToken-style GNNs are nearly collapsed (rank 1.9) and still decode every probe target.
+The warm start keeps the pretrained GNN's status loss (88.1\%) after one epoch of joint training while recovering degree (98.3\%), which matches its multi-turn profile (node degree 72.7\%, cycle membership 43.4\%).
+In the other direction, the feature-wise objective aligns node embeddings with the principal components of Llama's token embeddings, and both readers built on this GNN are the strongest on the attribute tasks (static attribute lookup 46.5\% for TEA-style and 46.2\% for the warm start, against 29.5\% for GraphToken-style); we read this as the pretraining keeping node-text content in a form the projector can map to word-like tokens, although we did not probe attributes directly.
 
 \section{Inferences}
 \label{sec:discussion}
 
 \paragraph{Graph tokens encode the specific, current graph.}
-Re-encoded GraphToken-style tokens beat a shuffled graph by 21.8 points, a graph-blind soft prompt by 19--21 points with or without the revision text, and zero-shot Llama reading the serialized graph by 25 points, at every density and session length and on all three seeds.
+Re-encoded GraphToken-style tokens beat a shuffled graph by 22.0 points, a graph-blind soft prompt by 19--21 points with or without the revision text, and zero-shot Llama reading the serialized graph by 26 points, at every density and session length and on all three seeds.
 A model that ignored the tokens would score the same under all of these conditions, so the tokens carry session-specific information (RQ3).
 
 \paragraph{Staleness hurts exactly where an edit matters.}
-On answer-changing turns stale tokens fall to 25.2\%, below the per-task majority, while re-encoded tokens keep 51.2\%; on unchanged turns the two are within 5 points.
-The gap survives on changed turns whose question does not name the edited station (35.8\% vs.\ 26.1\%), where no text lookup helps (RQ2).
+On answer-changing turns stale tokens fall to 24.2\%, below the per-task majority, while re-encoded tokens keep 51.8\%; on unchanged turns the two are within 5 points.
+The gap survives on changed turns whose question does not name the edited station (38.3\% vs.\ 26.8\%), where no text lookup helps (RQ2).
 
 \paragraph{The gain comes from re-encoding, not from text history.}
-Adding the revision text to stale tokens does not help: \texttt{frozen\_graph\_history} and \texttt{structure\_only} are both 41.3\%.
+Adding the revision text to stale tokens does not help: \texttt{frozen\_graph\_history} and \texttt{structure\_only} are both 41.2\%.
 Text channels that see the full history do not catch up either: the soft prompt reaches 34.7\%, and zero-shot Llama with the initial graph and every revision in context reaches 29.9\%.
 Updating the graph and re-reading it is what recovers the answer.
 
 \paragraph{The write path is not the bottleneck.}
-Model-written edits are 96.6\% execution-correct and cost 0.2 points (RQ1), but revisions are templated, so this likely overstates the write path on free-form dialogue.
+Model-written edits are 96.6\% execution-correct and cost 0.1 points (RQ1), but revisions are templated, so this likely overstates the write path on free-form dialogue.
 
 \paragraph{The reader is local.}
-GraphToken-style accuracy stays at or below learned local ceilings on the structural tasks, and on turns that no local rule solves it is no better than a shuffled graph (20.9\% vs.\ 20.1\%).
+GraphToken-style accuracy stays at or below learned local ceilings on the structural tasks, and on turns that no local rule solves it is no better than a shuffled graph (22.2\% vs.\ 21.2\%) and below the question alone (24.6\%).
 The benchmark rewards tracking local facts that updates change; it does not yet show that soft graph tokens support multi-hop reasoning.
 
-%TEA-INFERENCE
+\paragraph{Training the GNN adds little; pretraining it contrastively hurts.}
+A frozen random GNN with a trained projector matches the jointly trained GraphToken-style reader (55.2\% vs.\ 54.3\%), because a random sum-aggregation GNN already exposes degree, status, and neighbourhood counts linearly.
+The bottleneck is the frozen LLM reading ten soft tokens, not the encoder.
+TEA-GLM pretraining, built for zero-shot transfer of semantic categories, makes the GNN invariant to the edge and status details that updates change; the TEA-style reader trails the frozen random GNN by 13.2 points and the warm start trails GraphToken-style by 9.6, although both keep more node-attribute content.
+For GLMs over graphs that change, the encoder must preserve exactly the local details that augmentation-based contrastive objectives are designed to ignore.
 
 \section{Status}
 \label{sec:status}
@@ -547,8 +568,11 @@ Two items remain open: a contradiction probe, in which a session evolves into a 
 \section*{Limitations}
 
 The benchmark is synthetic and its revisions follow templates, so edit accuracy likely overstates performance on free-form dialogue.
-GraphToken-style and TEA-style use three seeds; the warm start, the random GNN, and the soft prompt use one.
-Every reader trains for one epoch on static QA, and the projector learning rate was chosen on validation loss after a first round of runs at $10^{-3}$, in which the readers built on a frozen or pretrained GNN had not converged.
+GraphToken-style and TEA-style use three seeds; the warm start, the random GNN, and the soft prompt use one, so the tie between the random GNN and GraphToken-style rests on a single random-GNN seed.
+Every reader trains for one epoch on static QA, and longer training could change how the readers rank.
+The projector learning rate was chosen on validation loss after a first round of runs at $10^{-3}$, in which the readers built on a frozen or pretrained GNN had not converged; the soft prompt's learning rate ($10^{-3}$) was not swept.
+Each multi-turn task uses a single revision paraphrase family, so wording effects cannot be separated from task effects.
+Our explanation of TEA-style's advantage on the attribute tasks is not backed by a dedicated attribute probe.
 Learned local classifiers reach 67--70\% on the structural tasks, so absolute accuracy on this benchmark mostly measures local reading.
 
 \bibliography{custom}
@@ -643,9 +667,10 @@ Reachability and shortest-path questions use open endpoints only, and the cycle 
 
 \paragraph{Static accuracy by task family.}
 Figures~\ref{fig:static-tasks-gt} and~\ref{fig:static-tasks-tea} break Table~\ref{tab:static} down by task family against the soft prompt and the learned local ceiling.
-GraphToken-style is strongest on node degree (97.5\%), cycle membership (79.0\%), reachability (65.2\%), and edge existence (61.7\%), and below the local ceiling on each.
-On the attribute tasks it stays close to the soft prompt: attribute lookup 29.0\% (soft prompt 25.8\%), most common attribute 27.9\% (26.5\%), and attribute check 49.9\% (50.5\% majority), so the tokens carry little beyond the node status and structure that the training signal emphasizes.
-%TEA-TASKS
+GraphToken-style is strongest on node degree (99.1\%), cycle membership (79.0\%), reachability (65.7\%), and edge existence (61.2\%), and below the local ceiling on each.
+On the attribute tasks it stays close to the soft prompt: attribute lookup 29.5\% (soft prompt 25.8\%), most common attribute 28.5\% (26.5\%), and attribute check 49.4\% (50.5\% majority), so the tokens carry little beyond the node status and structure that the training signal emphasizes.
+TEA-style has the opposite profile: it is weaker on every structural task (node degree 44.2\%, cycle membership 52.0\%, shortest path 23.0\%) but the strongest reader on attribute lookup (46.5\%) and the most common attribute (36.3\%); attribute check stays near the majority for every reader (48.7--53.8\%).
+The frozen random GNN follows GraphToken-style closely on every task (node degree 94.9\%, cycle membership 81.8\%, attribute lookup 28.0\%).
 
 \begin{figure*}[t]
   \centering
@@ -679,7 +704,7 @@ Projector & $12{,}305\to10\times4096$, linear \\
 TEA-GLM pretraining & Adam $2{\times}10^{-3}$, $\tau{=}0.4$, dropout 0.5, edge drop 0.3/0.4, \\
  & feature mask 0/0.1, 1{,}000 PCs, 32 graphs/batch, $\leq$70 epochs \\
 Training & AdamW, wd $10^{-4}$, eff.\ batch 24, 1 epoch, cosine, 200 warmup \\
-Projector lr & @@lr.graphtoken@@ (GT), @@lr.tea@@ (TEA), @@lr.warm@@ (warm), @@lr.random@@ (random) \\
+Projector lr & $10^{-4}$ (GT), $10^{-4}$ (TEA), $10^{-4}$ (warm), $10^{-4}$ (random) \\
 GNN lr (joint) & $10^{-4}$ (GT, warm start) \\
 Checkpoint & lowest validation loss (every 100 steps, 1{,}000 items) \\
 \bottomrule

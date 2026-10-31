@@ -51,13 +51,13 @@
     "graphtoken_s42": {
       "collapse": {
         "dim": 4096,
-        "effective_rank": 1.8863835831472693,
-        "mean_within_graph_cosine": 0.9943689589548592
+        "effective_rank": 1.9204089462436882,
+        "mean_within_graph_cosine": 0.971501389386678
       },
       "probe": {
         "degree": 1.0,
-        "status": 0.9642007946968079,
-        "within_two_hops": 0.9603386521339417
+        "status": 0.9582590460777283,
+        "within_two_hops": 0.9689542055130005
       }
     },
     "majority": {
@@ -68,37 +68,37 @@
     "random_frozen": {
       "collapse": {
         "dim": 4096,
-        "effective_rank": 1.8939393448007458,
-        "mean_within_graph_cosine": 0.9172103236419986
+        "effective_rank": 1.8939393451507462,
+        "mean_within_graph_cosine": 0.9172103251471664
       },
       "probe": {
         "degree": 1.0,
-        "status": 0.9656862616539001,
-        "within_two_hops": 0.9221627712249756
+        "status": 0.9658347964286804,
+        "within_two_hops": 0.9229055047035217
       }
     },
     "tea_glm_pretrained": {
       "collapse": {
         "dim": 4096,
-        "effective_rank": 16.193058414356624,
-        "mean_within_graph_cosine": 0.2361931852770574
+        "effective_rank": 16.193058421592557,
+        "mean_within_graph_cosine": 0.23619318618015808
       },
       "probe": {
-        "degree": 0.9642007946968079,
+        "degree": 0.9643493294715881,
         "status": 0.88116455078125,
-        "within_two_hops": 0.7924836277961731
+        "within_two_hops": 0.7915923595428467
       }
     },
     "warm_start_s42": {
       "collapse": {
         "dim": 4096,
-        "effective_rank": 4.154837386939454,
-        "mean_within_graph_cosine": 0.7238307584716817
+        "effective_rank": 12.948460445531836,
+        "mean_within_graph_cosine": 0.37052351371808484
       },
       "probe": {
-        "degree": 0.9937611222267151,
-        "status": 0.8813130855560303,
-        "within_two_hops": 0.8680926561355591
+        "degree": 0.9830659031867981,
+        "status": 0.8814616799354553,
+        "within_two_hops": 0.8211526870727539
       }
     }
   },
@@ -107,20 +107,20 @@
       "graphtoken": {
         "frozen_graph_history": {
           "all": {
-            "mean": 41.3,
-            "sd": 0.4
+            "mean": 41.2,
+            "sd": 0.6
           }
         },
         "oracle_updated_graph": {
           "all": {
-            "mean": 53.7,
-            "sd": 0.8
+            "mean": 54.3,
+            "sd": 0.2
           }
         },
         "predicted_updated_graph": {
           "all": {
-            "mean": 53.5,
-            "sd": 0.7
+            "mean": 54.2,
+            "sd": 0.3
           }
         },
         "question_only": {
@@ -131,13 +131,13 @@
         },
         "shuffled_graph": {
           "all": {
-            "mean": 32.4,
-            "sd": 0.3
+            "mean": 32.5,
+            "sd": 0.4
           }
         },
         "structure_only": {
           "all": {
-            "mean": 41.3,
+            "mean": 41.2,
             "sd": 0.5
           }
         }
@@ -145,19 +145,19 @@
       "random": {
         "frozen_graph_history": {
           "all": {
-            "mean": 35.5,
+            "mean": 41.7,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "all": {
-            "mean": 44.3,
+            "mean": 55.2,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "all": {
-            "mean": 44.0,
+            "mean": 55.1,
             "sd": null
           }
         },
@@ -169,13 +169,13 @@
         },
         "shuffled_graph": {
           "all": {
-            "mean": 29.9,
+            "mean": 31.8,
             "sd": null
           }
         },
         "structure_only": {
           "all": {
-            "mean": 35.6,
+            "mean": 41.7,
             "sd": null
           }
         }
@@ -209,20 +209,20 @@
       "tea": {
         "frozen_graph_history": {
           "all": {
-            "mean": 30.9,
-            "sd": 0.6
+            "mean": 38.2,
+            "sd": 0.1
           }
         },
         "oracle_updated_graph": {
           "all": {
-            "mean": 33.2,
-            "sd": 0.1
+            "mean": 42.1,
+            "sd": 0.4
           }
         },
         "predicted_updated_graph": {
           "all": {
-            "mean": 33.1,
-            "sd": 0.2
+            "mean": 42.1,
+            "sd": 0.3
           }
         },
         "question_only": {
@@ -233,33 +233,33 @@
         },
         "shuffled_graph": {
           "all": {
-            "mean": 27.7,
-            "sd": 0.4
+            "mean": 31.9,
+            "sd": 0.5
           }
         },
         "structure_only": {
           "all": {
-            "mean": 31.2,
-            "sd": 0.4
+            "mean": 37.9,
+            "sd": 0.1
           }
         }
       },
       "warm": {
         "frozen_graph_history": {
           "all": {
-            "mean": 32.3,
+            "mean": 38.8,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "all": {
-            "mean": 36.7,
+            "mean": 44.5,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "all": {
-            "mean": 36.5,
+            "mean": 44.6,
             "sd": null
           }
         },
@@ -271,13 +271,13 @@
         },
         "shuffled_graph": {
           "all": {
-            "mean": 29.2,
+            "mean": 30.8,
             "sd": null
           }
         },
         "structure_only": {
           "all": {
-            "mean": 32.6,
+            "mean": 38.0,
             "sd": null
           }
         }
@@ -287,32 +287,32 @@
       "graphtoken": {
         "frozen_graph_history": {
           "changed": {
-            "mean": 25.2,
-            "sd": 0.7
+            "mean": 24.2,
+            "sd": 1.0
           },
           "unchanged": {
-            "mean": 50.5,
-            "sd": 0.8
+            "mean": 50.9,
+            "sd": 0.5
           }
         },
         "oracle_updated_graph": {
           "changed": {
-            "mean": 51.2,
-            "sd": 0.9
+            "mean": 51.8,
+            "sd": 0.2
           },
           "unchanged": {
-            "mean": 55.1,
-            "sd": 0.7
+            "mean": 55.7,
+            "sd": 0.3
           }
         },
         "predicted_updated_graph": {
           "changed": {
-            "mean": 50.4,
-            "sd": 0.9
+            "mean": 51.2,
+            "sd": 0.4
           },
           "unchanged": {
-            "mean": 55.3,
-            "sd": 0.7
+            "mean": 55.9,
+            "sd": 0.5
           }
         },
         "question_only": {
@@ -327,53 +327,53 @@
         },
         "shuffled_graph": {
           "changed": {
-            "mean": 28.8,
-            "sd": 0.2
+            "mean": 29.4,
+            "sd": 0.6
           },
           "unchanged": {
-            "mean": 34.5,
+            "mean": 34.2,
             "sd": 0.5
           }
         },
         "structure_only": {
           "changed": {
-            "mean": 24.6,
+            "mean": 23.0,
             "sd": 1.1
           },
           "unchanged": {
-            "mean": 50.8,
-            "sd": 0.4
+            "mean": 51.7,
+            "sd": 0.2
           }
         }
       },
       "random": {
         "frozen_graph_history": {
           "changed": {
-            "mean": 22.4,
+            "mean": 24.8,
             "sd": null
           },
           "unchanged": {
-            "mean": 43.0,
+            "mean": 51.4,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "changed": {
-            "mean": 40.7,
+            "mean": 52.8,
             "sd": null
           },
           "unchanged": {
-            "mean": 46.3,
+            "mean": 56.6,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "changed": {
-            "mean": 40.1,
+            "mean": 52.1,
             "sd": null
           },
           "unchanged": {
-            "mean": 46.2,
+            "mean": 56.8,
             "sd": null
           }
         },
@@ -389,21 +389,21 @@
         },
         "shuffled_graph": {
           "changed": {
-            "mean": 26.1,
+            "mean": 28.0,
             "sd": null
           },
           "unchanged": {
-            "mean": 32.1,
+            "mean": 34.0,
             "sd": null
           }
         },
         "structure_only": {
           "changed": {
-            "mean": 22.2,
+            "mean": 22.8,
             "sd": null
           },
           "unchanged": {
-            "mean": 43.2,
+            "mean": 52.5,
             "sd": null
           }
         }
@@ -445,32 +445,32 @@
       "tea": {
         "frozen_graph_history": {
           "changed": {
-            "mean": 24.4,
-            "sd": 1.2
+            "mean": 29.1,
+            "sd": 0.5
           },
           "unchanged": {
-            "mean": 34.6,
+            "mean": 43.4,
             "sd": 0.4
           }
         },
         "oracle_updated_graph": {
           "changed": {
-            "mean": 29.9,
-            "sd": 0.3
+            "mean": 37.8,
+            "sd": 0.7
           },
           "unchanged": {
-            "mean": 35.0,
-            "sd": 0.4
+            "mean": 44.6,
+            "sd": 0.3
           }
         },
         "predicted_updated_graph": {
           "changed": {
-            "mean": 29.6,
-            "sd": 0.2
+            "mean": 37.6,
+            "sd": 0.6
           },
           "unchanged": {
-            "mean": 35.1,
-            "sd": 0.5
+            "mean": 44.6,
+            "sd": 0.2
           }
         },
         "question_only": {
@@ -485,53 +485,53 @@
         },
         "shuffled_graph": {
           "changed": {
-            "mean": 23.8,
+            "mean": 28.5,
             "sd": 0.7
           },
           "unchanged": {
-            "mean": 30.0,
-            "sd": 0.3
+            "mean": 33.8,
+            "sd": 0.4
           }
         },
         "structure_only": {
           "changed": {
-            "mean": 24.8,
-            "sd": 0.8
+            "mean": 27.9,
+            "sd": 0.4
           },
           "unchanged": {
-            "mean": 34.8,
-            "sd": 0.4
+            "mean": 43.6,
+            "sd": 0.1
           }
         }
       },
       "warm": {
         "frozen_graph_history": {
           "changed": {
-            "mean": 24.1,
+            "mean": 27.0,
             "sd": null
           },
           "unchanged": {
-            "mean": 37.0,
+            "mean": 45.5,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "changed": {
-            "mean": 33.5,
+            "mean": 40.1,
             "sd": null
           },
           "unchanged": {
-            "mean": 38.6,
+            "mean": 47.0,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "changed": {
-            "mean": 32.9,
+            "mean": 40.0,
             "sd": null
           },
           "unchanged": {
-            "mean": 38.6,
+            "mean": 47.2,
             "sd": null
           }
         },
@@ -547,21 +547,21 @@
         },
         "shuffled_graph": {
           "changed": {
-            "mean": 26.8,
+            "mean": 27.6,
             "sd": null
           },
           "unchanged": {
-            "mean": 30.6,
+            "mean": 32.7,
             "sd": null
           }
         },
         "structure_only": {
           "changed": {
-            "mean": 24.4,
+            "mean": 26.1,
             "sd": null
           },
           "unchanged": {
-            "mean": 37.3,
+            "mean": 44.8,
             "sd": null
           }
         }
@@ -571,43 +571,43 @@
       "graphtoken": {
         "frozen_graph_history": {
           "dense": {
-            "mean": 42.4,
-            "sd": 0.8
+            "mean": 42.3,
+            "sd": 0.9
           },
           "medium": {
-            "mean": 41.5,
-            "sd": 0.6
+            "mean": 41.7,
+            "sd": 0.5
           },
           "sparse": {
-            "mean": 40.0,
-            "sd": 0.4
+            "mean": 39.6,
+            "sd": 0.8
           }
         },
         "oracle_updated_graph": {
           "dense": {
-            "mean": 54.1,
-            "sd": 0.9
-          },
-          "medium": {
-            "mean": 54.6,
-            "sd": 1.0
-          },
-          "sparse": {
-            "mean": 52.3,
-            "sd": 0.5
-          }
-        },
-        "predicted_updated_graph": {
-          "dense": {
-            "mean": 54.0,
+            "mean": 55.4,
             "sd": 0.8
           },
           "medium": {
             "mean": 54.5,
-            "sd": 1.2
+            "sd": 0.7
           },
           "sparse": {
-            "mean": 52.0,
+            "mean": 53.0,
+            "sd": 0.4
+          }
+        },
+        "predicted_updated_graph": {
+          "dense": {
+            "mean": 55.4,
+            "sd": 0.8
+          },
+          "medium": {
+            "mean": 54.4,
+            "sd": 0.9
+          },
+          "sparse": {
+            "mean": 52.8,
             "sd": 0.5
           }
         },
@@ -627,73 +627,73 @@
         },
         "shuffled_graph": {
           "dense": {
-            "mean": 31.6,
-            "sd": 0.1
+            "mean": 31.4,
+            "sd": 1.2
           },
           "medium": {
-            "mean": 33.8,
-            "sd": 0.4
+            "mean": 33.6,
+            "sd": 0.8
           },
           "sparse": {
-            "mean": 31.9,
-            "sd": 0.4
+            "mean": 32.3,
+            "sd": 0.3
           }
         },
         "structure_only": {
           "dense": {
             "mean": 42.5,
-            "sd": 0.8
+            "sd": 1.6
           },
           "medium": {
-            "mean": 41.1,
-            "sd": 0.5
+            "mean": 41.2,
+            "sd": 0.6
           },
           "sparse": {
-            "mean": 40.2,
-            "sd": 0.4
+            "mean": 40.0,
+            "sd": 0.5
           }
         }
       },
       "random": {
         "frozen_graph_history": {
           "dense": {
-            "mean": 35.4,
+            "mean": 42.6,
             "sd": null
           },
           "medium": {
-            "mean": 35.6,
+            "mean": 42.7,
             "sd": null
           },
           "sparse": {
-            "mean": 35.6,
+            "mean": 39.7,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "dense": {
-            "mean": 42.8,
+            "mean": 55.8,
             "sd": null
           },
           "medium": {
-            "mean": 45.1,
+            "mean": 56.5,
             "sd": null
           },
           "sparse": {
-            "mean": 44.9,
+            "mean": 53.4,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "dense": {
-            "mean": 42.6,
+            "mean": 55.4,
             "sd": null
           },
           "medium": {
-            "mean": 45.1,
+            "mean": 56.6,
             "sd": null
           },
           "sparse": {
-            "mean": 44.4,
+            "mean": 53.3,
             "sd": null
           }
         },
@@ -713,29 +713,29 @@
         },
         "shuffled_graph": {
           "dense": {
-            "mean": 28.1,
+            "mean": 31.2,
             "sd": null
           },
           "medium": {
-            "mean": 31.8,
+            "mean": 34.0,
             "sd": null
           },
           "sparse": {
-            "mean": 29.8,
+            "mean": 30.2,
             "sd": null
           }
         },
         "structure_only": {
           "dense": {
-            "mean": 35.7,
+            "mean": 43.2,
             "sd": null
           },
           "medium": {
-            "mean": 34.9,
+            "mean": 42.2,
             "sd": null
           },
           "sparse": {
-            "mean": 36.1,
+            "mean": 39.6,
             "sd": null
           }
         }
@@ -785,44 +785,44 @@
       "tea": {
         "frozen_graph_history": {
           "dense": {
-            "mean": 30.2,
-            "sd": 0.9
+            "mean": 37.7,
+            "sd": 1.4
           },
           "medium": {
-            "mean": 30.5,
-            "sd": 1.2
+            "mean": 38.4,
+            "sd": 1.0
           },
           "sparse": {
-            "mean": 32.0,
-            "sd": 0.8
+            "mean": 38.5,
+            "sd": 0.7
           }
         },
         "oracle_updated_graph": {
           "dense": {
-            "mean": 32.6,
-            "sd": 0.7
+            "mean": 41.1,
+            "sd": 0.4
           },
           "medium": {
-            "mean": 32.9,
-            "sd": 0.6
+            "mean": 42.6,
+            "sd": 2.0
           },
           "sparse": {
-            "mean": 34.0,
-            "sd": 0.0
+            "mean": 42.7,
+            "sd": 0.8
           }
         },
         "predicted_updated_graph": {
           "dense": {
-            "mean": 32.7,
-            "sd": 0.8
+            "mean": 41.2,
+            "sd": 0.5
           },
           "medium": {
-            "mean": 32.7,
-            "sd": 0.4
+            "mean": 42.5,
+            "sd": 2.0
           },
           "sparse": {
-            "mean": 33.8,
-            "sd": 0.2
+            "mean": 42.5,
+            "sd": 0.6
           }
         },
         "question_only": {
@@ -841,73 +841,73 @@
         },
         "shuffled_graph": {
           "dense": {
-            "mean": 25.3,
-            "sd": 0.5
+            "mean": 31.3,
+            "sd": 1.0
           },
           "medium": {
-            "mean": 28.6,
-            "sd": 0.2
+            "mean": 31.8,
+            "sd": 0.4
           },
           "sparse": {
-            "mean": 29.4,
+            "mean": 32.5,
             "sd": 1.0
           }
         },
         "structure_only": {
           "dense": {
-            "mean": 31.0,
-            "sd": 1.1
+            "mean": 37.8,
+            "sd": 1.0
           },
           "medium": {
-            "mean": 30.6,
-            "sd": 1.0
+            "mean": 37.7,
+            "sd": 1.6
           },
           "sparse": {
-            "mean": 32.0,
-            "sd": 1.0
+            "mean": 38.2,
+            "sd": 1.1
           }
         }
       },
       "warm": {
         "frozen_graph_history": {
           "dense": {
-            "mean": 31.4,
+            "mean": 39.9,
             "sd": null
           },
           "medium": {
-            "mean": 32.0,
+            "mean": 38.5,
             "sd": null
           },
           "sparse": {
-            "mean": 33.6,
+            "mean": 38.0,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "dense": {
-            "mean": 36.6,
+            "mean": 43.8,
             "sd": null
           },
           "medium": {
-            "mean": 36.0,
+            "mean": 44.4,
             "sd": null
           },
           "sparse": {
-            "mean": 37.6,
+            "mean": 45.3,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "dense": {
-            "mean": 36.7,
+            "mean": 43.9,
             "sd": null
           },
           "medium": {
-            "mean": 35.8,
+            "mean": 44.8,
             "sd": null
           },
           "sparse": {
-            "mean": 37.2,
+            "mean": 45.1,
             "sd": null
           }
         },
@@ -927,29 +927,29 @@
         },
         "shuffled_graph": {
           "dense": {
-            "mean": 27.5,
+            "mean": 30.5,
             "sd": null
           },
           "medium": {
-            "mean": 29.9,
+            "mean": 30.2,
             "sd": null
           },
           "sparse": {
-            "mean": 30.1,
+            "mean": 31.8,
             "sd": null
           }
         },
         "structure_only": {
           "dense": {
-            "mean": 31.9,
+            "mean": 39.0,
             "sd": null
           },
           "medium": {
-            "mean": 32.4,
+            "mean": 37.6,
             "sd": null
           },
           "sparse": {
-            "mean": 33.6,
+            "mean": 37.4,
             "sd": null
           }
         }
@@ -959,44 +959,44 @@
       "graphtoken": {
         "frozen_graph_history": {
           "direct": {
-            "mean": 46.2,
-            "sd": 0.5
+            "mean": 46.6,
+            "sd": 0.7
           },
           "notice": {
-            "mean": 36.8,
-            "sd": 0.4
+            "mean": 37.5,
+            "sd": 0.6
           },
           "service": {
-            "mean": 40.9,
-            "sd": 0.6
+            "mean": 39.6,
+            "sd": 1.1
           }
         },
         "oracle_updated_graph": {
           "direct": {
-            "mean": 58.0,
+            "mean": 58.4,
             "sd": 1.2
           },
           "notice": {
-            "mean": 40.7,
-            "sd": 0.5
+            "mean": 41.3,
+            "sd": 0.8
           },
           "service": {
-            "mean": 62.3,
-            "sd": 0.8
+            "mean": 63.2,
+            "sd": 1.1
           }
         },
         "predicted_updated_graph": {
           "direct": {
-            "mean": 58.0,
+            "mean": 58.3,
             "sd": 1.2
           },
           "notice": {
-            "mean": 40.2,
-            "sd": 0.5
+            "mean": 41.1,
+            "sd": 0.7
           },
           "service": {
-            "mean": 62.3,
-            "sd": 0.7
+            "mean": 63.1,
+            "sd": 1.1
           }
         },
         "question_only": {
@@ -1015,73 +1015,73 @@
         },
         "shuffled_graph": {
           "direct": {
-            "mean": 38.7,
-            "sd": 0.2
+            "mean": 38.9,
+            "sd": 0.1
           },
           "notice": {
-            "mean": 31.9,
-            "sd": 0.4
+            "mean": 32.0,
+            "sd": 0.5
           },
           "service": {
-            "mean": 26.7,
-            "sd": 0.5
+            "mean": 26.5,
+            "sd": 0.9
           }
         },
         "structure_only": {
           "direct": {
-            "mean": 46.0,
-            "sd": 0.7
+            "mean": 45.9,
+            "sd": 0.6
           },
           "notice": {
-            "mean": 37.0,
-            "sd": 0.5
+            "mean": 37.7,
+            "sd": 0.4
           },
           "service": {
-            "mean": 40.8,
-            "sd": 0.5
+            "mean": 40.2,
+            "sd": 0.7
           }
         }
       },
       "random": {
         "frozen_graph_history": {
           "direct": {
-            "mean": 42.9,
+            "mean": 46.5,
             "sd": null
           },
           "notice": {
-            "mean": 30.2,
+            "mean": 38.7,
             "sd": null
           },
           "service": {
-            "mean": 33.5,
+            "mean": 39.9,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "direct": {
-            "mean": 60.1,
+            "mean": 60.9,
             "sd": null
           },
           "notice": {
-            "mean": 34.1,
+            "mean": 42.7,
             "sd": null
           },
           "service": {
-            "mean": 38.6,
+            "mean": 62.1,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "direct": {
-            "mean": 60.1,
+            "mean": 60.9,
             "sd": null
           },
           "notice": {
-            "mean": 33.4,
+            "mean": 42.4,
             "sd": null
           },
           "service": {
-            "mean": 38.5,
+            "mean": 62.0,
             "sd": null
           }
         },
@@ -1101,29 +1101,29 @@
         },
         "shuffled_graph": {
           "direct": {
-            "mean": 39.3,
+            "mean": 37.9,
             "sd": null
           },
           "notice": {
-            "mean": 23.4,
+            "mean": 31.4,
             "sd": null
           },
           "service": {
-            "mean": 27.0,
+            "mean": 26.2,
             "sd": null
           }
         },
         "structure_only": {
           "direct": {
-            "mean": 42.8,
+            "mean": 46.3,
             "sd": null
           },
           "notice": {
-            "mean": 31.0,
+            "mean": 38.7,
             "sd": null
           },
           "service": {
-            "mean": 32.9,
+            "mean": 39.9,
             "sd": null
           }
         }
@@ -1173,44 +1173,44 @@
       "tea": {
         "frozen_graph_history": {
           "direct": {
-            "mean": 35.4,
-            "sd": 1.9
+            "mean": 39.8,
+            "sd": 0.6
           },
           "notice": {
-            "mean": 26.3,
+            "mean": 39.0,
             "sd": 0.8
           },
           "service": {
-            "mean": 31.0,
-            "sd": 1.0
+            "mean": 35.8,
+            "sd": 0.2
           }
         },
         "oracle_updated_graph": {
           "direct": {
-            "mean": 38.8,
-            "sd": 0.8
+            "mean": 42.6,
+            "sd": 0.7
           },
           "notice": {
-            "mean": 28.9,
-            "sd": 1.0
+            "mean": 41.1,
+            "sd": 0.4
           },
           "service": {
-            "mean": 31.9,
-            "sd": 0.6
+            "mean": 42.8,
+            "sd": 1.2
           }
         },
         "predicted_updated_graph": {
           "direct": {
-            "mean": 38.7,
-            "sd": 0.8
+            "mean": 42.6,
+            "sd": 0.7
           },
           "notice": {
-            "mean": 28.7,
+            "mean": 40.9,
             "sd": 0.7
           },
           "service": {
-            "mean": 31.8,
-            "sd": 0.6
+            "mean": 42.7,
+            "sd": 1.2
           }
         },
         "question_only": {
@@ -1229,73 +1229,73 @@
         },
         "shuffled_graph": {
           "direct": {
-            "mean": 35.3,
-            "sd": 0.5
+            "mean": 37.4,
+            "sd": 0.2
           },
           "notice": {
-            "mean": 22.9,
-            "sd": 0.7
+            "mean": 32.4,
+            "sd": 0.5
           },
           "service": {
-            "mean": 25.1,
-            "sd": 0.3
+            "mean": 25.8,
+            "sd": 1.3
           }
         },
         "structure_only": {
           "direct": {
-            "mean": 36.0,
-            "sd": 1.7
+            "mean": 39.4,
+            "sd": 0.8
           },
           "notice": {
-            "mean": 26.8,
+            "mean": 39.2,
             "sd": 0.9
           },
           "service": {
-            "mean": 30.7,
-            "sd": 0.7
+            "mean": 35.1,
+            "sd": 0.5
           }
         }
       },
       "warm": {
         "frozen_graph_history": {
           "direct": {
-            "mean": 38.3,
+            "mean": 38.9,
             "sd": null
           },
           "notice": {
-            "mean": 27.1,
+            "mean": 39.3,
             "sd": null
           },
           "service": {
-            "mean": 31.5,
+            "mean": 38.0,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "direct": {
-            "mean": 43.6,
+            "mean": 41.2,
             "sd": null
           },
           "notice": {
-            "mean": 31.2,
+            "mean": 40.5,
             "sd": null
           },
           "service": {
-            "mean": 35.3,
+            "mean": 51.7,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "direct": {
-            "mean": 43.6,
+            "mean": 41.3,
             "sd": null
           },
           "notice": {
-            "mean": 30.8,
+            "mean": 40.9,
             "sd": null
           },
           "service": {
-            "mean": 35.2,
+            "mean": 51.6,
             "sd": null
           }
         },
@@ -1315,29 +1315,29 @@
         },
         "shuffled_graph": {
           "direct": {
-            "mean": 36.3,
+            "mean": 38.3,
             "sd": null
           },
           "notice": {
-            "mean": 23.9,
+            "mean": 30.7,
             "sd": null
           },
           "service": {
-            "mean": 27.3,
+            "mean": 23.4,
             "sd": null
           }
         },
         "structure_only": {
           "direct": {
-            "mean": 38.9,
+            "mean": 37.6,
             "sd": null
           },
           "notice": {
-            "mean": 27.7,
+            "mean": 38.0,
             "sd": null
           },
           "service": {
-            "mean": 31.2,
+            "mean": 38.4,
             "sd": null
           }
         }
@@ -1347,56 +1347,56 @@
       "graphtoken": {
         "frozen_graph_history": {
           "1": {
-            "mean": 45.1,
-            "sd": 1.8
+            "mean": 47.0,
+            "sd": 1.7
           },
           "2": {
-            "mean": 38.5,
-            "sd": 0.8
+            "mean": 40.7,
+            "sd": 0.4
           },
           "4": {
-            "mean": 41.2,
-            "sd": 0.6
+            "mean": 41.7,
+            "sd": 1.1
           },
           "8": {
-            "mean": 41.6,
-            "sd": 0.7
+            "mean": 40.3,
+            "sd": 0.5
           }
         },
         "oracle_updated_graph": {
           "1": {
-            "mean": 53.1,
-            "sd": 1.4
+            "mean": 54.1,
+            "sd": 2.9
           },
           "2": {
-            "mean": 52.5,
-            "sd": 0.4
+            "mean": 53.6,
+            "sd": 0.1
           },
           "4": {
-            "mean": 54.5,
-            "sd": 0.2
+            "mean": 55.1,
+            "sd": 0.7
           },
           "8": {
-            "mean": 53.6,
-            "sd": 1.3
+            "mean": 54.1,
+            "sd": 0.4
           }
         },
         "predicted_updated_graph": {
           "1": {
-            "mean": 53.0,
-            "sd": 1.4
+            "mean": 53.5,
+            "sd": 3.2
           },
           "2": {
-            "mean": 52.4,
+            "mean": 53.5,
             "sd": 0.3
           },
           "4": {
-            "mean": 54.2,
-            "sd": 0.0
+            "mean": 55.4,
+            "sd": 0.7
           },
           "8": {
-            "mean": 53.4,
-            "sd": 1.2
+            "mean": 53.8,
+            "sd": 0.6
           }
         },
         "question_only": {
@@ -1419,93 +1419,93 @@
         },
         "shuffled_graph": {
           "1": {
-            "mean": 27.8,
-            "sd": 2.1
+            "mean": 28.7,
+            "sd": 1.2
           },
           "2": {
-            "mean": 32.7,
-            "sd": 0.8
+            "mean": 31.7,
+            "sd": 1.9
           },
           "4": {
-            "mean": 32.9,
-            "sd": 0.1
+            "mean": 33.1,
+            "sd": 0.6
           },
           "8": {
-            "mean": 32.7,
-            "sd": 0.7
+            "mean": 32.8,
+            "sd": 0.4
           }
         },
         "structure_only": {
           "1": {
-            "mean": 45.7,
-            "sd": 1.4
+            "mean": 45.0,
+            "sd": 2.4
           },
           "2": {
             "mean": 39.6,
-            "sd": 1.2
+            "sd": 0.7
           },
           "4": {
-            "mean": 41.7,
-            "sd": 0.8
+            "mean": 42.2,
+            "sd": 0.3
           },
           "8": {
-            "mean": 40.9,
-            "sd": 0.9
+            "mean": 40.7,
+            "sd": 0.5
           }
         }
       },
       "random": {
         "frozen_graph_history": {
           "1": {
-            "mean": 35.0,
+            "mean": 45.1,
             "sd": null
           },
           "2": {
-            "mean": 36.7,
+            "mean": 39.6,
             "sd": null
           },
           "4": {
-            "mean": 36.3,
+            "mean": 42.3,
             "sd": null
           },
           "8": {
-            "mean": 34.9,
+            "mean": 41.5,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "1": {
-            "mean": 38.7,
+            "mean": 52.2,
             "sd": null
           },
           "2": {
-            "mean": 45.1,
+            "mean": 55.9,
             "sd": null
           },
           "4": {
-            "mean": 45.6,
+            "mean": 55.5,
             "sd": null
           },
           "8": {
-            "mean": 44.1,
+            "mean": 55.3,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "1": {
-            "mean": 38.0,
+            "mean": 52.2,
             "sd": null
           },
           "2": {
-            "mean": 45.3,
+            "mean": 55.9,
             "sd": null
           },
           "4": {
-            "mean": 45.3,
+            "mean": 55.5,
             "sd": null
           },
           "8": {
-            "mean": 43.8,
+            "mean": 55.1,
             "sd": null
           }
         },
@@ -1529,37 +1529,37 @@
         },
         "shuffled_graph": {
           "1": {
-            "mean": 26.6,
+            "mean": 28.3,
             "sd": null
           },
           "2": {
-            "mean": 30.6,
+            "mean": 30.3,
             "sd": null
           },
           "4": {
-            "mean": 29.8,
+            "mean": 32.2,
             "sd": null
           },
           "8": {
-            "mean": 30.2,
+            "mean": 32.4,
             "sd": null
           }
         },
         "structure_only": {
           "1": {
-            "mean": 36.4,
+            "mean": 45.8,
             "sd": null
           },
           "2": {
-            "mean": 36.2,
+            "mean": 41.4,
             "sd": null
           },
           "4": {
-            "mean": 35.4,
+            "mean": 42.3,
             "sd": null
           },
           "8": {
-            "mean": 35.4,
+            "mean": 40.9,
             "sd": null
           }
         }
@@ -1617,56 +1617,56 @@
       "tea": {
         "frozen_graph_history": {
           "1": {
-            "mean": 31.0,
-            "sd": 1.5
+            "mean": 43.7,
+            "sd": 0.8
           },
           "2": {
-            "mean": 30.1,
+            "mean": 35.6,
             "sd": 1.4
           },
           "4": {
-            "mean": 31.3,
-            "sd": 0.6
+            "mean": 38.1,
+            "sd": 0.5
           },
           "8": {
-            "mean": 30.9,
-            "sd": 1.0
+            "mean": 38.2,
+            "sd": 0.7
           }
         },
         "oracle_updated_graph": {
           "1": {
-            "mean": 32.1,
-            "sd": 1.3
+            "mean": 45.7,
+            "sd": 1.0
           },
           "2": {
-            "mean": 32.3,
-            "sd": 0.9
+            "mean": 40.8,
+            "sd": 0.8
           },
           "4": {
-            "mean": 33.6,
-            "sd": 0.2
+            "mean": 42.0,
+            "sd": 1.4
           },
           "8": {
-            "mean": 33.3,
-            "sd": 0.5
+            "mean": 42.1,
+            "sd": 0.3
           }
         },
         "predicted_updated_graph": {
           "1": {
-            "mean": 32.0,
-            "sd": 1.5
+            "mean": 45.6,
+            "sd": 0.8
           },
           "2": {
-            "mean": 32.1,
-            "sd": 1.0
+            "mean": 40.6,
+            "sd": 0.7
           },
           "4": {
-            "mean": 33.8,
-            "sd": 0.4
+            "mean": 42.1,
+            "sd": 1.4
           },
           "8": {
-            "mean": 33.1,
-            "sd": 0.7
+            "mean": 42.0,
+            "sd": 0.5
           }
         },
         "question_only": {
@@ -1689,37 +1689,37 @@
         },
         "shuffled_graph": {
           "1": {
-            "mean": 26.9,
-            "sd": 1.5
+            "mean": 29.9,
+            "sd": 2.5
           },
           "2": {
-            "mean": 25.6,
-            "sd": 0.9
+            "mean": 30.1,
+            "sd": 1.2
           },
           "4": {
-            "mean": 27.4,
-            "sd": 0.6
+            "mean": 32.6,
+            "sd": 1.8
           },
           "8": {
-            "mean": 28.5,
-            "sd": 0.5
+            "mean": 32.2,
+            "sd": 0.9
           }
         },
         "structure_only": {
           "1": {
-            "mean": 31.5,
-            "sd": 0.5
+            "mean": 42.2,
+            "sd": 0.7
           },
           "2": {
-            "mean": 30.1,
-            "sd": 0.8
+            "mean": 36.2,
+            "sd": 0.6
           },
           "4": {
-            "mean": 31.6,
-            "sd": 0.3
+            "mean": 38.6,
+            "sd": 0.8
           },
           "8": {
-            "mean": 31.2,
+            "mean": 37.5,
             "sd": 0.8
           }
         }
@@ -1727,55 +1727,55 @@
       "warm": {
         "frozen_graph_history": {
           "1": {
-            "mean": 33.3,
+            "mean": 42.1,
             "sd": null
           },
           "2": {
-            "mean": 30.6,
+            "mean": 38.7,
             "sd": null
           },
           "4": {
-            "mean": 32.6,
+            "mean": 38.8,
             "sd": null
           },
           "8": {
-            "mean": 32.5,
+            "mean": 38.3,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "1": {
-            "mean": 33.7,
+            "mean": 46.8,
             "sd": null
           },
           "2": {
-            "mean": 35.9,
+            "mean": 44.3,
             "sd": null
           },
           "4": {
-            "mean": 37.4,
+            "mean": 45.8,
             "sd": null
           },
           "8": {
-            "mean": 37.0,
+            "mean": 43.6,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "1": {
-            "mean": 34.0,
+            "mean": 46.5,
             "sd": null
           },
           "2": {
-            "mean": 36.0,
+            "mean": 44.1,
             "sd": null
           },
           "4": {
-            "mean": 37.5,
+            "mean": 45.9,
             "sd": null
           },
           "8": {
-            "mean": 36.5,
+            "mean": 43.9,
             "sd": null
           }
         },
@@ -1799,37 +1799,37 @@
         },
         "shuffled_graph": {
           "1": {
-            "mean": 25.9,
+            "mean": 28.6,
             "sd": null
           },
           "2": {
-            "mean": 29.0,
+            "mean": 32.0,
             "sd": null
           },
           "4": {
-            "mean": 29.5,
+            "mean": 32.2,
             "sd": null
           },
           "8": {
-            "mean": 29.5,
+            "mean": 30.1,
             "sd": null
           }
         },
         "structure_only": {
           "1": {
-            "mean": 32.7,
+            "mean": 42.4,
             "sd": null
           },
           "2": {
-            "mean": 32.2,
+            "mean": 37.9,
             "sd": null
           },
           "4": {
-            "mean": 33.3,
+            "mean": 39.0,
             "sd": null
           },
           "8": {
-            "mean": 32.4,
+            "mean": 37.0,
             "sd": null
           }
         }
@@ -1839,345 +1839,345 @@
       "graphtoken": {
         "frozen_graph_history": {
           "constrained_reachability": {
-            "mean": 52.1,
-            "sd": 1.9
+            "mean": 52.9,
+            "sd": 1.1
           },
           "cycle_membership": {
-            "mean": 62.8,
-            "sd": 1.0
+            "mean": 62.5,
+            "sd": 0.6
           },
           "edge_exists": {
-            "mean": 53.7,
-            "sd": 1.5
+            "mean": 53.2,
+            "sd": 1.3
           },
           "filtered_neighbor_count": {
+            "mean": 30.0,
+            "sd": 0.5
+          },
+          "most_common_attribute_within_hops": {
             "mean": 29.6,
-            "sd": 0.8
+            "sd": 1.6
+          },
+          "node_degree": {
+            "mean": 40.8,
+            "sd": 0.2
+          },
+          "reachability": {
+            "mean": 61.0,
+            "sd": 3.0
+          },
+          "shortest_path": {
+            "mean": 24.0,
+            "sd": 1.9
+          },
+          "within_hops_count": {
+            "mean": 17.0,
+            "sd": 0.2
+          }
+        },
+        "oracle_updated_graph": {
+          "constrained_reachability": {
+            "mean": 61.0,
+            "sd": 0.4
+          },
+          "cycle_membership": {
+            "mean": 83.4,
+            "sd": 1.3
+          },
+          "edge_exists": {
+            "mean": 66.3,
+            "sd": 1.9
+          },
+          "filtered_neighbor_count": {
+            "mean": 34.3,
+            "sd": 1.3
+          },
+          "most_common_attribute_within_hops": {
+            "mean": 28.6,
+            "sd": 2.6
+          },
+          "node_degree": {
+            "mean": 99.9,
+            "sd": 0.1
+          },
+          "reachability": {
+            "mean": 68.4,
+            "sd": 0.6
+          },
+          "shortest_path": {
+            "mean": 25.5,
+            "sd": 1.9
+          },
+          "within_hops_count": {
+            "mean": 21.3,
+            "sd": 2.8
+          }
+        },
+        "predicted_updated_graph": {
+          "constrained_reachability": {
+            "mean": 59.9,
+            "sd": 0.3
+          },
+          "cycle_membership": {
+            "mean": 83.2,
+            "sd": 1.3
+          },
+          "edge_exists": {
+            "mean": 66.4,
+            "sd": 2.0
+          },
+          "filtered_neighbor_count": {
+            "mean": 34.6,
+            "sd": 2.6
+          },
+          "most_common_attribute_within_hops": {
+            "mean": 28.8,
+            "sd": 2.7
+          },
+          "node_degree": {
+            "mean": 99.7,
+            "sd": 0.1
+          },
+          "reachability": {
+            "mean": 68.3,
+            "sd": 0.7
+          },
+          "shortest_path": {
+            "mean": 25.5,
+            "sd": 1.9
+          },
+          "within_hops_count": {
+            "mean": 21.3,
+            "sd": 2.7
+          }
+        },
+        "question_only": {
+          "constrained_reachability": {
+            "mean": 49.9,
+            "sd": 0.0
+          },
+          "cycle_membership": {
+            "mean": 41.6,
+            "sd": 0.0
+          },
+          "edge_exists": {
+            "mean": 49.7,
+            "sd": 0.0
+          },
+          "filtered_neighbor_count": {
+            "mean": 19.8,
+            "sd": 0.0
+          },
+          "most_common_attribute_within_hops": {
+            "mean": 1.0,
+            "sd": 0.0
+          },
+          "node_degree": {
+            "mean": 11.3,
+            "sd": 0.0
+          },
+          "reachability": {
+            "mean": 40.6,
+            "sd": 0.0
+          },
+          "shortest_path": {
+            "mean": 13.7,
+            "sd": 0.0
+          },
+          "within_hops_count": {
+            "mean": 10.7,
+            "sd": 0.0
+          }
+        },
+        "shuffled_graph": {
+          "constrained_reachability": {
+            "mean": 47.3,
+            "sd": 0.7
+          },
+          "cycle_membership": {
+            "mean": 54.5,
+            "sd": 0.7
+          },
+          "edge_exists": {
+            "mean": 46.9,
+            "sd": 0.6
+          },
+          "filtered_neighbor_count": {
+            "mean": 20.1,
+            "sd": 0.7
           },
           "most_common_attribute_within_hops": {
             "mean": 28.6,
             "sd": 0.8
           },
           "node_degree": {
-            "mean": 41.4,
-            "sd": 0.3
-          },
-          "reachability": {
-            "mean": 64.8,
-            "sd": 0.8
-          },
-          "shortest_path": {
-            "mean": 22.1,
-            "sd": 1.1
-          },
-          "within_hops_count": {
-            "mean": 16.5,
-            "sd": 1.2
-          }
-        },
-        "oracle_updated_graph": {
-          "constrained_reachability": {
-            "mean": 59.2,
-            "sd": 2.1
-          },
-          "cycle_membership": {
-            "mean": 84.2,
-            "sd": 2.8
-          },
-          "edge_exists": {
-            "mean": 65.9,
-            "sd": 0.6
-          },
-          "filtered_neighbor_count": {
-            "mean": 34.0,
-            "sd": 0.1
-          },
-          "most_common_attribute_within_hops": {
-            "mean": 29.0,
-            "sd": 1.1
-          },
-          "node_degree": {
-            "mean": 99.1,
-            "sd": 0.4
-          },
-          "reachability": {
-            "mean": 69.0,
-            "sd": 2.0
-          },
-          "shortest_path": {
-            "mean": 23.8,
-            "sd": 1.5
-          },
-          "within_hops_count": {
-            "mean": 18.9,
-            "sd": 1.7
-          }
-        },
-        "predicted_updated_graph": {
-          "constrained_reachability": {
-            "mean": 58.5,
-            "sd": 1.8
-          },
-          "cycle_membership": {
-            "mean": 84.1,
-            "sd": 2.9
-          },
-          "edge_exists": {
-            "mean": 65.9,
-            "sd": 0.6
-          },
-          "filtered_neighbor_count": {
-            "mean": 32.7,
-            "sd": 0.5
-          },
-          "most_common_attribute_within_hops": {
-            "mean": 29.4,
-            "sd": 1.5
-          },
-          "node_degree": {
-            "mean": 98.9,
-            "sd": 0.4
-          },
-          "reachability": {
-            "mean": 69.1,
-            "sd": 2.0
-          },
-          "shortest_path": {
-            "mean": 23.8,
-            "sd": 1.5
-          },
-          "within_hops_count": {
-            "mean": 18.9,
-            "sd": 1.6
-          }
-        },
-        "question_only": {
-          "constrained_reachability": {
-            "mean": 49.9,
-            "sd": 0.0
-          },
-          "cycle_membership": {
-            "mean": 41.6,
-            "sd": 0.0
-          },
-          "edge_exists": {
-            "mean": 49.7,
-            "sd": 0.0
-          },
-          "filtered_neighbor_count": {
-            "mean": 19.8,
-            "sd": 0.0
-          },
-          "most_common_attribute_within_hops": {
-            "mean": 1.0,
-            "sd": 0.0
-          },
-          "node_degree": {
-            "mean": 11.3,
-            "sd": 0.0
-          },
-          "reachability": {
-            "mean": 40.6,
-            "sd": 0.0
-          },
-          "shortest_path": {
-            "mean": 13.7,
-            "sd": 0.0
-          },
-          "within_hops_count": {
-            "mean": 10.7,
-            "sd": 0.0
-          }
-        },
-        "shuffled_graph": {
-          "constrained_reachability": {
-            "mean": 47.7,
-            "sd": 0.9
-          },
-          "cycle_membership": {
-            "mean": 55.2,
-            "sd": 0.9
-          },
-          "edge_exists": {
-            "mean": 46.9,
-            "sd": 0.3
-          },
-          "filtered_neighbor_count": {
-            "mean": 19.7,
-            "sd": 1.0
-          },
-          "most_common_attribute_within_hops": {
-            "mean": 28.4,
-            "sd": 0.6
-          },
-          "node_degree": {
             "mean": 11.1,
             "sd": 0.0
           },
           "reachability": {
-            "mean": 55.2,
-            "sd": 2.1
+            "mean": 53.7,
+            "sd": 1.5
           },
           "shortest_path": {
-            "mean": 13.9,
-            "sd": 0.6
+            "mean": 15.1,
+            "sd": 1.4
           },
           "within_hops_count": {
-            "mean": 13.9,
-            "sd": 1.1
+            "mean": 14.7,
+            "sd": 1.6
           }
         },
         "structure_only": {
           "constrained_reachability": {
-            "mean": 51.4,
-            "sd": 0.8
+            "mean": 52.3,
+            "sd": 1.3
           },
           "cycle_membership": {
-            "mean": 63.1,
-            "sd": 0.8
+            "mean": 62.2,
+            "sd": 0.7
           },
           "edge_exists": {
-            "mean": 51.5,
-            "sd": 1.2
+            "mean": 50.9,
+            "sd": 0.0
           },
           "filtered_neighbor_count": {
-            "mean": 30.3,
-            "sd": 0.7
+            "mean": 31.2,
+            "sd": 1.0
           },
           "most_common_attribute_within_hops": {
-            "mean": 29.3,
-            "sd": 0.7
+            "mean": 29.5,
+            "sd": 0.9
           },
           "node_degree": {
-            "mean": 41.3,
-            "sd": 0.3
+            "mean": 41.6,
+            "sd": 0.2
           },
           "reachability": {
-            "mean": 64.6,
-            "sd": 0.3
+            "mean": 61.1,
+            "sd": 2.0
           },
           "shortest_path": {
-            "mean": 23.5,
-            "sd": 0.3
+            "mean": 24.5,
+            "sd": 1.3
           },
           "within_hops_count": {
-            "mean": 16.4,
-            "sd": 1.5
+            "mean": 17.8,
+            "sd": 0.6
           }
         }
       },
       "random": {
         "frozen_graph_history": {
           "constrained_reachability": {
-            "mean": 54.7,
+            "mean": 53.7,
             "sd": null
           },
           "cycle_membership": {
-            "mean": 60.6,
+            "mean": 63.2,
             "sd": null
           },
           "edge_exists": {
-            "mean": 50.5,
+            "mean": 54.5,
             "sd": null
           },
           "filtered_neighbor_count": {
-            "mean": 26.9,
+            "mean": 31.5,
             "sd": null
           },
           "most_common_attribute_within_hops": {
-            "mean": 8.9,
+            "mean": 30.7,
             "sd": null
           },
           "node_degree": {
-            "mean": 25.9,
+            "mean": 41.2,
             "sd": null
           },
           "reachability": {
-            "mean": 58.0,
+            "mean": 62.2,
             "sd": null
           },
           "shortest_path": {
-            "mean": 17.6,
+            "mean": 21.6,
             "sd": null
           },
           "within_hops_count": {
-            "mean": 16.8,
+            "mean": 16.4,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "constrained_reachability": {
-            "mean": 60.8,
+            "mean": 61.8,
             "sd": null
           },
           "cycle_membership": {
-            "mean": 89.3,
+            "mean": 87.3,
             "sd": null
           },
           "edge_exists": {
-            "mean": 69.9,
+            "mean": 70.5,
             "sd": null
           },
           "filtered_neighbor_count": {
-            "mean": 29.1,
+            "mean": 33.1,
             "sd": null
           },
           "most_common_attribute_within_hops": {
-            "mean": 12.3,
+            "mean": 33.1,
             "sd": null
           },
           "node_degree": {
-            "mean": 29.5,
+            "mean": 97.6,
             "sd": null
           },
           "reachability": {
-            "mean": 68.1,
+            "mean": 70.3,
             "sd": null
           },
           "shortest_path": {
-            "mean": 21.2,
+            "mean": 24.8,
             "sd": null
           },
           "within_hops_count": {
-            "mean": 18.2,
+            "mean": 18.4,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "constrained_reachability": {
-            "mean": 58.8,
+            "mean": 60.8,
             "sd": null
           },
           "cycle_membership": {
-            "mean": 89.5,
+            "mean": 87.3,
             "sd": null
           },
           "edge_exists": {
-            "mean": 69.9,
+            "mean": 70.5,
             "sd": null
           },
           "filtered_neighbor_count": {
-            "mean": 29.1,
+            "mean": 33.3,
             "sd": null
           },
           "most_common_attribute_within_hops": {
-            "mean": 12.3,
+            "mean": 32.9,
             "sd": null
           },
           "node_degree": {
-            "mean": 29.3,
+            "mean": 97.4,
             "sd": null
           },
           "reachability": {
-            "mean": 67.9,
+            "mean": 70.3,
             "sd": null
           },
           "shortest_path": {
-            "mean": 21.0,
+            "mean": 24.8,
             "sd": null
           },
           "within_hops_count": {
-            "mean": 18.2,
+            "mean": 18.4,
             "sd": null
           }
         },
@@ -2221,77 +2221,77 @@
         },
         "shuffled_graph": {
           "constrained_reachability": {
-            "mean": 45.9,
+            "mean": 46.1,
             "sd": null
           },
           "cycle_membership": {
-            "mean": 57.8,
+            "mean": 56.4,
             "sd": null
           },
           "edge_exists": {
-            "mean": 47.1,
+            "mean": 45.1,
             "sd": null
           },
           "filtered_neighbor_count": {
-            "mean": 15.6,
+            "mean": 20.0,
             "sd": null
           },
           "most_common_attribute_within_hops": {
-            "mean": 8.9,
+            "mean": 28.1,
             "sd": null
           },
           "node_degree": {
-            "mean": 16.6,
+            "mean": 11.1,
             "sd": null
           },
           "reachability": {
-            "mean": 49.9,
+            "mean": 54.5,
             "sd": null
           },
           "shortest_path": {
-            "mean": 12.9,
+            "mean": 12.3,
             "sd": null
           },
           "within_hops_count": {
-            "mean": 14.5,
+            "mean": 12.9,
             "sd": null
           }
         },
         "structure_only": {
           "constrained_reachability": {
-            "mean": 54.3,
+            "mean": 53.9,
             "sd": null
           },
           "cycle_membership": {
-            "mean": 61.0,
+            "mean": 63.0,
             "sd": null
           },
           "edge_exists": {
-            "mean": 50.1,
+            "mean": 52.3,
             "sd": null
           },
           "filtered_neighbor_count": {
-            "mean": 26.7,
+            "mean": 29.9,
             "sd": null
           },
           "most_common_attribute_within_hops": {
-            "mean": 12.1,
+            "mean": 32.3,
             "sd": null
           },
           "node_degree": {
-            "mean": 24.0,
+            "mean": 41.4,
             "sd": null
           },
           "reachability": {
-            "mean": 58.6,
+            "mean": 61.0,
             "sd": null
           },
           "shortest_path": {
-            "mean": 17.2,
+            "mean": 23.6,
             "sd": null
           },
           "within_hops_count": {
-            "mean": 16.2,
+            "mean": 17.4,
             "sd": null
           }
         }
@@ -2389,116 +2389,116 @@
       "tea": {
         "frozen_graph_history": {
           "constrained_reachability": {
-            "mean": 51.8,
-            "sd": 1.1
-          },
-          "cycle_membership": {
-            "mean": 49.2,
-            "sd": 2.3
-          },
-          "edge_exists": {
-            "mean": 52.5,
-            "sd": 2.8
-          },
-          "filtered_neighbor_count": {
-            "mean": 21.5,
-            "sd": 2.2
-          },
-          "most_common_attribute_within_hops": {
-            "mean": 5.6,
-            "sd": 1.0
-          },
-          "node_degree": {
-            "mean": 21.6,
+            "mean": 51.7,
             "sd": 1.4
           },
+          "cycle_membership": {
+            "mean": 45.9,
+            "sd": 2.5
+          },
+          "edge_exists": {
+            "mean": 52.7,
+            "sd": 0.6
+          },
+          "filtered_neighbor_count": {
+            "mean": 27.9,
+            "sd": 1.0
+          },
+          "most_common_attribute_within_hops": {
+            "mean": 37.4,
+            "sd": 0.5
+          },
+          "node_degree": {
+            "mean": 32.5,
+            "sd": 0.8
+          },
           "reachability": {
-            "mean": 55.1,
-            "sd": 1.3
+            "mean": 57.2,
+            "sd": 0.3
           },
           "shortest_path": {
-            "mean": 4.6,
-            "sd": 1.5
+            "mean": 20.9,
+            "sd": 2.4
           },
           "within_hops_count": {
-            "mean": 16.3,
-            "sd": 1.2
+            "mean": 17.6,
+            "sd": 0.7
           }
         },
         "oracle_updated_graph": {
           "constrained_reachability": {
-            "mean": 55.2,
-            "sd": 1.2
+            "mean": 56.6,
+            "sd": 0.3
           },
           "cycle_membership": {
-            "mean": 52.7,
-            "sd": 1.5
-          },
-          "edge_exists": {
-            "mean": 58.9,
-            "sd": 1.9
-          },
-          "filtered_neighbor_count": {
-            "mean": 24.2,
+            "mean": 49.2,
             "sd": 2.6
           },
+          "edge_exists": {
+            "mean": 58.1,
+            "sd": 1.5
+          },
+          "filtered_neighbor_count": {
+            "mean": 30.6,
+            "sd": 1.6
+          },
           "most_common_attribute_within_hops": {
-            "mean": 7.1,
-            "sd": 0.8
+            "mean": 36.0,
+            "sd": 0.5
           },
           "node_degree": {
-            "mean": 22.2,
-            "sd": 1.0
+            "mean": 49.6,
+            "sd": 1.2
           },
           "reachability": {
-            "mean": 57.4,
-            "sd": 0.8
+            "mean": 60.2,
+            "sd": 1.7
           },
           "shortest_path": {
-            "mean": 4.7,
-            "sd": 1.8
+            "mean": 20.5,
+            "sd": 2.1
           },
           "within_hops_count": {
-            "mean": 16.0,
-            "sd": 0.5
+            "mean": 18.6,
+            "sd": 1.0
           }
         },
         "predicted_updated_graph": {
           "constrained_reachability": {
-            "mean": 54.7,
+            "mean": 56.0,
             "sd": 0.6
           },
           "cycle_membership": {
-            "mean": 52.5,
-            "sd": 1.4
+            "mean": 49.2,
+            "sd": 2.6
           },
           "edge_exists": {
-            "mean": 58.9,
-            "sd": 1.9
+            "mean": 58.1,
+            "sd": 1.5
           },
           "filtered_neighbor_count": {
-            "mean": 24.2,
-            "sd": 2.5
+            "mean": 30.8,
+            "sd": 2.2
           },
           "most_common_attribute_within_hops": {
-            "mean": 7.2,
-            "sd": 1.0
-          },
-          "node_degree": {
-            "mean": 22.1,
-            "sd": 1.1
-          },
-          "reachability": {
-            "mean": 57.4,
+            "mean": 36.0,
             "sd": 0.7
           },
+          "node_degree": {
+            "mean": 49.4,
+            "sd": 1.2
+          },
+          "reachability": {
+            "mean": 60.2,
+            "sd": 1.7
+          },
           "shortest_path": {
-            "mean": 4.7,
-            "sd": 1.8
+            "mean": 20.5,
+            "sd": 2.1
           },
           "within_hops_count": {
-            "mean": 16.0,
-            "sd": 0.5
+            "mean": 18.6,
+            "sd": 1.0
           }
         },
         "question_only": {
@@ -2541,193 +2541,193 @@
         },
         "shuffled_graph": {
           "constrained_reachability": {
-            "mean": 46.7,
-            "sd": 2.3
+            "mean": 48.9,
+            "sd": 1.8
           },
           "cycle_membership": {
-            "mean": 53.8,
-            "sd": 0.6
+            "mean": 51.5,
+            "sd": 0.9
           },
           "edge_exists": {
-            "mean": 48.6,
-            "sd": 1.0
+            "mean": 46.3,
+            "sd": 1.3
           },
           "filtered_neighbor_count": {
-            "mean": 17.4,
-            "sd": 0.5
+            "mean": 20.3,
+            "sd": 1.0
           },
           "most_common_attribute_within_hops": {
-            "mean": 4.5,
-            "sd": 0.6
+            "mean": 27.9,
+            "sd": 0.5
           },
           "node_degree": {
-            "mean": 13.7,
+            "mean": 13.8,
             "sd": 0.9
           },
           "reachability": {
-            "mean": 48.8,
-            "sd": 2.0
+            "mean": 50.0,
+            "sd": 4.2
           },
           "shortest_path": {
-            "mean": 3.4,
-            "sd": 1.0
+            "mean": 14.3,
+            "sd": 0.6
           },
           "within_hops_count": {
-            "mean": 12.6,
-            "sd": 0.8
+            "mean": 13.7,
+            "sd": 0.6
           }
         },
         "structure_only": {
           "constrained_reachability": {
-            "mean": 51.5,
-            "sd": 1.1
+            "mean": 52.2,
+            "sd": 1.0
           },
           "cycle_membership": {
-            "mean": 50.8,
-            "sd": 2.8
+            "mean": 47.7,
+            "sd": 2.2
           },
           "edge_exists": {
-            "mean": 52.7,
-            "sd": 2.3
+            "mean": 49.1,
+            "sd": 2.2
           },
           "filtered_neighbor_count": {
-            "mean": 22.1,
-            "sd": 2.4
+            "mean": 28.8,
+            "sd": 1.1
           },
           "most_common_attribute_within_hops": {
-            "mean": 6.9,
+            "mean": 36.8,
             "sd": 0.7
           },
           "node_degree": {
-            "mean": 20.2,
-            "sd": 0.9
-          },
-          "reachability": {
-            "mean": 55.3,
+            "mean": 32.2,
             "sd": 1.2
           },
+          "reachability": {
+            "mean": 56.4,
+            "sd": 0.9
+          },
           "shortest_path": {
-            "mean": 4.6,
-            "sd": 1.1
+            "mean": 21.5,
+            "sd": 2.7
           },
           "within_hops_count": {
             "mean": 16.6,
-            "sd": 0.8
+            "sd": 1.1
           }
         }
       },
       "warm": {
         "frozen_graph_history": {
           "constrained_reachability": {
-            "mean": 51.3,
+            "mean": 50.9,
             "sd": null
           },
           "cycle_membership": {
-            "mean": 47.5,
+            "mean": 44.4,
             "sd": null
           },
           "edge_exists": {
-            "mean": 49.7,
+            "mean": 51.9,
             "sd": null
           },
           "filtered_neighbor_count": {
-            "mean": 23.4,
+            "mean": 31.3,
             "sd": null
           },
           "most_common_attribute_within_hops": {
-            "mean": 6.7,
+            "mean": 35.8,
             "sd": null
           },
           "node_degree": {
-            "mean": 25.1,
+            "mean": 39.2,
             "sd": null
           },
           "reachability": {
-            "mean": 55.2,
+            "mean": 57.8,
             "sd": null
           },
           "shortest_path": {
-            "mean": 17.8,
+            "mean": 20.4,
             "sd": null
           },
           "within_hops_count": {
-            "mean": 14.3,
+            "mean": 17.2,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "constrained_reachability": {
-            "mean": 58.2,
+            "mean": 55.4,
             "sd": null
           },
           "cycle_membership": {
-            "mean": 53.9,
+            "mean": 43.4,
             "sd": null
           },
           "edge_exists": {
-            "mean": 58.2,
+            "mean": 58.0,
             "sd": null
           },
           "filtered_neighbor_count": {
-            "mean": 27.1,
+            "mean": 31.5,
             "sd": null
           },
           "most_common_attribute_within_hops": {
-            "mean": 8.5,
+            "mean": 34.7,
             "sd": null
           },
           "node_degree": {
-            "mean": 26.3,
+            "mean": 72.7,
             "sd": null
           },
           "reachability": {
-            "mean": 63.4,
+            "mean": 63.2,
             "sd": null
           },
           "shortest_path": {
-            "mean": 18.8,
+            "mean": 22.2,
             "sd": null
           },
           "within_hops_count": {
-            "mean": 16.2,
+            "mean": 19.2,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "constrained_reachability": {
-            "mean": 57.2,
+            "mean": 54.9,
             "sd": null
           },
           "cycle_membership": {
-            "mean": 53.9,
+            "mean": 43.4,
             "sd": null
           },
           "edge_exists": {
-            "mean": 58.2,
+            "mean": 58.0,
             "sd": null
           },
           "filtered_neighbor_count": {
-            "mean": 26.5,
+            "mean": 32.7,
             "sd": null
           },
           "most_common_attribute_within_hops": {
-            "mean": 8.7,
+            "mean": 34.9,
             "sd": null
           },
           "node_degree": {
-            "mean": 26.1,
+            "mean": 72.5,
             "sd": null
           },
           "reachability": {
-            "mean": 63.4,
+            "mean": 63.2,
             "sd": null
           },
           "shortest_path": {
-            "mean": 18.8,
+            "mean": 22.4,
             "sd": null
           },
           "within_hops_count": {
-            "mean": 16.2,
+            "mean": 19.2,
             "sd": null
           }
         },
@@ -2771,15 +2771,15 @@
         },
         "shuffled_graph": {
           "constrained_reachability": {
-            "mean": 45.1,
+            "mean": 47.3,
             "sd": null
           },
           "cycle_membership": {
-            "mean": 49.7,
+            "mean": 53.3,
             "sd": null
           },
           "edge_exists": {
-            "mean": 44.2,
+            "mean": 48.1,
             "sd": null
           },
           "filtered_neighbor_count": {
@@ -2787,61 +2787,61 @@
             "sd": null
           },
           "most_common_attribute_within_hops": {
-            "mean": 8.3,
+            "mean": 26.5,
             "sd": null
           },
           "node_degree": {
-            "mean": 17.4,
+            "mean": 12.1,
             "sd": null
           },
           "reachability": {
-            "mean": 52.7,
+            "mean": 43.6,
             "sd": null
           },
           "shortest_path": {
-            "mean": 14.9,
+            "mean": 13.5,
             "sd": null
           },
           "within_hops_count": {
-            "mean": 11.9,
+            "mean": 14.5,
             "sd": null
           }
         },
         "structure_only": {
           "constrained_reachability": {
-            "mean": 50.7,
+            "mean": 49.5,
             "sd": null
           },
           "cycle_membership": {
-            "mean": 50.9,
+            "mean": 43.4,
             "sd": null
           },
           "edge_exists": {
-            "mean": 48.5,
+            "mean": 47.7,
             "sd": null
           },
           "filtered_neighbor_count": {
-            "mean": 22.2,
+            "mean": 29.3,
             "sd": null
           },
           "most_common_attribute_within_hops": {
-            "mean": 10.1,
+            "mean": 35.2,
             "sd": null
           },
           "node_degree": {
-            "mean": 24.6,
+            "mean": 38.4,
             "sd": null
           },
           "reachability": {
-            "mean": 55.8,
+            "mean": 57.8,
             "sd": null
           },
           "shortest_path": {
-            "mean": 17.4,
+            "mean": 21.8,
             "sd": null
           },
           "within_hops_count": {
-            "mean": 13.3,
+            "mean": 19.0,
             "sd": null
           }
         }
@@ -2851,104 +2851,104 @@
       "graphtoken": {
         "frozen_graph_history": {
           "1": {
-            "mean": 42.7,
-            "sd": 0.0
-          },
-          "2": {
-            "mean": 39.5,
-            "sd": 0.8
-          },
-          "3": {
-            "mean": 42.3,
-            "sd": 0.1
-          },
-          "4": {
-            "mean": 42.0,
-            "sd": 1.2
-          },
-          "5": {
-            "mean": 40.9,
-            "sd": 2.4
-          },
-          "6": {
-            "mean": 42.4,
+            "mean": 44.4,
             "sd": 0.7
           },
+          "2": {
+            "mean": 39.8,
+            "sd": 0.3
+          },
+          "3": {
+            "mean": 41.4,
+            "sd": 1.9
+          },
+          "4": {
+            "mean": 41.4,
+            "sd": 0.9
+          },
+          "5": {
+            "mean": 39.2,
+            "sd": 0.5
+          },
+          "6": {
+            "mean": 41.3,
+            "sd": 2.2
+          },
           "7": {
-            "mean": 36.8,
-            "sd": 1.7
+            "mean": 37.0,
+            "sd": 0.9
           },
           "8": {
-            "mean": 41.3,
-            "sd": 1.4
+            "mean": 38.4,
+            "sd": 2.9
           }
         },
         "oracle_updated_graph": {
           "1": {
-            "mean": 52.5,
-            "sd": 1.0
+            "mean": 53.9,
+            "sd": 0.3
           },
           "2": {
-            "mean": 53.0,
-            "sd": 0.4
+            "mean": 54.3,
+            "sd": 0.8
           },
           "3": {
-            "mean": 56.2,
-            "sd": 0.6
+            "mean": 55.4,
+            "sd": 0.9
           },
           "4": {
-            "mean": 55.4,
-            "sd": 1.5
+            "mean": 55.7,
+            "sd": 0.9
           },
           "5": {
-            "mean": 56.3,
-            "sd": 0.5
+            "mean": 56.2,
+            "sd": 0.9
           },
           "6": {
-            "mean": 52.6,
-            "sd": 0.5
+            "mean": 52.4,
+            "sd": 1.0
           },
           "7": {
-            "mean": 52.2,
-            "sd": 3.0
+            "mean": 53.3,
+            "sd": 0.7
           },
           "8": {
-            "mean": 52.0,
-            "sd": 1.0
+            "mean": 51.6,
+            "sd": 1.4
           }
         },
         "predicted_updated_graph": {
           "1": {
-            "mean": 52.1,
-            "sd": 1.0
-          },
-          "2": {
-            "mean": 52.8,
-            "sd": 0.5
-          },
-          "3": {
-            "mean": 55.6,
+            "mean": 53.5,
             "sd": 0.4
           },
+          "2": {
+            "mean": 54.3,
+            "sd": 0.8
+          },
+          "3": {
+            "mean": 55.3,
+            "sd": 0.9
+          },
           "4": {
-            "mean": 55.7,
-            "sd": 1.9
+            "mean": 56.2,
+            "sd": 0.7
           },
           "5": {
-            "mean": 56.1,
-            "sd": 1.0
+            "mean": 55.8,
+            "sd": 0.8
           },
           "6": {
-            "mean": 52.7,
-            "sd": 0.5
+            "mean": 52.2,
+            "sd": 0.9
           },
           "7": {
-            "mean": 52.4,
-            "sd": 2.9
+            "mean": 53.2,
+            "sd": 0.6
           },
           "8": {
-            "mean": 51.4,
-            "sd": 0.8
+            "mean": 51.5,
+            "sd": 1.2
           }
         },
         "question_only": {
@@ -2987,127 +2987,263 @@
         },
         "shuffled_graph": {
           "1": {
-            "mean": 31.6,
-            "sd": 0.4
+            "mean": 32.3,
+            "sd": 0.9
           },
           "2": {
-            "mean": 32.2,
-            "sd": 0.6
+            "mean": 31.3,
+            "sd": 2.0
           },
           "3": {
-            "mean": 34.1,
-            "sd": 1.6
+            "mean": 33.5,
+            "sd": 0.3
           },
           "4": {
-            "mean": 31.4,
-            "sd": 1.0
-          },
-          "5": {
-            "mean": 28.4,
+            "mean": 32.1,
             "sd": 1.4
           },
+          "5": {
+            "mean": 30.0,
+            "sd": 0.0
+          },
           "6": {
-            "mean": 35.6,
-            "sd": 2.4
+            "mean": 36.9,
+            "sd": 0.4
           },
           "7": {
-            "mean": 33.4,
-            "sd": 1.2
+            "mean": 32.4,
+            "sd": 0.8
           },
           "8": {
-            "mean": 35.1,
-            "sd": 2.2
+            "mean": 33.2,
+            "sd": 2.0
           }
         },
         "structure_only": {
           "1": {
             "mean": 42.8,
-            "sd": 0.2
+            "sd": 1.3
           },
           "2": {
-            "mean": 39.8,
-            "sd": 1.0
+            "mean": 40.3,
+            "sd": 0.9
           },
           "3": {
-            "mean": 41.9,
-            "sd": 0.2
+            "mean": 42.0,
+            "sd": 1.0
           },
           "4": {
-            "mean": 42.3,
-            "sd": 1.6
+            "mean": 42.9,
+            "sd": 0.9
           },
           "5": {
-            "mean": 41.2,
-            "sd": 1.7
+            "mean": 38.8,
+            "sd": 0.2
           },
           "6": {
-            "mean": 42.8,
-            "sd": 0.3
+            "mean": 42.6,
+            "sd": 1.2
           },
           "7": {
-            "mean": 36.9,
-            "sd": 1.7
+            "mean": 36.7,
+            "sd": 1.2
           },
           "8": {
-            "mean": 39.3,
-            "sd": 1.0
+            "mean": 38.5,
+            "sd": 2.6
           }
         }
       },
       "random": {
         "frozen_graph_history": {
           "1": {
-            "mean": 34.8,
+            "mean": 42.6,
             "sd": null
           },
           "2": {
-            "mean": 36.8,
+            "mean": 41.1,
             "sd": null
           },
           "3": {
-            "mean": 36.0,
+            "mean": 42.3,
             "sd": null
           },
           "4": {
-            "mean": 38.2,
+            "mean": 42.1,
             "sd": null
           },
           "5": {
-            "mean": 35.4,
+            "mean": 40.7,
             "sd": null
           },
           "6": {
-            "mean": 33.3,
+            "mean": 41.4,
             "sd": null
           },
           "7": {
-            "mean": 36.0,
+            "mean": 39.1,
             "sd": null
           },
           "8": {
-            "mean": 30.0,
+            "mean": 41.8,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "1": {
-            "mean": 42.0,
+            "mean": 54.0,
             "sd": null
           },
           "2": {
-            "mean": 45.5,
+            "mean": 54.7,
             "sd": null
           },
           "3": {
-            "mean": 45.8,
+            "mean": 57.2,
             "sd": null
           },
           "4": {
-            "mean": 46.6,
+            "mean": 57.1,
             "sd": null
           },
           "5": {
-            "mean": 45.8,
+            "mean": 56.6,
+            "sd": null
+          },
+          "6": {
+            "mean": 53.2,
+            "sd": null
+          },
+          "7": {
+            "mean": 55.6,
+            "sd": null
+          },
+          "8": {
+            "mean": 54.2,
+            "sd": null
+          }
+        },
+        "predicted_updated_graph": {
+          "1": {
+            "mean": 53.8,
+            "sd": null
+          },
+          "2": {
+            "mean": 54.9,
+            "sd": null
+          },
+          "3": {
+            "mean": 56.9,
+            "sd": null
+          },
+          "4": {
+            "mean": 57.4,
+            "sd": null
+          },
+          "5": {
+            "mean": 55.2,
+            "sd": null
+          },
+          "6": {
+            "mean": 53.2,
+            "sd": null
+          },
+          "7": {
+            "mean": 55.9,
+            "sd": null
+          },
+          "8": {
+            "mean": 53.5,
+            "sd": null
+          }
+        },
+        "question_only": {
+          "1": {
+            "mean": 26.0,
+            "sd": null
+          },
+          "2": {
+            "mean": 29.0,
+            "sd": null
+          },
+          "3": {
+            "mean": 26.8,
+            "sd": null
+          },
+          "4": {
+            "mean": 26.8,
+            "sd": null
+          },
+          "5": {
+            "mean": 24.9,
+            "sd": null
+          },
+          "6": {
+            "mean": 25.3,
+            "sd": null
+          },
+          "7": {
+            "mean": 27.6,
+            "sd": null
+          },
+          "8": {
+            "mean": 21.5,
+            "sd": null
+          }
+        },
+        "shuffled_graph": {
+          "1": {
+            "mean": 30.6,
+            "sd": null
+          },
+          "2": {
+            "mean": 31.9,
+            "sd": null
+          },
+          "3": {
+            "mean": 32.8,
+            "sd": null
+          },
+          "4": {
+            "mean": 30.1,
+            "sd": null
+          },
+          "5": {
+            "mean": 29.3,
+            "sd": null
+          },
+          "6": {
+            "mean": 38.4,
+            "sd": null
+          },
+          "7": {
+            "mean": 32.3,
+            "sd": null
+          },
+          "8": {
+            "mean": 33.7,
+            "sd": null
+          }
+        },
+        "structure_only": {
+          "1": {
+            "mean": 43.1,
+            "sd": null
+          },
+          "2": {
+            "mean": 41.5,
+            "sd": null
+          },
+          "3": {
+            "mean": 43.4,
+            "sd": null
+          },
+          "4": {
+            "mean": 42.8,
+            "sd": null
+          },
+          "5": {
+            "mean": 37.7,
             "sd": null
           },
           "6": {
@@ -3115,147 +3251,11 @@
             "sd": null
           },
           "7": {
-            "mean": 46.1,
-            "sd": null
-          },
-          "8": {
-            "mean": 39.7,
-            "sd": null
-          }
-        },
-        "predicted_updated_graph": {
-          "1": {
-            "mean": 41.8,
-            "sd": null
-          },
-          "2": {
-            "mean": 45.3,
-            "sd": null
-          },
-          "3": {
-            "mean": 44.9,
-            "sd": null
-          },
-          "4": {
-            "mean": 46.8,
-            "sd": null
-          },
-          "5": {
-            "mean": 45.5,
-            "sd": null
-          },
-          "6": {
-            "mean": 43.4,
-            "sd": null
-          },
-          "7": {
-            "mean": 45.8,
-            "sd": null
-          },
-          "8": {
-            "mean": 38.4,
-            "sd": null
-          }
-        },
-        "question_only": {
-          "1": {
-            "mean": 26.0,
-            "sd": null
-          },
-          "2": {
-            "mean": 29.0,
-            "sd": null
-          },
-          "3": {
-            "mean": 26.8,
-            "sd": null
-          },
-          "4": {
-            "mean": 26.8,
-            "sd": null
-          },
-          "5": {
-            "mean": 24.9,
-            "sd": null
-          },
-          "6": {
-            "mean": 25.3,
-            "sd": null
-          },
-          "7": {
-            "mean": 27.6,
-            "sd": null
-          },
-          "8": {
-            "mean": 21.5,
-            "sd": null
-          }
-        },
-        "shuffled_graph": {
-          "1": {
-            "mean": 29.2,
-            "sd": null
-          },
-          "2": {
-            "mean": 28.1,
-            "sd": null
-          },
-          "3": {
-            "mean": 30.0,
-            "sd": null
-          },
-          "4": {
-            "mean": 30.6,
-            "sd": null
-          },
-          "5": {
-            "mean": 31.3,
-            "sd": null
-          },
-          "6": {
-            "mean": 31.0,
-            "sd": null
-          },
-          "7": {
-            "mean": 30.0,
-            "sd": null
-          },
-          "8": {
-            "mean": 34.0,
-            "sd": null
-          }
-        },
-        "structure_only": {
-          "1": {
-            "mean": 35.2,
-            "sd": null
-          },
-          "2": {
-            "mean": 36.9,
-            "sd": null
-          },
-          "3": {
-            "mean": 35.5,
-            "sd": null
-          },
-          "4": {
-            "mean": 37.5,
-            "sd": null
-          },
-          "5": {
             "mean": 35.7,
             "sd": null
           },
-          "6": {
-            "mean": 34.7,
-            "sd": null
-          },
-          "7": {
-            "mean": 36.0,
-            "sd": null
-          },
           "8": {
-            "mean": 29.6,
+            "mean": 39.1,
             "sd": null
           }
         }
@@ -3345,104 +3345,104 @@
       "tea": {
         "frozen_graph_history": {
           "1": {
-            "mean": 30.7,
-            "sd": 1.2
+            "mean": 38.9,
+            "sd": 0.6
           },
           "2": {
-            "mean": 30.6,
-            "sd": 0.4
+            "mean": 37.7,
+            "sd": 0.6
           },
           "3": {
-            "mean": 29.9,
-            "sd": 1.0
+            "mean": 36.6,
+            "sd": 1.6
           },
           "4": {
-            "mean": 32.6,
-            "sd": 0.8
+            "mean": 40.2,
+            "sd": 0.4
           },
           "5": {
-            "mean": 32.1,
-            "sd": 1.5
+            "mean": 38.5,
+            "sd": 1.2
           },
           "6": {
-            "mean": 32.9,
-            "sd": 3.4
+            "mean": 39.3,
+            "sd": 1.2
           },
           "7": {
-            "mean": 30.3,
-            "sd": 0.3
+            "mean": 39.1,
+            "sd": 0.7
           },
           "8": {
-            "mean": 28.8,
-            "sd": 2.4
+            "mean": 34.1,
+            "sd": 0.8
           }
         },
         "oracle_updated_graph": {
           "1": {
-            "mean": 32.9,
-            "sd": 1.0
+            "mean": 43.0,
+            "sd": 0.1
           },
           "2": {
-            "mean": 32.6,
-            "sd": 1.4
+            "mean": 41.1,
+            "sd": 0.9
           },
           "3": {
-            "mean": 31.3,
-            "sd": 1.1
+            "mean": 40.3,
+            "sd": 1.5
           },
           "4": {
-            "mean": 34.1,
-            "sd": 1.1
+            "mean": 43.3,
+            "sd": 1.0
           },
           "5": {
-            "mean": 36.3,
-            "sd": 0.8
+            "mean": 45.9,
+            "sd": 1.0
           },
           "6": {
-            "mean": 34.9,
-            "sd": 3.2
+            "mean": 42.3,
+            "sd": 1.1
           },
           "7": {
-            "mean": 33.6,
-            "sd": 0.7
+            "mean": 43.8,
+            "sd": 2.0
           },
           "8": {
-            "mean": 32.5,
-            "sd": 2.0
+            "mean": 37.5,
+            "sd": 2.5
           }
         },
         "predicted_updated_graph": {
           "1": {
-            "mean": 32.7,
-            "sd": 1.0
+            "mean": 42.8,
+            "sd": 0.1
           },
           "2": {
-            "mean": 32.8,
-            "sd": 1.3
+            "mean": 41.2,
+            "sd": 0.7
           },
           "3": {
-            "mean": 31.1,
+            "mean": 40.1,
             "sd": 1.6
           },
           "4": {
-            "mean": 34.1,
-            "sd": 1.3
-          },
-          "5": {
-            "mean": 36.0,
+            "mean": 43.7,
             "sd": 1.0
           },
-          "6": {
-            "mean": 34.8,
-            "sd": 3.1
+          "5": {
+            "mean": 45.7,
+            "sd": 1.1
           },
-          "7": {
-            "mean": 33.7,
+          "6": {
+            "mean": 42.4,
             "sd": 0.9
           },
+          "7": {
+            "mean": 43.5,
+            "sd": 2.0
+          },
           "8": {
-            "mean": 32.1,
-            "sd": 2.4
+            "mean": 37.3,
+            "sd": 2.0
           }
         },
         "question_only": {
@@ -3481,173 +3481,173 @@
         },
         "shuffled_graph": {
           "1": {
-            "mean": 26.1,
+            "mean": 31.4,
             "sd": 0.9
           },
           "2": {
-            "mean": 27.4,
-            "sd": 1.3
+            "mean": 31.3,
+            "sd": 0.6
           },
           "3": {
-            "mean": 28.8,
-            "sd": 1.5
+            "mean": 33.2,
+            "sd": 1.4
           },
           "4": {
-            "mean": 28.2,
-            "sd": 0.5
+            "mean": 30.4,
+            "sd": 1.7
           },
           "5": {
-            "mean": 26.3,
-            "sd": 0.9
+            "mean": 29.6,
+            "sd": 2.1
           },
           "6": {
-            "mean": 30.0,
-            "sd": 0.9
-          },
-          "7": {
-            "mean": 29.4,
+            "mean": 36.4,
             "sd": 2.0
           },
+          "7": {
+            "mean": 33.4,
+            "sd": 1.9
+          },
           "8": {
-            "mean": 29.7,
-            "sd": 0.7
+            "mean": 31.6,
+            "sd": 0.3
           }
         },
         "structure_only": {
           "1": {
-            "mean": 31.0,
-            "sd": 1.2
+            "mean": 38.6,
+            "sd": 0.2
           },
           "2": {
-            "mean": 30.7,
-            "sd": 0.7
+            "mean": 37.3,
+            "sd": 0.6
           },
           "3": {
-            "mean": 30.2,
-            "sd": 0.7
+            "mean": 35.6,
+            "sd": 1.9
           },
           "4": {
-            "mean": 32.2,
-            "sd": 0.5
+            "mean": 41.2,
+            "sd": 0.8
           },
           "5": {
-            "mean": 33.0,
-            "sd": 0.3
+            "mean": 38.2,
+            "sd": 0.5
           },
           "6": {
-            "mean": 32.9,
-            "sd": 3.6
+            "mean": 38.0,
+            "sd": 1.5
           },
           "7": {
-            "mean": 31.6,
-            "sd": 0.9
+            "mean": 39.3,
+            "sd": 1.2
           },
           "8": {
-            "mean": 29.6,
-            "sd": 3.1
+            "mean": 33.0,
+            "sd": 1.5
           }
         }
       },
       "warm": {
         "frozen_graph_history": {
           "1": {
-            "mean": 30.8,
+            "mean": 39.5,
             "sd": null
           },
           "2": {
-            "mean": 32.5,
+            "mean": 37.8,
             "sd": null
           },
           "3": {
-            "mean": 32.3,
+            "mean": 38.9,
             "sd": null
           },
           "4": {
-            "mean": 34.8,
+            "mean": 40.9,
             "sd": null
           },
           "5": {
-            "mean": 32.7,
+            "mean": 39.7,
             "sd": null
           },
           "6": {
-            "mean": 33.3,
+            "mean": 37.0,
             "sd": null
           },
           "7": {
-            "mean": 33.3,
+            "mean": 37.0,
             "sd": null
           },
           "8": {
-            "mean": 30.3,
+            "mean": 36.7,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "1": {
-            "mean": 33.8,
+            "mean": 44.5,
             "sd": null
           },
           "2": {
-            "mean": 38.2,
+            "mean": 44.6,
             "sd": null
           },
           "3": {
-            "mean": 37.9,
+            "mean": 44.8,
             "sd": null
           },
           "4": {
-            "mean": 37.2,
+            "mean": 45.6,
             "sd": null
           },
           "5": {
-            "mean": 38.7,
+            "mean": 46.5,
             "sd": null
           },
           "6": {
-            "mean": 37.4,
+            "mean": 45.1,
             "sd": null
           },
           "7": {
-            "mean": 37.4,
+            "mean": 42.1,
             "sd": null
           },
           "8": {
-            "mean": 37.4,
+            "mean": 41.1,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "1": {
-            "mean": 33.5,
+            "mean": 44.1,
             "sd": null
           },
           "2": {
-            "mean": 38.4,
+            "mean": 44.8,
             "sd": null
           },
           "3": {
-            "mean": 37.2,
+            "mean": 44.8,
             "sd": null
           },
           "4": {
-            "mean": 37.4,
+            "mean": 46.1,
             "sd": null
           },
           "5": {
-            "mean": 38.7,
+            "mean": 47.1,
             "sd": null
           },
           "6": {
-            "mean": 37.0,
+            "mean": 45.8,
             "sd": null
           },
           "7": {
-            "mean": 37.0,
+            "mean": 42.8,
             "sd": null
           },
           "8": {
-            "mean": 37.0,
+            "mean": 40.7,
             "sd": null
           }
         },
@@ -3687,19 +3687,19 @@
         },
         "shuffled_graph": {
           "1": {
-            "mean": 28.7,
+            "mean": 29.5,
             "sd": null
           },
           "2": {
-            "mean": 28.1,
+            "mean": 31.5,
             "sd": null
           },
           "3": {
-            "mean": 30.6,
+            "mean": 31.1,
             "sd": null
           },
           "4": {
-            "mean": 28.5,
+            "mean": 29.6,
             "sd": null
           },
           "5": {
@@ -3707,49 +3707,49 @@
             "sd": null
           },
           "6": {
-            "mean": 31.6,
+            "mean": 34.7,
             "sd": null
           },
           "7": {
-            "mean": 30.0,
+            "mean": 32.7,
             "sd": null
           },
           "8": {
-            "mean": 29.6,
+            "mean": 31.3,
             "sd": null
           }
         },
         "structure_only": {
           "1": {
-            "mean": 31.5,
+            "mean": 38.4,
             "sd": null
           },
           "2": {
-            "mean": 33.3,
+            "mean": 38.5,
             "sd": null
           },
           "3": {
-            "mean": 32.5,
+            "mean": 37.7,
             "sd": null
           },
           "4": {
-            "mean": 34.2,
+            "mean": 41.4,
             "sd": null
           },
           "5": {
-            "mean": 32.3,
+            "mean": 37.7,
             "sd": null
           },
           "6": {
-            "mean": 33.0,
+            "mean": 37.0,
             "sd": null
           },
           "7": {
-            "mean": 34.3,
+            "mean": 35.4,
             "sd": null
           },
           "8": {
-            "mean": 30.3,
+            "mean": 32.7,
             "sd": null
           }
         }
@@ -3759,20 +3759,20 @@
       "graphtoken": {
         "frozen_graph_history": {
           "changed_no_mention": {
-            "mean": 26.1,
-            "sd": 0.7
+            "mean": 26.8,
+            "sd": 1.1
           }
         },
         "oracle_updated_graph": {
           "changed_no_mention": {
-            "mean": 35.8,
-            "sd": 1.9
+            "mean": 38.3,
+            "sd": 1.4
           }
         },
         "predicted_updated_graph": {
           "changed_no_mention": {
-            "mean": 35.7,
-            "sd": 2.0
+            "mean": 38.2,
+            "sd": 1.5
           }
         },
         "question_only": {
@@ -3783,33 +3783,33 @@
         },
         "shuffled_graph": {
           "changed_no_mention": {
-            "mean": 25.1,
-            "sd": 0.3
+            "mean": 27.8,
+            "sd": 1.3
           }
         },
         "structure_only": {
           "changed_no_mention": {
-            "mean": 27.1,
-            "sd": 0.6
+            "mean": 27.2,
+            "sd": 1.1
           }
         }
       },
       "random": {
         "frozen_graph_history": {
           "changed_no_mention": {
-            "mean": 21.7,
+            "mean": 24.8,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "changed_no_mention": {
-            "mean": 36.8,
+            "mean": 40.9,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "changed_no_mention": {
-            "mean": 36.8,
+            "mean": 40.7,
             "sd": null
           }
         },
@@ -3821,13 +3821,13 @@
         },
         "shuffled_graph": {
           "changed_no_mention": {
-            "mean": 26.2,
+            "mean": 27.3,
             "sd": null
           }
         },
         "structure_only": {
           "changed_no_mention": {
-            "mean": 22.0,
+            "mean": 26.7,
             "sd": null
           }
         }
@@ -3861,20 +3861,20 @@
       "tea": {
         "frozen_graph_history": {
           "changed_no_mention": {
-            "mean": 21.5,
-            "sd": 1.6
+            "mean": 27.5,
+            "sd": 0.9
           }
         },
         "oracle_updated_graph": {
           "changed_no_mention": {
-            "mean": 22.7,
-            "sd": 0.2
+            "mean": 26.3,
+            "sd": 1.5
           }
         },
         "predicted_updated_graph": {
           "changed_no_mention": {
-            "mean": 22.7,
-            "sd": 0.2
+            "mean": 26.5,
+            "sd": 1.7
           }
         },
         "question_only": {
@@ -3885,33 +3885,33 @@
         },
         "shuffled_graph": {
           "changed_no_mention": {
-            "mean": 19.7,
-            "sd": 0.9
+            "mean": 24.5,
+            "sd": 0.3
           }
         },
         "structure_only": {
           "changed_no_mention": {
-            "mean": 22.9,
-            "sd": 0.7
+            "mean": 26.6,
+            "sd": 2.7
           }
         }
       },
       "warm": {
         "frozen_graph_history": {
           "changed_no_mention": {
-            "mean": 24.0,
+            "mean": 29.5,
             "sd": null
           }
         },
         "oracle_updated_graph": {
           "changed_no_mention": {
-            "mean": 25.3,
+            "mean": 25.6,
             "sd": null
           }
         },
         "predicted_updated_graph": {
           "changed_no_mention": {
-            "mean": 25.1,
+            "mean": 26.2,
             "sd": null
           }
         },
@@ -3923,13 +3923,13 @@
         },
         "shuffled_graph": {
           "changed_no_mention": {
-            "mean": 25.1,
+            "mean": 25.9,
             "sd": null
           }
         },
         "structure_only": {
           "changed_no_mention": {
-            "mean": 24.8,
+            "mean": 27.3,
             "sd": null
           }
         }
@@ -3938,20 +3938,20 @@
     "ci95": {
       "v4_graphtoken_s42": {
         "frozen_graph_history": [
-          39.1,
-          42.8
+          38.7,
+          42.4
         ],
         "majority_answer": [
           29.7,
           33.9
         ],
         "oracle_updated_graph": [
-          51.5,
-          56.2
+          51.8,
+          56.3
         ],
         "predicted_updated_graph": [
-          51.3,
-          56.0
+          51.7,
+          56.3
         ],
         "question_only": [
           24.7,
@@ -3966,8 +3966,8 @@
           65.0
         ],
         "structure_only": [
-          39.0,
-          42.7
+          38.8,
+          42.4
         ],
         "tool_solver": [
           100.0,
@@ -3976,7 +3976,7 @@
       },
       "v4_graphtoken_s43": {
         "frozen_graph_history": [
-          39.7,
+          39.9,
           43.5
         ],
         "majority_answer": [
@@ -3984,19 +3984,19 @@
           33.9
         ],
         "oracle_updated_graph": [
-          51.9,
-          56.6
+          52.2,
+          56.8
         ],
         "predicted_updated_graph": [
-          51.7,
-          56.4
+          52.2,
+          56.8
         ],
         "question_only": [
           24.7,
           28.4
         ],
         "shuffled_graph": [
-          30.8,
+          30.9,
           34.6
         ],
         "stale_answer": [
@@ -4004,8 +4004,8 @@
           65.0
         ],
         "structure_only": [
-          39.8,
-          43.6
+          39.9,
+          43.5
         ],
         "tool_solver": [
           100.0,
@@ -4014,27 +4014,27 @@
       },
       "v4_graphtoken_s44": {
         "frozen_graph_history": [
-          39.3,
-          42.8
+          39.6,
+          43.2
         ],
         "majority_answer": [
           29.7,
           33.9
         ],
         "oracle_updated_graph": [
-          50.5,
-          55.0
+          51.9,
+          56.4
         ],
         "predicted_updated_graph": [
-          50.3,
-          54.9
+          51.7,
+          56.2
         ],
         "question_only": [
           24.7,
           28.4
         ],
         "shuffled_graph": [
-          30.6,
+          30.7,
           34.4
         ],
         "stale_answer": [
@@ -4043,7 +4043,7 @@
         ],
         "structure_only": [
           39.3,
-          43.0
+          43.1
         ],
         "tool_solver": [
           100.0,
@@ -4052,36 +4052,36 @@
       },
       "v4_graphtoken_warm_s42": {
         "frozen_graph_history": [
-          30.4,
-          34.2
+          37.1,
+          40.5
         ],
         "majority_answer": [
           29.7,
           33.9
         ],
         "oracle_updated_graph": [
-          34.7,
-          38.8
+          42.6,
+          46.5
         ],
         "predicted_updated_graph": [
-          34.5,
-          38.6
+          42.7,
+          46.6
         ],
         "question_only": [
           24.7,
           28.4
         ],
         "shuffled_graph": [
-          27.3,
-          31.0
+          29.0,
+          32.6
         ],
         "stale_answer": [
           62.2,
           65.0
         ],
         "structure_only": [
-          30.7,
-          34.4
+          36.3,
+          39.7
         ],
         "tool_solver": [
           100.0,
@@ -4100,36 +4100,36 @@
       },
       "v4_tea_random_sum": {
         "frozen_graph_history": [
-          33.5,
-          37.4
+          39.8,
+          43.5
         ],
         "majority_answer": [
           29.7,
           33.9
         ],
         "oracle_updated_graph": [
-          42.0,
-          46.6
+          52.9,
+          57.5
         ],
         "predicted_updated_graph": [
-          41.7,
-          46.3
+          52.7,
+          57.4
         ],
         "question_only": [
           24.7,
           28.4
         ],
         "shuffled_graph": [
-          28.1,
-          31.7
+          30.0,
+          33.7
         ],
         "stale_answer": [
           62.2,
           65.0
         ],
         "structure_only": [
-          33.5,
-          37.5
+          39.9,
+          43.4
         ],
         "tool_solver": [
           100.0,
@@ -4138,36 +4138,36 @@
       },
       "v4_tea_s42": {
         "frozen_graph_history": [
-          28.4,
-          32.4
+          36.6,
+          40.1
         ],
         "majority_answer": [
           29.7,
           33.9
         ],
         "oracle_updated_graph": [
-          31.1,
-          35.1
+          40.2,
+          43.9
         ],
         "predicted_updated_graph": [
-          31.0,
-          34.9
+          40.1,
+          43.7
         ],
         "question_only": [
           24.7,
           28.4
         ],
         "shuffled_graph": [
-          26.2,
-          30.1
+          29.6,
+          33.3
         ],
         "stale_answer": [
           62.2,
           65.0
         ],
         "structure_only": [
-          28.9,
-          32.8
+          36.4,
+          39.7
         ],
         "tool_solver": [
           100.0,
@@ -4176,36 +4176,36 @@
       },
       "v4_tea_s43": {
         "frozen_graph_history": [
-          29.6,
-          33.5
+          36.3,
+          39.9
         ],
         "majority_answer": [
           29.7,
           33.9
         ],
         "oracle_updated_graph": [
-          31.2,
-          35.4
+          40.0,
+          43.7
         ],
         "predicted_updated_graph": [
-          31.2,
-          35.4
+          40.1,
+          43.8
         ],
         "question_only": [
           24.7,
           28.4
         ],
         "shuffled_graph": [
-          25.6,
-          29.4
+          30.5,
+          34.3
         ],
         "stale_answer": [
           62.2,
           65.0
         ],
         "structure_only": [
-          29.7,
-          33.6
+          36.3,
+          39.8
         ],
         "tool_solver": [
           100.0,
@@ -4214,36 +4214,36 @@
       },
       "v4_tea_s44": {
         "frozen_graph_history": [
-          28.7,
-          32.6
+          36.4,
+          39.9
         ],
         "majority_answer": [
           29.7,
           33.9
         ],
         "oracle_updated_graph": [
-          31.0,
-          35.1
+          40.8,
+          44.6
         ],
         "predicted_updated_graph": [
-          30.9,
-          35.0
+          40.6,
+          44.4
         ],
         "question_only": [
           24.7,
           28.4
         ],
         "shuffled_graph": [
-          25.5,
-          29.5
+          30.0,
+          33.4
         ],
         "stale_answer": [
           62.2,
           65.0
         ],
         "structure_only": [
-          29.1,
-          33.0
+          36.0,
+          39.5
         ],
         "tool_solver": [
           100.0,
@@ -4278,518 +4278,518 @@
     "paired": {
       "v4_graphtoken_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt [all]": {
         "ci95": [
-          16.5,
-          21.7
+          16.8,
+          22.0
         ],
-        "delta": 19.1
+        "delta": 19.4
       },
       "v4_graphtoken_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt [answer_changing]": {
         "ci95": [
-          16.0,
-          22.6
+          16.1,
+          23.2
         ],
-        "delta": 19.3
+        "delta": 19.7
       },
       "v4_graphtoken_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt [local_wrong]": {
         "ci95": [
-          -1.7,
-          4.9
+          0.2,
+          7.7
         ],
-        "delta": 1.6
+        "delta": 4.0
       },
       "v4_graphtoken_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [all]": {
         "ci95": [
-          18.0,
-          23.0
-        ],
-        "delta": 20.5
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [answer_changing]": {
-        "ci95": [
-          19.2,
-          25.4
-        ],
-        "delta": 22.3
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [local_wrong]": {
-        "ci95": [
-          -1.1,
-          5.4
-        ],
-        "delta": 2.1
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_random_sum:oracle_updated_graph [all]": {
-        "ci95": [
-          7.5,
-          11.7
-        ],
-        "delta": 9.6
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_random_sum:oracle_updated_graph [answer_changing]": {
-        "ci95": [
-          8.0,
-          13.8
-        ],
-        "delta": 10.9
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_random_sum:oracle_updated_graph [local_wrong]": {
-        "ci95": [
-          -7.2,
-          -1.4
-        ],
-        "delta": -4.3
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [all]": {
-        "ci95": [
-          18.5,
-          23.0
-        ],
-        "delta": 20.7
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [answer_changing]": {
-        "ci95": [
-          18.5,
-          24.5
-        ],
-        "delta": 21.6
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [local_wrong]": {
-        "ci95": [
-          -3.4,
-          2.6
-        ],
-        "delta": -0.4
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [all]": {
-        "ci95": [
           18.2,
-          23.0
-        ],
-        "delta": 20.5
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [answer_changing]": {
-        "ci95": [
-          18.7,
-          25.0
-        ],
-        "delta": 21.9
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [local_wrong]": {
-        "ci95": [
-          -1.7,
-          4.3
-        ],
-        "delta": 1.3
-      },
-      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s44:oracle_updated_graph [all]": {
-        "ci95": [
-          18.5,
-          23.1
+          23.3
         ],
         "delta": 20.8
       },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [answer_changing]": {
+        "ci95": [
+          19.4,
+          26.0
+        ],
+        "delta": 22.6
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [local_wrong]": {
+        "ci95": [
+          0.9,
+          7.9
+        ],
+        "delta": 4.5
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_random_sum:oracle_updated_graph [all]": {
+        "ci95": [
+          -2.3,
+          0.0
+        ],
+        "delta": -1.1
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_random_sum:oracle_updated_graph [answer_changing]": {
+        "ci95": [
+          -2.6,
+          0.7
+        ],
+        "delta": -0.9
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_random_sum:oracle_updated_graph [local_wrong]": {
+        "ci95": [
+          1.2,
+          5.7
+        ],
+        "delta": 3.4
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [all]": {
+        "ci95": [
+          9.9,
+          14.3
+        ],
+        "delta": 12.1
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [answer_changing]": {
+        "ci95": [
+          11.3,
+          17.5
+        ],
+        "delta": 14.4
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [local_wrong]": {
+        "ci95": [
+          -5.8,
+          0.5
+        ],
+        "delta": -2.6
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [all]": {
+        "ci95": [
+          10.0,
+          14.4
+        ],
+        "delta": 12.3
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [answer_changing]": {
+        "ci95": [
+          11.4,
+          17.8
+        ],
+        "delta": 14.6
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [local_wrong]": {
+        "ci95": [
+          -2.4,
+          4.5
+        ],
+        "delta": 1.0
+      },
+      "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s44:oracle_updated_graph [all]": {
+        "ci95": [
+          9.3,
+          13.6
+        ],
+        "delta": 11.5
+      },
       "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s44:oracle_updated_graph [answer_changing]": {
         "ci95": [
-          18.3,
-          24.3
+          10.3,
+          16.3
         ],
-        "delta": 21.3
+        "delta": 13.3
       },
       "v4_graphtoken_s42:oracle_updated_graph - v4_tea_s44:oracle_updated_graph [local_wrong]": {
         "ci95": [
-          -3.3,
-          2.8
+          -4.8,
+          1.8
         ],
-        "delta": -0.3
+        "delta": -1.4
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_soft_prompt:soft_prompt [all]": {
         "ci95": [
-          17.1,
-          22.1
+          17.3,
+          22.3
         ],
-        "delta": 19.6
+        "delta": 19.8
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_soft_prompt:soft_prompt [answer_changing]": {
         "ci95": [
-          16.2,
-          23.0
+          16.5,
+          23.4
         ],
         "delta": 19.7
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_soft_prompt:soft_prompt [local_wrong]": {
         "ci95": [
-          0.0,
-          6.5
+          -0.1,
+          6.7
         ],
         "delta": 3.3
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [all]": {
         "ci95": [
-          18.5,
-          23.5
+          18.7,
+          23.6
         ],
-        "delta": 21.0
+        "delta": 21.2
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [answer_changing]": {
         "ci95": [
-          19.3,
-          26.0
+          19.5,
+          26.2
         ],
         "delta": 22.7
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [local_wrong]": {
         "ci95": [
-          0.5,
-          6.9
+          0.4,
+          7.2
         ],
         "delta": 3.8
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [all]": {
         "ci95": [
-          18.9,
-          23.5
+          10.2,
+          14.6
         ],
-        "delta": 21.2
+        "delta": 12.5
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [answer_changing]": {
         "ci95": [
-          18.8,
-          25.1
+          11.5,
+          17.5
         ],
-        "delta": 22.0
+        "delta": 14.5
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [local_wrong]": {
         "ci95": [
-          -1.7,
-          4.3
+          -6.6,
+          0.3
         ],
-        "delta": 1.3
+        "delta": -3.2
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [all]": {
         "ci95": [
-          18.8,
-          23.3
+          10.5,
+          14.8
         ],
-        "delta": 21.0
+        "delta": 12.7
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [answer_changing]": {
         "ci95": [
-          19.2,
-          25.5
+          11.7,
+          17.6
         ],
-        "delta": 22.4
+        "delta": 14.7
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [local_wrong]": {
         "ci95": [
-          0.0,
-          6.0
+          -2.9,
+          3.5
         ],
-        "delta": 3.0
+        "delta": 0.4
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_tea_s44:oracle_updated_graph [all]": {
         "ci95": [
-          19.0,
-          23.6
+          9.6,
+          14.0
         ],
-        "delta": 21.3
+        "delta": 11.9
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_tea_s44:oracle_updated_graph [answer_changing]": {
         "ci95": [
-          18.8,
-          24.7
+          10.5,
+          16.3
         ],
-        "delta": 21.8
+        "delta": 13.4
       },
       "v4_graphtoken_s43:oracle_updated_graph - v4_tea_s44:oracle_updated_graph [local_wrong]": {
         "ci95": [
-          -1.8,
-          4.7
+          -5.5,
+          1.3
         ],
-        "delta": 1.4
+        "delta": -2.1
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_soft_prompt:soft_prompt [all]": {
         "ci95": [
-          15.6,
-          20.5
+          17.0,
+          22.0
         ],
-        "delta": 18.1
+        "delta": 19.5
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_soft_prompt:soft_prompt [answer_changing]": {
         "ci95": [
-          14.6,
-          21.3
+          16.0,
+          22.9
         ],
-        "delta": 17.9
+        "delta": 19.4
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_soft_prompt:soft_prompt [local_wrong]": {
         "ci95": [
-          -1.1,
-          5.1
+          0.1,
+          7.0
         ],
-        "delta": 2.0
+        "delta": 3.5
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [all]": {
         "ci95": [
-          17.0,
-          21.9
-        ],
-        "delta": 19.5
-      },
-      "v4_graphtoken_s44:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [answer_changing]": {
-        "ci95": [
-          17.6,
-          24.3
+          18.4,
+          23.4
         ],
         "delta": 20.9
       },
+      "v4_graphtoken_s44:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [answer_changing]": {
+        "ci95": [
+          19.1,
+          25.7
+        ],
+        "delta": 22.3
+      },
       "v4_graphtoken_s44:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [local_wrong]": {
         "ci95": [
-          -0.7,
-          5.5
+          0.7,
+          7.4
         ],
-        "delta": 2.5
+        "delta": 4.0
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [all]": {
         "ci95": [
-          17.4,
-          22.0
+          10.0,
+          14.3
         ],
-        "delta": 19.7
+        "delta": 12.3
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [answer_changing]": {
         "ci95": [
-          17.1,
-          23.2
+          11.1,
+          17.0
         ],
-        "delta": 20.2
+        "delta": 14.1
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_tea_s42:oracle_updated_graph [local_wrong]": {
         "ci95": [
-          -3.2,
-          2.9
+          -6.2,
+          0.0
         ],
-        "delta": 0.0
+        "delta": -3.0
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [all]": {
         "ci95": [
-          17.2,
-          21.8
+          10.2,
+          14.5
         ],
-        "delta": 19.5
+        "delta": 12.4
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [answer_changing]": {
         "ci95": [
-          17.3,
-          23.8
+          11.3,
+          17.2
         ],
-        "delta": 20.6
+        "delta": 14.3
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_tea_s43:oracle_updated_graph [local_wrong]": {
         "ci95": [
-          -1.3,
-          4.7
+          -2.5,
+          3.5
         ],
-        "delta": 1.7
+        "delta": 0.6
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_tea_s44:oracle_updated_graph [all]": {
         "ci95": [
-          17.5,
-          22.0
+          9.4,
+          13.7
         ],
-        "delta": 19.8
+        "delta": 11.6
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_tea_s44:oracle_updated_graph [answer_changing]": {
         "ci95": [
-          16.9,
-          23.0
+          10.0,
+          15.8
         ],
-        "delta": 20.0
+        "delta": 13.0
       },
       "v4_graphtoken_s44:oracle_updated_graph - v4_tea_s44:oracle_updated_graph [local_wrong]": {
         "ci95": [
-          -3.0,
-          3.3
+          -5.0,
+          1.2
         ],
-        "delta": 0.1
+        "delta": -1.9
       },
       "v4_graphtoken_warm_s42:oracle_updated_graph - v4_graphtoken_s42:oracle_updated_graph [all]": {
         "ci95": [
-          -19.3,
-          -14.9
+          -11.5,
+          -7.7
         ],
-        "delta": -17.1
+        "delta": -9.6
       },
       "v4_graphtoken_warm_s42:oracle_updated_graph - v4_graphtoken_s42:oracle_updated_graph [answer_changing]": {
         "ci95": [
-          -21.0,
-          -15.2
+          -14.5,
+          -9.1
         ],
-        "delta": -18.1
+        "delta": -11.8
       },
       "v4_graphtoken_warm_s42:oracle_updated_graph - v4_graphtoken_s42:oracle_updated_graph [local_wrong]": {
         "ci95": [
-          -1.7,
-          4.1
+          -4.1,
+          2.0
         ],
-        "delta": 1.1
+        "delta": -1.0
       },
       "v4_tea_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [all]": {
         "ci95": [
-          -2.1,
-          1.8
+          6.3,
+          11.1
         ],
-        "delta": -0.2
+        "delta": 8.7
       },
       "v4_tea_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [answer_changing]": {
         "ci95": [
-          -1.9,
-          3.4
+          5.0,
+          11.4
         ],
-        "delta": 0.7
+        "delta": 8.2
       },
       "v4_tea_s42:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [local_wrong]": {
         "ci95": [
-          -0.7,
-          5.7
+          3.3,
+          10.6
         ],
-        "delta": 2.5
+        "delta": 7.0
       },
       "v4_tea_s42:oracle_updated_graph - v4_tea_random_sum:oracle_updated_graph [all]": {
         "ci95": [
-          -13.1,
-          -9.3
+          -15.4,
+          -11.0
         ],
-        "delta": -11.2
+        "delta": -13.2
       },
       "v4_tea_s42:oracle_updated_graph - v4_tea_random_sum:oracle_updated_graph [answer_changing]": {
         "ci95": [
-          -13.2,
-          -8.3
+          -18.2,
+          -12.4
         ],
-        "delta": -10.7
+        "delta": -15.4
       },
       "v4_tea_s42:oracle_updated_graph - v4_tea_random_sum:oracle_updated_graph [local_wrong]": {
         "ci95": [
-          -6.9,
-          -0.9
+          3.2,
+          9.0
         ],
-        "delta": -3.9
+        "delta": 6.0
       },
       "v4_tea_s43:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [all]": {
         "ci95": [
-          -1.7,
-          1.7
+          6.5,
+          10.6
         ],
-        "delta": 0.0
+        "delta": 8.5
       },
       "v4_tea_s43:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [answer_changing]": {
         "ci95": [
-          -2.1,
-          2.8
+          5.1,
+          10.9
         ],
-        "delta": 0.3
+        "delta": 8.0
       },
       "v4_tea_s43:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [local_wrong]": {
         "ci95": [
-          -2.3,
-          3.8
+          0.1,
+          6.6
         ],
-        "delta": 0.8
+        "delta": 3.4
       },
       "v4_tea_s44:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [all]": {
         "ci95": [
-          -2.1,
-          1.6
+          7.2,
+          11.5
         ],
-        "delta": -0.2
+        "delta": 9.3
       },
       "v4_tea_s44:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [answer_changing]": {
         "ci95": [
-          -1.6,
-          3.5
+          6.4,
+          12.3
         ],
-        "delta": 0.9
+        "delta": 9.3
       },
       "v4_tea_s44:oracle_updated_graph - v4_soft_prompt:soft_prompt_no_history [local_wrong]": {
         "ci95": [
-          -0.9,
-          5.7
+          2.5,
+          9.4
         ],
-        "delta": 2.4
+        "delta": 5.9
       }
     },
     "seeds": {
       "v4_graphtoken_s* frozen_graph_history [all]": {
-        "mean": 41.3,
-        "sd": 0.4
+        "mean": 41.2,
+        "sd": 0.6
       },
       "v4_graphtoken_s* frozen_graph_history [answer_changing]": {
-        "mean": 25.2,
-        "sd": 0.7
+        "mean": 24.2,
+        "sd": 1.0
       },
       "v4_graphtoken_s* frozen_graph_history [changed_and_no_mention]": {
-        "mean": 26.1,
-        "sd": 0.7
+        "mean": 26.8,
+        "sd": 1.1
       },
       "v4_graphtoken_s* frozen_graph_history [local_wrong]": {
-        "mean": 20.8,
-        "sd": 0.6
+        "mean": 22.5,
+        "sd": 0.9
       },
       "v4_graphtoken_s* frozen_graph_history [no_mention]": {
-        "mean": 46.7,
-        "sd": 0.4
+        "mean": 47.6,
+        "sd": 0.3
       },
       "v4_graphtoken_s* frozen_graph_history [shortcut_wrong]": {
-        "mean": 24.5,
-        "sd": 0.4
-      },
-      "v4_graphtoken_s* oracle_updated_graph [all]": {
-        "mean": 53.7,
-        "sd": 0.8
-      },
-      "v4_graphtoken_s* oracle_updated_graph [answer_changing]": {
-        "mean": 51.2,
-        "sd": 0.9
-      },
-      "v4_graphtoken_s* oracle_updated_graph [changed_and_no_mention]": {
-        "mean": 35.8,
-        "sd": 1.9
-      },
-      "v4_graphtoken_s* oracle_updated_graph [local_wrong]": {
-        "mean": 20.9,
-        "sd": 0.9
-      },
-      "v4_graphtoken_s* oracle_updated_graph [no_mention]": {
-        "mean": 52.6,
+        "mean": 25.5,
         "sd": 0.6
       },
+      "v4_graphtoken_s* oracle_updated_graph [all]": {
+        "mean": 54.3,
+        "sd": 0.2
+      },
+      "v4_graphtoken_s* oracle_updated_graph [answer_changing]": {
+        "mean": 51.8,
+        "sd": 0.2
+      },
+      "v4_graphtoken_s* oracle_updated_graph [changed_and_no_mention]": {
+        "mean": 38.3,
+        "sd": 1.4
+      },
+      "v4_graphtoken_s* oracle_updated_graph [local_wrong]": {
+        "mean": 22.2,
+        "sd": 0.3
+      },
+      "v4_graphtoken_s* oracle_updated_graph [no_mention]": {
+        "mean": 53.6,
+        "sd": 0.2
+      },
       "v4_graphtoken_s* oracle_updated_graph [shortcut_wrong]": {
-        "mean": 25.5,
-        "sd": 0.8
+        "mean": 26.9,
+        "sd": 0.4
       },
       "v4_graphtoken_s* predicted_updated_graph [all]": {
-        "mean": 53.5,
-        "sd": 0.7
+        "mean": 54.2,
+        "sd": 0.3
       },
       "v4_graphtoken_s* predicted_updated_graph [answer_changing]": {
-        "mean": 50.4,
-        "sd": 0.9
+        "mean": 51.2,
+        "sd": 0.4
       },
       "v4_graphtoken_s* predicted_updated_graph [changed_and_no_mention]": {
-        "mean": 35.7,
-        "sd": 2.0
+        "mean": 38.2,
+        "sd": 1.5
       },
       "v4_graphtoken_s* predicted_updated_graph [local_wrong]": {
-        "mean": 20.7,
-        "sd": 0.9
+        "mean": 22.7,
+        "sd": 0.5
       },
       "v4_graphtoken_s* predicted_updated_graph [no_mention]": {
-        "mean": 52.6,
-        "sd": 0.7
+        "mean": 53.7,
+        "sd": 0.3
       },
       "v4_graphtoken_s* predicted_updated_graph [shortcut_wrong]": {
-        "mean": 25.2,
-        "sd": 0.8
+        "mean": 27.0,
+        "sd": 0.6
       },
       "v4_graphtoken_s* question_only [all]": {
         "mean": 26.5,
@@ -4816,124 +4816,124 @@
         "sd": 0
       },
       "v4_graphtoken_s* shuffled_graph [all]": {
-        "mean": 32.4,
-        "sd": 0.3
+        "mean": 32.5,
+        "sd": 0.4
       },
       "v4_graphtoken_s* shuffled_graph [answer_changing]": {
-        "mean": 28.8,
-        "sd": 0.2
+        "mean": 29.4,
+        "sd": 0.6
       },
       "v4_graphtoken_s* shuffled_graph [changed_and_no_mention]": {
-        "mean": 25.1,
-        "sd": 0.3
+        "mean": 27.8,
+        "sd": 1.3
       },
       "v4_graphtoken_s* shuffled_graph [local_wrong]": {
-        "mean": 20.1,
+        "mean": 21.2,
         "sd": 0.1
       },
       "v4_graphtoken_s* shuffled_graph [no_mention]": {
-        "mean": 32.4,
-        "sd": 0.3
+        "mean": 32.7,
+        "sd": 0.4
       },
       "v4_graphtoken_s* shuffled_graph [shortcut_wrong]": {
-        "mean": 23.9,
+        "mean": 25.0,
         "sd": 0.3
       },
       "v4_graphtoken_s* structure_only [all]": {
-        "mean": 41.3,
+        "mean": 41.2,
         "sd": 0.5
       },
       "v4_graphtoken_s* structure_only [answer_changing]": {
-        "mean": 24.6,
+        "mean": 23.0,
         "sd": 1.1
       },
       "v4_graphtoken_s* structure_only [changed_and_no_mention]": {
-        "mean": 27.1,
-        "sd": 0.6
+        "mean": 27.2,
+        "sd": 1.1
       },
       "v4_graphtoken_s* structure_only [local_wrong]": {
-        "mean": 21.0,
-        "sd": 1.3
+        "mean": 23.2,
+        "sd": 1.1
       },
       "v4_graphtoken_s* structure_only [no_mention]": {
-        "mean": 47.2,
-        "sd": 0.1
+        "mean": 48.1,
+        "sd": 0.0
       },
       "v4_graphtoken_s* structure_only [shortcut_wrong]": {
-        "mean": 24.9,
-        "sd": 0.9
+        "mean": 26.5,
+        "sd": 0.8
       },
       "v4_tea_s* frozen_graph_history [all]": {
-        "mean": 30.9,
-        "sd": 0.6
+        "mean": 38.2,
+        "sd": 0.1
       },
       "v4_tea_s* frozen_graph_history [answer_changing]": {
-        "mean": 24.4,
-        "sd": 1.2
+        "mean": 29.1,
+        "sd": 0.5
       },
       "v4_tea_s* frozen_graph_history [changed_and_no_mention]": {
-        "mean": 21.5,
-        "sd": 1.6
+        "mean": 27.5,
+        "sd": 0.9
       },
       "v4_tea_s* frozen_graph_history [local_wrong]": {
-        "mean": 19.3,
-        "sd": 0.9
+        "mean": 22.3,
+        "sd": 1.0
       },
       "v4_tea_s* frozen_graph_history [no_mention]": {
-        "mean": 32.2,
-        "sd": 0.1
+        "mean": 39.8,
+        "sd": 0.4
       },
       "v4_tea_s* frozen_graph_history [shortcut_wrong]": {
-        "mean": 22.3,
-        "sd": 0.6
+        "mean": 26.2,
+        "sd": 0.4
       },
       "v4_tea_s* oracle_updated_graph [all]": {
-        "mean": 33.2,
-        "sd": 0.1
+        "mean": 42.1,
+        "sd": 0.4
       },
       "v4_tea_s* oracle_updated_graph [answer_changing]": {
-        "mean": 29.9,
-        "sd": 0.3
+        "mean": 37.8,
+        "sd": 0.7
       },
       "v4_tea_s* oracle_updated_graph [changed_and_no_mention]": {
-        "mean": 22.7,
-        "sd": 0.2
+        "mean": 26.3,
+        "sd": 1.5
       },
       "v4_tea_s* oracle_updated_graph [local_wrong]": {
-        "mean": 20.0,
-        "sd": 1.0
+        "mean": 23.6,
+        "sd": 1.8
       },
       "v4_tea_s* oracle_updated_graph [no_mention]": {
-        "mean": 32.9,
-        "sd": 0.3
+        "mean": 40.8,
+        "sd": 0.6
       },
       "v4_tea_s* oracle_updated_graph [shortcut_wrong]": {
-        "mean": 23.8,
-        "sd": 1.0
+        "mean": 27.7,
+        "sd": 1.3
       },
       "v4_tea_s* predicted_updated_graph [all]": {
-        "mean": 33.1,
-        "sd": 0.2
+        "mean": 42.1,
+        "sd": 0.3
       },
       "v4_tea_s* predicted_updated_graph [answer_changing]": {
-        "mean": 29.6,
-        "sd": 0.2
+        "mean": 37.6,
+        "sd": 0.6
       },
       "v4_tea_s* predicted_updated_graph [changed_and_no_mention]": {
-        "mean": 22.7,
-        "sd": 0.2
+        "mean": 26.5,
+        "sd": 1.7
       },
       "v4_tea_s* predicted_updated_graph [local_wrong]": {
-        "mean": 20.0,
-        "sd": 0.9
+        "mean": 23.8,
+        "sd": 1.6
       },
       "v4_tea_s* predicted_updated_graph [no_mention]": {
-        "mean": 32.9,
-        "sd": 0.2
+        "mean": 40.8,
+        "sd": 0.6
       },
       "v4_tea_s* predicted_updated_graph [shortcut_wrong]": {
-        "mean": 23.8,
-        "sd": 0.9
+        "mean": 27.9,
+        "sd": 1.1
       },
       "v4_tea_s* question_only [all]": {
         "mean": 26.5,
@@ -4960,61 +4960,61 @@
         "sd": 0
       },
       "v4_tea_s* shuffled_graph [all]": {
-        "mean": 27.7,
-        "sd": 0.4
+        "mean": 31.9,
+        "sd": 0.5
       },
       "v4_tea_s* shuffled_graph [answer_changing]": {
-        "mean": 23.8,
+        "mean": 28.5,
         "sd": 0.7
       },
       "v4_tea_s* shuffled_graph [changed_and_no_mention]": {
-        "mean": 19.7,
-        "sd": 0.9
+        "mean": 24.5,
+        "sd": 0.3
       },
       "v4_tea_s* shuffled_graph [local_wrong]": {
-        "mean": 18.0,
-        "sd": 1.6
+        "mean": 21.3,
+        "sd": 0.9
       },
       "v4_tea_s* shuffled_graph [no_mention]": {
-        "mean": 28.8,
-        "sd": 0.5
+        "mean": 32.0,
+        "sd": 0.6
       },
       "v4_tea_s* shuffled_graph [shortcut_wrong]": {
-        "mean": 22.3,
-        "sd": 1.3
+        "mean": 25.7,
+        "sd": 0.3
       },
       "v4_tea_s* structure_only [all]": {
-        "mean": 31.2,
-        "sd": 0.4
+        "mean": 37.9,
+        "sd": 0.1
       },
       "v4_tea_s* structure_only [answer_changing]": {
-        "mean": 24.8,
-        "sd": 0.8
-      },
-      "v4_tea_s* structure_only [changed_and_no_mention]": {
-        "mean": 22.9,
-        "sd": 0.7
-      },
-      "v4_tea_s* structure_only [local_wrong]": {
-        "mean": 19.6,
-        "sd": 0.7
-      },
-      "v4_tea_s* structure_only [no_mention]": {
-        "mean": 32.8,
+        "mean": 27.9,
         "sd": 0.4
       },
-      "v4_tea_s* structure_only [shortcut_wrong]": {
-        "mean": 22.8,
+      "v4_tea_s* structure_only [changed_and_no_mention]": {
+        "mean": 26.6,
+        "sd": 2.7
+      },
+      "v4_tea_s* structure_only [local_wrong]": {
+        "mean": 23.2,
+        "sd": 1.5
+      },
+      "v4_tea_s* structure_only [no_mention]": {
+        "mean": 40.1,
         "sd": 0.7
+      },
+      "v4_tea_s* structure_only [shortcut_wrong]": {
+        "mean": 26.9,
+        "sd": 1.3
       }
     },
     "slices": {
       "v4_graphtoken_s42": {
         "frozen_graph_history": {
-          "all": 41.0,
-          "answer_changing": 24.7,
-          "changed_and_no_mention": 26.7,
-          "local_wrong": 20.2
+          "all": 40.5,
+          "answer_changing": 23.1,
+          "changed_and_no_mention": 27.3,
+          "local_wrong": 23.0
         },
         "majority_answer": {
           "all": 31.8,
@@ -5023,16 +5023,16 @@
           "local_wrong": 24.6
         },
         "oracle_updated_graph": {
-          "all": 53.8,
-          "answer_changing": 51.5,
-          "changed_and_no_mention": 36.5,
-          "local_wrong": 20.2
+          "all": 54.1,
+          "answer_changing": 51.9,
+          "changed_and_no_mention": 39.8,
+          "local_wrong": 22.6
         },
         "predicted_updated_graph": {
-          "all": 53.6,
-          "answer_changing": 50.7,
-          "changed_and_no_mention": 36.2,
-          "local_wrong": 20.1
+          "all": 54.0,
+          "answer_changing": 51.5,
+          "changed_and_no_mention": 39.8,
+          "local_wrong": 23.2
         },
         "question_only": {
           "all": 26.5,
@@ -5042,9 +5042,9 @@
         },
         "shuffled_graph": {
           "all": 32.1,
-          "answer_changing": 28.7,
-          "changed_and_no_mention": 25.1,
-          "local_wrong": 20.1
+          "answer_changing": 29.2,
+          "changed_and_no_mention": 27.9,
+          "local_wrong": 21.2
         },
         "stale_answer": {
           "all": 63.6,
@@ -5053,10 +5053,10 @@
           "local_wrong": 57.3
         },
         "structure_only": {
-          "all": 40.8,
-          "answer_changing": 23.3,
-          "changed_and_no_mention": 27.3,
-          "local_wrong": 19.5
+          "all": 40.7,
+          "answer_changing": 21.8,
+          "changed_and_no_mention": 27.9,
+          "local_wrong": 23.4
         },
         "tool_solver": {
           "all": 100.0,
@@ -5068,9 +5068,9 @@
       "v4_graphtoken_s43": {
         "frozen_graph_history": {
           "all": 41.7,
-          "answer_changing": 24.9,
-          "changed_and_no_mention": 26.2,
-          "local_wrong": 21.2
+          "answer_changing": 24.7,
+          "changed_and_no_mention": 25.6,
+          "local_wrong": 21.4
         },
         "majority_answer": {
           "all": 31.8,
@@ -5079,16 +5079,16 @@
           "local_wrong": 24.6
         },
         "oracle_updated_graph": {
-          "all": 54.3,
+          "all": 54.5,
           "answer_changing": 52.0,
-          "changed_and_no_mention": 37.3,
+          "changed_and_no_mention": 37.6,
           "local_wrong": 22.0
         },
         "predicted_updated_graph": {
-          "all": 54.1,
-          "answer_changing": 51.0,
-          "changed_and_no_mention": 37.3,
-          "local_wrong": 21.8
+          "all": 54.5,
+          "answer_changing": 51.3,
+          "changed_and_no_mention": 37.6,
+          "local_wrong": 22.6
         },
         "question_only": {
           "all": 26.5,
@@ -5097,10 +5097,10 @@
           "local_wrong": 24.6
         },
         "shuffled_graph": {
-          "all": 32.7,
-          "answer_changing": 29.0,
-          "changed_and_no_mention": 24.8,
-          "local_wrong": 20.2
+          "all": 32.8,
+          "answer_changing": 30.1,
+          "changed_and_no_mention": 29.0,
+          "local_wrong": 21.3
         },
         "stale_answer": {
           "all": 63.6,
@@ -5109,10 +5109,10 @@
           "local_wrong": 57.3
         },
         "structure_only": {
-          "all": 41.8,
-          "answer_changing": 25.4,
-          "changed_and_no_mention": 27.6,
-          "local_wrong": 21.5
+          "all": 41.7,
+          "answer_changing": 23.9,
+          "changed_and_no_mention": 25.9,
+          "local_wrong": 22.1
         },
         "tool_solver": {
           "all": 100.0,
@@ -5123,10 +5123,10 @@
       },
       "v4_graphtoken_s44": {
         "frozen_graph_history": {
-          "all": 41.1,
-          "answer_changing": 26.0,
-          "changed_and_no_mention": 25.3,
-          "local_wrong": 21.2
+          "all": 41.4,
+          "answer_changing": 24.9,
+          "changed_and_no_mention": 27.6,
+          "local_wrong": 23.0
         },
         "majority_answer": {
           "all": 31.8,
@@ -5135,16 +5135,16 @@
           "local_wrong": 24.6
         },
         "oracle_updated_graph": {
-          "all": 52.8,
-          "answer_changing": 50.2,
-          "changed_and_no_mention": 33.7,
-          "local_wrong": 20.6
+          "all": 54.3,
+          "answer_changing": 51.6,
+          "changed_and_no_mention": 37.3,
+          "local_wrong": 22.1
         },
         "predicted_updated_graph": {
-          "all": 52.7,
-          "answer_changing": 49.4,
-          "changed_and_no_mention": 33.4,
-          "local_wrong": 20.2
+          "all": 54.0,
+          "answer_changing": 50.7,
+          "changed_and_no_mention": 37.0,
+          "local_wrong": 22.1
         },
         "question_only": {
           "all": 26.5,
@@ -5154,9 +5154,9 @@
         },
         "shuffled_graph": {
           "all": 32.5,
-          "answer_changing": 28.7,
-          "changed_and_no_mention": 25.3,
-          "local_wrong": 20.1
+          "answer_changing": 28.9,
+          "changed_and_no_mention": 26.5,
+          "local_wrong": 21.2
         },
         "stale_answer": {
           "all": 63.6,
@@ -5165,10 +5165,10 @@
           "local_wrong": 57.3
         },
         "structure_only": {
-          "all": 41.2,
-          "answer_changing": 25.0,
-          "changed_and_no_mention": 26.5,
-          "local_wrong": 22.0
+          "all": 41.3,
+          "answer_changing": 23.2,
+          "changed_and_no_mention": 27.9,
+          "local_wrong": 24.1
         },
         "tool_solver": {
           "all": 100.0,
@@ -5179,10 +5179,10 @@
       },
       "v4_graphtoken_warm_s42": {
         "frozen_graph_history": {
-          "all": 32.3,
-          "answer_changing": 24.1,
-          "changed_and_no_mention": 24.0,
-          "local_wrong": 20.7
+          "all": 38.8,
+          "answer_changing": 27.0,
+          "changed_and_no_mention": 29.5,
+          "local_wrong": 24.0
         },
         "majority_answer": {
           "all": 31.8,
@@ -5191,16 +5191,16 @@
           "local_wrong": 24.6
         },
         "oracle_updated_graph": {
-          "all": 36.7,
-          "answer_changing": 33.5,
-          "changed_and_no_mention": 25.3,
-          "local_wrong": 21.4
+          "all": 44.5,
+          "answer_changing": 40.1,
+          "changed_and_no_mention": 25.6,
+          "local_wrong": 21.6
         },
         "predicted_updated_graph": {
-          "all": 36.5,
-          "answer_changing": 32.9,
-          "changed_and_no_mention": 25.1,
-          "local_wrong": 21.0
+          "all": 44.6,
+          "answer_changing": 40.0,
+          "changed_and_no_mention": 26.2,
+          "local_wrong": 22.3
         },
         "question_only": {
           "all": 26.5,
@@ -5209,10 +5209,10 @@
           "local_wrong": 24.6
         },
         "shuffled_graph": {
-          "all": 29.2,
-          "answer_changing": 26.8,
-          "changed_and_no_mention": 25.1,
-          "local_wrong": 19.9
+          "all": 30.8,
+          "answer_changing": 27.6,
+          "changed_and_no_mention": 25.9,
+          "local_wrong": 21.9
         },
         "stale_answer": {
           "all": 63.6,
@@ -5221,10 +5221,10 @@
           "local_wrong": 57.3
         },
         "structure_only": {
-          "all": 32.6,
-          "answer_changing": 24.4,
-          "changed_and_no_mention": 24.8,
-          "local_wrong": 18.9
+          "all": 38.0,
+          "answer_changing": 26.1,
+          "changed_and_no_mention": 27.3,
+          "local_wrong": 23.0
         },
         "tool_solver": {
           "all": 100.0,
@@ -5249,10 +5249,10 @@
       },
       "v4_tea_random_sum": {
         "frozen_graph_history": {
-          "all": 35.5,
-          "answer_changing": 22.4,
-          "changed_and_no_mention": 21.7,
-          "local_wrong": 22.2
+          "all": 41.7,
+          "answer_changing": 24.8,
+          "changed_and_no_mention": 24.8,
+          "local_wrong": 21.3
         },
         "majority_answer": {
           "all": 31.8,
@@ -5261,16 +5261,16 @@
           "local_wrong": 24.6
         },
         "oracle_updated_graph": {
-          "all": 44.3,
-          "answer_changing": 40.7,
-          "changed_and_no_mention": 36.8,
-          "local_wrong": 24.5
+          "all": 55.2,
+          "answer_changing": 52.8,
+          "changed_and_no_mention": 40.9,
+          "local_wrong": 19.2
         },
         "predicted_updated_graph": {
-          "all": 44.0,
-          "answer_changing": 40.1,
-          "changed_and_no_mention": 36.8,
-          "local_wrong": 24.6
+          "all": 55.1,
+          "answer_changing": 52.1,
+          "changed_and_no_mention": 40.7,
+          "local_wrong": 20.2
         },
         "question_only": {
           "all": 26.5,
@@ -5279,10 +5279,10 @@
           "local_wrong": 24.6
         },
         "shuffled_graph": {
-          "all": 29.9,
-          "answer_changing": 26.1,
-          "changed_and_no_mention": 26.2,
-          "local_wrong": 20.7
+          "all": 31.8,
+          "answer_changing": 28.0,
+          "changed_and_no_mention": 27.3,
+          "local_wrong": 18.6
         },
         "stale_answer": {
           "all": 63.6,
@@ -5291,10 +5291,10 @@
           "local_wrong": 57.3
         },
         "structure_only": {
-          "all": 35.6,
-          "answer_changing": 22.2,
-          "changed_and_no_mention": 22.0,
-          "local_wrong": 21.8
+          "all": 41.7,
+          "answer_changing": 22.8,
+          "changed_and_no_mention": 26.7,
+          "local_wrong": 21.6
         },
         "tool_solver": {
           "all": 100.0,
@@ -5305,10 +5305,10 @@
       },
       "v4_tea_s42": {
         "frozen_graph_history": {
-          "all": 30.4,
-          "answer_changing": 23.9,
-          "changed_and_no_mention": 22.8,
-          "local_wrong": 20.2
+          "all": 38.3,
+          "answer_changing": 28.7,
+          "changed_and_no_mention": 27.9,
+          "local_wrong": 23.2
         },
         "majority_answer": {
           "all": 31.8,
@@ -5317,16 +5317,16 @@
           "local_wrong": 24.6
         },
         "oracle_updated_graph": {
-          "all": 33.1,
-          "answer_changing": 30.0,
-          "changed_and_no_mention": 22.8,
-          "local_wrong": 20.6
+          "all": 42.0,
+          "answer_changing": 37.5,
+          "changed_and_no_mention": 27.9,
+          "local_wrong": 25.2
         },
         "predicted_updated_graph": {
-          "all": 33.0,
-          "answer_changing": 29.7,
-          "changed_and_no_mention": 22.8,
-          "local_wrong": 20.8
+          "all": 41.8,
+          "answer_changing": 37.3,
+          "changed_and_no_mention": 28.1,
+          "local_wrong": 25.3
         },
         "question_only": {
           "all": 26.5,
@@ -5335,10 +5335,10 @@
           "local_wrong": 24.6
         },
         "shuffled_graph": {
-          "all": 28.2,
-          "answer_changing": 24.6,
-          "changed_and_no_mention": 20.3,
-          "local_wrong": 19.9
+          "all": 31.4,
+          "answer_changing": 28.1,
+          "changed_and_no_mention": 24.2,
+          "local_wrong": 22.1
         },
         "stale_answer": {
           "all": 63.6,
@@ -5347,10 +5347,10 @@
           "local_wrong": 57.3
         },
         "structure_only": {
-          "all": 30.8,
-          "answer_changing": 24.5,
-          "changed_and_no_mention": 23.7,
-          "local_wrong": 20.0
+          "all": 38.0,
+          "answer_changing": 28.2,
+          "changed_and_no_mention": 29.8,
+          "local_wrong": 24.7
         },
         "tool_solver": {
           "all": 100.0,
@@ -5361,10 +5361,10 @@
       },
       "v4_tea_s43": {
         "frozen_graph_history": {
-          "all": 31.6,
-          "answer_changing": 25.8,
-          "changed_and_no_mention": 22.0,
-          "local_wrong": 18.5
+          "all": 38.1,
+          "answer_changing": 29.6,
+          "changed_and_no_mention": 28.1,
+          "local_wrong": 21.3
         },
         "majority_answer": {
           "all": 31.8,
@@ -5373,16 +5373,16 @@
           "local_wrong": 24.6
         },
         "oracle_updated_graph": {
-          "all": 33.3,
-          "answer_changing": 29.6,
-          "changed_and_no_mention": 22.6,
-          "local_wrong": 18.9
+          "all": 41.8,
+          "answer_changing": 37.3,
+          "changed_and_no_mention": 24.8,
+          "local_wrong": 21.6
         },
         "predicted_updated_graph": {
-          "all": 33.4,
-          "answer_changing": 29.5,
-          "changed_and_no_mention": 22.6,
-          "local_wrong": 19.0
+          "all": 41.9,
+          "answer_changing": 37.2,
+          "changed_and_no_mention": 24.8,
+          "local_wrong": 22.1
         },
         "question_only": {
           "all": 26.5,
@@ -5391,10 +5391,10 @@
           "local_wrong": 24.6
         },
         "shuffled_graph": {
-          "all": 27.5,
-          "answer_changing": 23.6,
-          "changed_and_no_mention": 20.1,
-          "local_wrong": 17.3
+          "all": 32.4,
+          "answer_changing": 29.3,
+          "changed_and_no_mention": 24.5,
+          "local_wrong": 20.2
         },
         "stale_answer": {
           "all": 63.6,
@@ -5403,10 +5403,10 @@
           "local_wrong": 57.3
         },
         "structure_only": {
-          "all": 31.7,
-          "answer_changing": 25.7,
-          "changed_and_no_mention": 22.3,
-          "local_wrong": 18.7
+          "all": 38.0,
+          "answer_changing": 28.1,
+          "changed_and_no_mention": 25.3,
+          "local_wrong": 21.8
         },
         "tool_solver": {
           "all": 100.0,
@@ -5417,10 +5417,10 @@
       },
       "v4_tea_s44": {
         "frozen_graph_history": {
-          "all": 30.7,
-          "answer_changing": 23.7,
-          "changed_and_no_mention": 19.8,
-          "local_wrong": 19.0
+          "all": 38.1,
+          "answer_changing": 28.9,
+          "changed_and_no_mention": 26.5,
+          "local_wrong": 22.5
         },
         "majority_answer": {
           "all": 31.8,
@@ -5429,16 +5429,16 @@
           "local_wrong": 24.6
         },
         "oracle_updated_graph": {
-          "all": 33.1,
-          "answer_changing": 30.2,
-          "changed_and_no_mention": 22.6,
-          "local_wrong": 20.5
+          "all": 42.6,
+          "answer_changing": 38.6,
+          "changed_and_no_mention": 26.2,
+          "local_wrong": 24.0
         },
         "predicted_updated_graph": {
-          "all": 32.9,
-          "answer_changing": 29.8,
-          "changed_and_no_mention": 22.6,
-          "local_wrong": 20.2
+          "all": 42.5,
+          "answer_changing": 38.3,
+          "changed_and_no_mention": 26.5,
+          "local_wrong": 24.1
         },
         "question_only": {
           "all": 26.5,
@@ -5447,10 +5447,10 @@
           "local_wrong": 24.6
         },
         "shuffled_graph": {
-          "all": 27.5,
-          "answer_changing": 23.3,
-          "changed_and_no_mention": 18.7,
-          "local_wrong": 16.8
+          "all": 31.7,
+          "answer_changing": 28.1,
+          "changed_and_no_mention": 24.8,
+          "local_wrong": 21.5
         },
         "stale_answer": {
           "all": 63.6,
@@ -5459,10 +5459,10 @@
           "local_wrong": 57.3
         },
         "structure_only": {
-          "all": 31.1,
-          "answer_changing": 24.2,
-          "changed_and_no_mention": 22.8,
-          "local_wrong": 20.1
+          "all": 37.7,
+          "answer_changing": 27.4,
+          "changed_and_no_mention": 24.8,
+          "local_wrong": 23.1
         },
         "tool_solver": {
           "all": 100.0,
@@ -5508,136 +5508,136 @@
       "v4_graphtoken_s42": {
         "oracle_updated_graph - frozen_graph_history": {
           "ci95": [
-            11.1,
-            14.7
+            11.7,
+            15.5
           ],
-          "delta": 12.9,
+          "delta": 13.6,
           "p": 0.0
         },
         "oracle_updated_graph - predicted_updated_graph": {
           "ci95": [
-            -0.1,
-            0.5
+            -0.2,
+            0.4
           ],
-          "delta": 0.2,
-          "p": 0.153
+          "delta": 0.1,
+          "p": 0.539
         },
         "oracle_updated_graph - shuffled_graph": {
           "ci95": [
-            19.4,
-            24.2
+            19.5,
+            24.5
           ],
-          "delta": 21.8,
+          "delta": 22.0,
           "p": 0.0
         },
         "oracle_updated_graph - structure_only": {
           "ci95": [
-            11.2,
-            14.9
+            11.6,
+            15.4
           ],
-          "delta": 13.0,
+          "delta": 13.4,
           "p": 0.0
         }
       },
       "v4_graphtoken_s43": {
         "oracle_updated_graph - frozen_graph_history": {
           "ci95": [
-            10.8,
-            14.5
+            10.9,
+            14.7
           ],
-          "delta": 12.6,
+          "delta": 12.8,
           "p": 0.0
         },
         "oracle_updated_graph - predicted_updated_graph": {
           "ci95": [
-            -0.1,
-            0.5
+            -0.3,
+            0.3
           ],
-          "delta": 0.2,
-          "p": 0.13
+          "delta": -0.0,
+          "p": 0.949
         },
         "oracle_updated_graph - shuffled_graph": {
           "ci95": [
-            19.1,
-            24.1
+            19.3,
+            24.2
           ],
-          "delta": 21.6,
+          "delta": 21.7,
           "p": 0.0
         },
         "oracle_updated_graph - structure_only": {
           "ci95": [
-            10.8,
-            14.3
+            10.9,
+            14.6
           ],
-          "delta": 12.5,
+          "delta": 12.8,
           "p": 0.0
         }
       },
       "v4_graphtoken_s44": {
         "oracle_updated_graph - frozen_graph_history": {
           "ci95": [
-            9.9,
-            13.6
+            10.9,
+            14.7
           ],
-          "delta": 11.7,
+          "delta": 12.8,
           "p": 0.0
         },
         "oracle_updated_graph - predicted_updated_graph": {
           "ci95": [
             -0.1,
-            0.4
+            0.6
           ],
           "delta": 0.2,
-          "p": 0.217
+          "p": 0.162
         },
         "oracle_updated_graph - shuffled_graph": {
           "ci95": [
-            17.9,
-            22.8
+            19.1,
+            24.1
           ],
-          "delta": 20.4,
+          "delta": 21.7,
           "p": 0.0
         },
         "oracle_updated_graph - structure_only": {
           "ci95": [
-            10.0,
-            13.4
+            11.0,
+            14.8
           ],
-          "delta": 11.7,
+          "delta": 13.0,
           "p": 0.0
         }
       },
       "v4_graphtoken_warm_s42": {
         "oracle_updated_graph - frozen_graph_history": {
           "ci95": [
-            3.3,
-            5.6
+            4.3,
+            7.2
           ],
-          "delta": 4.4,
+          "delta": 5.7,
           "p": 0.0
         },
         "oracle_updated_graph - predicted_updated_graph": {
           "ci95": [
-            -0.0,
-            0.4
+            -0.4,
+            0.1
           ],
-          "delta": 0.2,
-          "p": 0.125
+          "delta": -0.1,
+          "p": 0.407
         },
         "oracle_updated_graph - shuffled_graph": {
           "ci95": [
-            5.6,
-            9.4
+            11.3,
+            16.0
           ],
-          "delta": 7.5,
+          "delta": 13.7,
           "p": 0.0
         },
         "oracle_updated_graph - structure_only": {
           "ci95": [
-            3.0,
-            5.2
+            5.1,
+            7.8
           ],
-          "delta": 4.1,
+          "delta": 6.5,
           "p": 0.0
         }
       },
@@ -5645,112 +5645,112 @@
       "v4_tea_random_sum": {
         "oracle_updated_graph - frozen_graph_history": {
           "ci95": [
-            7.2,
-            10.3
+            11.6,
+            15.5
           ],
-          "delta": 8.7,
+          "delta": 13.5,
           "p": 0.0
         },
         "oracle_updated_graph - predicted_updated_graph": {
           "ci95": [
-            0.0,
+            -0.2,
             0.5
           ],
-          "delta": 0.3,
-          "p": 0.021
+          "delta": 0.1,
+          "p": 0.489
         },
         "oracle_updated_graph - shuffled_graph": {
           "ci95": [
-            12.7,
-            16.1
+            21.0,
+            25.8
           ],
-          "delta": 14.4,
+          "delta": 23.4,
           "p": 0.0
         },
         "oracle_updated_graph - structure_only": {
           "ci95": [
-            7.3,
-            10.2
+            11.7,
+            15.4
           ],
-          "delta": 8.7,
+          "delta": 13.6,
           "p": 0.0
         }
       },
       "v4_tea_s42": {
         "oracle_updated_graph - frozen_graph_history": {
           "ci95": [
-            1.9,
-            3.5
+            2.4,
+            4.9
           ],
-          "delta": 2.7,
+          "delta": 3.7,
           "p": 0.0
         },
         "oracle_updated_graph - predicted_updated_graph": {
           "ci95": [
             -0.1,
-            0.3
+            0.4
           ],
-          "delta": 0.1,
-          "p": 0.231
+          "delta": 0.2,
+          "p": 0.263
         },
         "oracle_updated_graph - shuffled_graph": {
           "ci95": [
-            3.0,
-            6.8
+            8.4,
+            12.7
           ],
-          "delta": 4.9,
+          "delta": 10.6,
           "p": 0.0
         },
         "oracle_updated_graph - structure_only": {
           "ci95": [
-            1.6,
-            3.1
+            2.9,
+            5.1
           ],
-          "delta": 2.3,
+          "delta": 4.0,
           "p": 0.0
         }
       },
       "v4_tea_s43": {
         "oracle_updated_graph - frozen_graph_history": {
           "ci95": [
-            0.9,
-            2.6
+            2.5,
+            4.8
           ],
-          "delta": 1.8,
+          "delta": 3.7,
           "p": 0.0
         },
         "oracle_updated_graph - predicted_updated_graph": {
           "ci95": [
-            -0.2,
+            -0.3,
             0.1
           ],
-          "delta": -0.0,
-          "p": 0.865
+          "delta": -0.1,
+          "p": 0.367
         },
         "oracle_updated_graph - shuffled_graph": {
           "ci95": [
-            4.2,
-            7.4
+            7.3,
+            11.5
           ],
-          "delta": 5.8,
+          "delta": 9.4,
           "p": 0.0
         },
         "oracle_updated_graph - structure_only": {
           "ci95": [
-            0.8,
-            2.4
+            2.8,
+            4.9
           ],
-          "delta": 1.7,
+          "delta": 3.8,
           "p": 0.0
         }
       },
       "v4_tea_s44": {
         "oracle_updated_graph - frozen_graph_history": {
           "ci95": [
-            1.5,
-            3.2
+            3.3,
+            5.8
           ],
-          "delta": 2.4,
+          "delta": 4.5,
           "p": 0.0
         },
         "oracle_updated_graph - predicted_updated_graph": {
@@ -5759,22 +5759,22 @@
             0.4
           ],
           "delta": 0.2,
-          "p": 0.107
+          "p": 0.171
         },
         "oracle_updated_graph - shuffled_graph": {
           "ci95": [
-            3.7,
-            7.4
+            8.8,
+            13.0
           ],
-          "delta": 5.6,
+          "delta": 10.9,
           "p": 0.0
         },
         "oracle_updated_graph - structure_only": {
           "ci95": [
-            1.1,
-            2.7
+            3.8,
+            6.0
           ],
-          "delta": 2.0,
+          "delta": 4.9,
           "p": 0.0
         }
       },
@@ -5785,102 +5785,102 @@
     "graphtoken": {
       "test": {
         "attribute_check": {
-          "mean": 49.9,
-          "sd": 2.1
+          "mean": 49.4,
+          "sd": 1.4
         },
         "attribute_lookup": {
-          "mean": 29.0,
-          "sd": 0.5
+          "mean": 29.5,
+          "sd": 1.8
         },
         "constrained_reachability": {
-          "mean": 55.8,
-          "sd": 2.2
+          "mean": 56.6,
+          "sd": 1.2
         },
         "cycle_membership": {
           "mean": 79.0,
-          "sd": 0.1
+          "sd": 0.4
         },
         "edge_exists": {
-          "mean": 61.7,
-          "sd": 2.4
+          "mean": 61.2,
+          "sd": 1.5
         },
         "filtered_neighbor_count": {
-          "mean": 31.8,
-          "sd": 1.0
+          "mean": 32.4,
+          "sd": 3.3
         },
         "most_common_attribute_within_hops": {
-          "mean": 27.9,
-          "sd": 1.0
+          "mean": 28.5,
+          "sd": 0.5
         },
         "node_degree": {
-          "mean": 97.5,
-          "sd": 1.0
+          "mean": 99.1,
+          "sd": 1.4
         },
         "overall": {
-          "mean": 49.7,
-          "sd": 0.6
+          "mean": 50.3,
+          "sd": 0.1
         },
         "reachability": {
-          "mean": 65.2,
-          "sd": 3.9
+          "mean": 65.7,
+          "sd": 0.8
         },
         "shortest_path": {
-          "mean": 30.0,
-          "sd": 1.2
+          "mean": 33.6,
+          "sd": 0.7
         },
         "within_hops_count": {
-          "mean": 19.0,
-          "sd": 1.4
+          "mean": 18.0,
+          "sd": 0.3
         }
       },
       "validation": {
         "attribute_check": {
-          "mean": 45.3,
-          "sd": 1.6
+          "mean": 46.0,
+          "sd": 0.9
         },
         "attribute_lookup": {
-          "mean": 26.9,
-          "sd": 1.3
+          "mean": 27.3,
+          "sd": 4.3
         },
         "constrained_reachability": {
-          "mean": 59.3,
-          "sd": 2.9
+          "mean": 60.9,
+          "sd": 0.6
         },
         "cycle_membership": {
-          "mean": 83.2,
-          "sd": 0.3
+          "mean": 83.0,
+          "sd": 0.6
         },
         "edge_exists": {
-          "mean": 63.0,
-          "sd": 3.4
+          "mean": 60.1,
+          "sd": 3.8
         },
         "filtered_neighbor_count": {
-          "mean": 28.6,
-          "sd": 1.9
+          "mean": 31.0,
+          "sd": 2.6
         },
         "most_common_attribute_within_hops": {
-          "mean": 30.1,
-          "sd": 1.6
+          "mean": 29.5,
+          "sd": 2.6
         },
         "node_degree": {
-          "mean": 98.5,
-          "sd": 0.5
+          "mean": 99.3,
+          "sd": 0.6
         },
         "overall": {
-          "mean": 50.5,
-          "sd": 0.1
+          "mean": 51.1,
+          "sd": 0.6
         },
         "reachability": {
-          "mean": 68.7,
-          "sd": 3.2
+          "mean": 69.9,
+          "sd": 0.3
         },
         "shortest_path": {
-          "mean": 33.5,
-          "sd": 2.0
+          "mean": 34.2,
+          "sd": 2.6
         },
         "within_hops_count": {
-          "mean": 18.4,
-          "sd": 3.7
+          "mean": 20.9,
+          "sd": 2.5
         }
       }
     },
@@ -5901,39 +5901,89 @@
     "random": {
       "test": {
         "attribute_check": {
-          "mean": 52.5,
+          "mean": 48.7,
           "sd": null
         },
         "attribute_lookup": {
-          "mean": 9.6,
+          "mean": 28.0,
           "sd": null
         },
         "constrained_reachability": {
-          "mean": 58.3,
+          "mean": 57.1,
           "sd": null
         },
         "cycle_membership": {
-          "mean": 87.4,
+          "mean": 81.8,
           "sd": null
         },
         "edge_exists": {
-          "mean": 59.8,
+          "mean": 65.9,
           "sd": null
         },
         "filtered_neighbor_count": {
-          "mean": 25.8,
+          "mean": 31.3,
           "sd": null
         },
         "most_common_attribute_within_hops": {
-          "mean": 10.6,
+          "mean": 30.1,
           "sd": null
         },
         "node_degree": {
-          "mean": 27.5,
+          "mean": 94.9,
           "sd": null
         },
         "overall": {
-          "mean": 39.6,
+          "mean": 50.8,
+          "sd": null
+        },
+        "reachability": {
+          "mean": 67.4,
+          "sd": null
+        },
+        "shortest_path": {
+          "mean": 34.3,
+          "sd": null
+        },
+        "within_hops_count": {
+          "mean": 19.2,
+          "sd": null
+        }
+      },
+      "validation": {
+        "attribute_check": {
+          "mean": 50.5,
+          "sd": null
+        },
+        "attribute_lookup": {
+          "mean": 28.3,
+          "sd": null
+        },
+        "constrained_reachability": {
+          "mean": 59.6,
+          "sd": null
+        },
+        "cycle_membership": {
+          "mean": 84.3,
+          "sd": null
+        },
+        "edge_exists": {
+          "mean": 66.2,
+          "sd": null
+        },
+        "filtered_neighbor_count": {
+          "mean": 32.8,
+          "sd": null
+        },
+        "most_common_attribute_within_hops": {
+          "mean": 29.8,
+          "sd": null
+        },
+        "node_degree": {
+          "mean": 95.5,
+          "sd": null
+        },
+        "overall": {
+          "mean": 51.5,
           "sd": null
         },
         "reachability": {
@@ -5941,61 +5991,11 @@
           "sd": null
         },
         "shortest_path": {
-          "mean": 21.7,
+          "mean": 33.8,
           "sd": null
         },
         "within_hops_count": {
-          "mean": 15.4,
-          "sd": null
-        }
-      },
-      "validation": {
-        "attribute_check": {
-          "mean": 48.5,
-          "sd": null
-        },
-        "attribute_lookup": {
-          "mean": 8.1,
-          "sd": null
-        },
-        "constrained_reachability": {
-          "mean": 58.6,
-          "sd": null
-        },
-        "cycle_membership": {
-          "mean": 86.4,
-          "sd": null
-        },
-        "edge_exists": {
-          "mean": 62.1,
-          "sd": null
-        },
-        "filtered_neighbor_count": {
-          "mean": 25.8,
-          "sd": null
-        },
-        "most_common_attribute_within_hops": {
-          "mean": 13.6,
-          "sd": null
-        },
-        "node_degree": {
-          "mean": 28.8,
-          "sd": null
-        },
-        "overall": {
-          "mean": 40.1,
-          "sd": null
-        },
-        "reachability": {
-          "mean": 68.2,
-          "sd": null
-        },
-        "shortest_path": {
-          "mean": 24.2,
-          "sd": null
-        },
-        "within_hops_count": {
-          "mean": 17.2,
+          "mean": 19.2,
           "sd": null
         }
       }
@@ -6105,203 +6105,203 @@
     "tea": {
       "test": {
         "attribute_check": {
-          "mean": 50.8,
-          "sd": 0.7
+          "mean": 52.9,
+          "sd": 1.0
         },
         "attribute_lookup": {
-          "mean": 7.7,
-          "sd": 1.1
+          "mean": 46.5,
+          "sd": 1.7
         },
         "constrained_reachability": {
-          "mean": 53.3,
-          "sd": 1.3
+          "mean": 51.7,
+          "sd": 1.2
         },
         "cycle_membership": {
-          "mean": 50.5,
-          "sd": 2.6
+          "mean": 52.0,
+          "sd": 0.5
         },
         "edge_exists": {
           "mean": 56.4,
-          "sd": 2.1
-        },
-        "filtered_neighbor_count": {
-          "mean": 25.6,
-          "sd": 2.7
-        },
-        "most_common_attribute_within_hops": {
-          "mean": 7.7,
           "sd": 0.4
         },
+        "filtered_neighbor_count": {
+          "mean": 27.6,
+          "sd": 1.9
+        },
+        "most_common_attribute_within_hops": {
+          "mean": 36.3,
+          "sd": 0.9
+        },
         "node_degree": {
-          "mean": 21.4,
-          "sd": 2.1
+          "mean": 44.2,
+          "sd": 1.3
         },
         "overall": {
-          "mean": 32.0,
+          "mean": 42.7,
           "sd": 0.1
         },
         "reachability": {
-          "mean": 57.7,
-          "sd": 2.8
-        },
-        "shortest_path": {
-          "mean": 4.7,
+          "mean": 61.2,
           "sd": 0.8
         },
+        "shortest_path": {
+          "mean": 23.0,
+          "sd": 2.0
+        },
         "within_hops_count": {
-          "mean": 15.7,
-          "sd": 1.4
+          "mean": 17.8,
+          "sd": 1.5
         }
       },
       "validation": {
         "attribute_check": {
-          "mean": 47.3,
-          "sd": 1.5
+          "mean": 47.5,
+          "sd": 0.9
         },
         "attribute_lookup": {
-          "mean": 6.9,
-          "sd": 1.1
+          "mean": 50.2,
+          "sd": 5.2
         },
         "constrained_reachability": {
-          "mean": 52.9,
-          "sd": 0.8
+          "mean": 54.9,
+          "sd": 1.5
         },
         "cycle_membership": {
-          "mean": 50.0,
-          "sd": 0.0
+          "mean": 54.7,
+          "sd": 3.1
         },
         "edge_exists": {
-          "mean": 55.7,
-          "sd": 2.8
+          "mean": 55.1,
+          "sd": 3.1
         },
         "filtered_neighbor_count": {
-          "mean": 21.2,
-          "sd": 1.3
+          "mean": 22.4,
+          "sd": 1.5
         },
         "most_common_attribute_within_hops": {
-          "mean": 8.2,
-          "sd": 1.2
+          "mean": 40.2,
+          "sd": 2.9
         },
         "node_degree": {
-          "mean": 21.5,
-          "sd": 2.0
+          "mean": 47.0,
+          "sd": 2.8
         },
         "overall": {
-          "mean": 31.6,
-          "sd": 0.7
+          "mean": 43.2,
+          "sd": 1.0
         },
         "reachability": {
-          "mean": 58.4,
-          "sd": 3.9
+          "mean": 61.3,
+          "sd": 2.1
         },
         "shortest_path": {
-          "mean": 5.6,
-          "sd": 2.6
+          "mean": 23.4,
+          "sd": 4.8
         },
         "within_hops_count": {
-          "mean": 19.9,
-          "sd": 2.1
+          "mean": 18.7,
+          "sd": 2.7
         }
       }
     },
     "warm": {
       "test": {
         "attribute_check": {
-          "mean": 51.3,
+          "mean": 53.8,
           "sd": null
         },
         "attribute_lookup": {
-          "mean": 11.4,
+          "mean": 46.2,
           "sd": null
         },
         "constrained_reachability": {
-          "mean": 52.8,
+          "mean": 55.8,
           "sd": null
         },
         "cycle_membership": {
-          "mean": 57.3,
+          "mean": 48.0,
           "sd": null
         },
         "edge_exists": {
-          "mean": 57.6,
+          "mean": 59.6,
           "sd": null
         },
         "filtered_neighbor_count": {
-          "mean": 26.5,
+          "mean": 30.8,
           "sd": null
         },
         "most_common_attribute_within_hops": {
-          "mean": 9.8,
+          "mean": 37.9,
           "sd": null
         },
         "node_degree": {
-          "mean": 25.8,
+          "mean": 75.0,
           "sd": null
         },
         "overall": {
-          "mean": 35.5,
+          "mean": 46.8,
           "sd": null
         },
         "reachability": {
-          "mean": 64.4,
+          "mean": 62.6,
           "sd": null
         },
         "shortest_path": {
-          "mean": 15.9,
+          "mean": 26.5,
           "sd": null
         },
         "within_hops_count": {
-          "mean": 17.9,
+          "mean": 18.2,
           "sd": null
         }
       },
       "validation": {
         "attribute_check": {
-          "mean": 49.0,
+          "mean": 52.5,
           "sd": null
         },
         "attribute_lookup": {
-          "mean": 13.1,
+          "mean": 50.0,
           "sd": null
         },
         "constrained_reachability": {
-          "mean": 58.1,
+          "mean": 56.6,
           "sd": null
         },
         "cycle_membership": {
-          "mean": 57.1,
+          "mean": 52.5,
           "sd": null
         },
         "edge_exists": {
-          "mean": 55.6,
+          "mean": 54.0,
           "sd": null
         },
         "filtered_neighbor_count": {
-          "mean": 25.3,
-          "sd": null
-        },
-        "most_common_attribute_within_hops": {
-          "mean": 10.1,
-          "sd": null
-        },
-        "node_degree": {
           "mean": 25.8,
           "sd": null
         },
+        "most_common_attribute_within_hops": {
+          "mean": 42.4,
+          "sd": null
+        },
+        "node_degree": {
+          "mean": 71.7,
+          "sd": null
+        },
         "overall": {
-          "mean": 36.2,
+          "mean": 47.1,
           "sd": null
         },
         "reachability": {
-          "mean": 68.2,
+          "mean": 66.2,
           "sd": null
         },
         "shortest_path": {
-          "mean": 17.7,
+          "mean": 24.7,
           "sd": null
         },
         "within_hops_count": {
-          "mean": 18.2,
+          "mean": 21.7,
           "sd": null
         }
       }
